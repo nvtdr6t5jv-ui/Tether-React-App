@@ -76,7 +76,7 @@ export const OnboardingSyncScreen = () => {
           photo: photoUri,
         };
       })
-      .slice(0, 100);
+;
   };
 
   const handleContinue = async () => {
