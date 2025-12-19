@@ -6,7 +6,6 @@ import Animated, {
   FadeIn,
   FadeInDown,
   FadeInUp,
-  FadeInRight,
   SlideInRight,
   ZoomIn,
   useAnimatedStyle,
@@ -19,6 +18,10 @@ import Animated, {
 } from "react-native-reanimated";
 import { useApp, TetheredFriend } from "../context/AppContext";
 import { orbits, getAvatarColor } from "../constants/mockData";
+import { ShuffleModal } from "../components/ShuffleModal";
+import { LogConnectionModal } from "../components/LogConnectionModal";
+import { HealthStatusModal } from "../components/HealthStatusModal";
+import { EventModal } from "../components/EventModal";
 
 const { width } = Dimensions.get("window");
 const ORBIT_SIZE = width - 32;
@@ -200,6 +203,7 @@ interface ToolkitCardProps {
   textColor: string;
   index: number;
   onPress?: () => void;
+  badge?: string;
 }
 
 const ToolkitCard: React.FC<ToolkitCardProps> = ({
@@ -212,6 +216,7 @@ const ToolkitCard: React.FC<ToolkitCardProps> = ({
   textColor,
   index,
   onPress,
+  badge,
 }) => (
   <Animated.View entering={FadeInUp.delay(400 + index * 100).duration(500).springify()}>
     <TouchableOpacity
@@ -230,17 +235,24 @@ const ToolkitCard: React.FC<ToolkitCardProps> = ({
         elevation: 3,
       }}
     >
-      <View
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: 20,
-          backgroundColor: iconBgColor,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <MaterialCommunityIcons name={icon as any} size={20} color={iconColor} />
+      <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
+        <View
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: iconBgColor,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <MaterialCommunityIcons name={icon as any} size={20} color={iconColor} />
+        </View>
+        {badge && (
+          <View style={{ backgroundColor: "rgba(129, 178, 154, 0.1)", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 9999 }}>
+            <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 12, color: "#81B29A" }}>{badge}</Text>
+          </View>
+        )}
       </View>
       <View>
         <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 18, color: textColor, marginBottom: 2 }}>
@@ -261,6 +273,11 @@ interface HomeScreenProps {
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
   const { friends, updateLastContact } = useApp();
   const [activeTab, setActiveTab] = useState<"overdue" | "drafts" | "events">("overdue");
+  
+  const [showShuffle, setShowShuffle] = useState(false);
+  const [showLogConnection, setShowLogConnection] = useState(false);
+  const [showHealth, setShowHealth] = useState(false);
+  const [showEvent, setShowEvent] = useState(false);
 
   const overdueCount = friends.filter(f => {
     if (!f.nextNudge) return true;
@@ -276,6 +293,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
   const handleNudgeAction = (friendId: string) => {
     updateLastContact(friendId);
   };
+
+  const handleLogConnection = (friendId: string, type: string, note: string) => {
+    updateLastContact(friendId);
+  };
+
+  const healthPercentage = friends.length > 0
+    ? Math.round(((friends.length - overdueCount) / friends.length) * 100)
+    : 100;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F7F8F6" }} edges={["top"]}>
@@ -391,6 +416,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
             </View>
 
             <TouchableOpacity
+              onPress={() => setShowShuffle(true)}
               style={{
                 position: "absolute",
                 bottom: 16,
@@ -500,6 +526,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
                 iconColor="#FFF"
                 textColor="#FFF"
                 index={0}
+                onPress={() => setShowShuffle(true)}
               />
             </View>
             <View style={{ width: (width - 44) / 2 }}>
@@ -512,6 +539,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
                 iconColor="#3D405B"
                 textColor="#3D405B"
                 index={1}
+                onPress={() => setShowLogConnection(true)}
               />
             </View>
             <View style={{ width: (width - 44) / 2 }}>
@@ -524,6 +552,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
                 iconColor="#E07A5F"
                 textColor="#3D405B"
                 index={2}
+                onPress={() => setShowEvent(true)}
               />
             </View>
             <View style={{ width: (width - 44) / 2 }}>
@@ -536,11 +565,44 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
                 iconColor="#81B29A"
                 textColor="#3D405B"
                 index={3}
+                onPress={() => setShowHealth(true)}
+                badge={`${healthPercentage}%`}
               />
             </View>
           </View>
         </Animated.View>
       </ScrollView>
+
+      <ShuffleModal
+        visible={showShuffle}
+        onClose={() => setShowShuffle(false)}
+        friends={friends}
+        onMessage={(friend) => {
+          setShowShuffle(false);
+          updateLastContact(friend.id);
+        }}
+      />
+
+      <LogConnectionModal
+        visible={showLogConnection}
+        onClose={() => setShowLogConnection(false)}
+        friends={friends}
+        onLogConnection={handleLogConnection}
+      />
+
+      <HealthStatusModal
+        visible={showHealth}
+        onClose={() => setShowHealth(false)}
+        friends={friends}
+        onViewAnalytics={() => {
+          setShowHealth(false);
+        }}
+      />
+
+      <EventModal
+        visible={showEvent}
+        onClose={() => setShowEvent(false)}
+      />
     </SafeAreaView>
   );
 };
