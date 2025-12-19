@@ -4,7 +4,20 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import Animated, { FadeIn, FadeInUp, FadeOutLeft, FadeInRight } from "react-native-reanimated";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+  SlideInRight,
+  SlideOutLeft,
+  ZoomIn,
+  Layout,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 import { useOnboarding } from "../context/OnboardingContext";
 import { orbits, getAvatarColor } from "../constants/mockData";
 import { RootStackParamList } from "../navigation/AppNavigator";
@@ -25,6 +38,7 @@ export const OnboardingAssignOrbitsScreen = () => {
 
   const [selectedOrbit, setSelectedOrbit] = useState<string | null>(null);
   const [key, setKey] = useState(0);
+  const progressWidth = useSharedValue(0);
 
   useEffect(() => {
     if (currentFriend) {
@@ -32,6 +46,15 @@ export const OnboardingAssignOrbitsScreen = () => {
       setKey(prev => prev + 1);
     }
   }, [currentFriendIndex, currentFriend]);
+
+  useEffect(() => {
+    const progress = ((currentFriendIndex + 1) / selectedFriends.length) * 100;
+    progressWidth.value = withSpring(progress, { damping: 15, stiffness: 100 });
+  }, [currentFriendIndex, selectedFriends.length]);
+
+  const progressStyle = useAnimatedStyle(() => ({
+    width: `${progressWidth.value}%`,
+  }));
 
   const handleOrbitSelect = (orbitId: string) => {
     setSelectedOrbit(orbitId);
@@ -59,8 +82,6 @@ export const OnboardingAssignOrbitsScreen = () => {
     return null;
   }
 
-  const progress = ((currentFriendIndex + 1) / selectedFriends.length) * 100;
-
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F4F1DE" }} edges={["top", "bottom"]}>
       <View style={{ flex: 1 }}>
@@ -76,18 +97,22 @@ export const OnboardingAssignOrbitsScreen = () => {
           </Text>
         </View>
 
-        <View style={{ height: 4, backgroundColor: "rgba(61, 64, 91, 0.1)", marginHorizontal: 24 }}>
-          <View style={{ height: "100%", width: `${progress}%`, backgroundColor: "#E07A5F", borderRadius: 2 }} />
+        <View style={{ height: 4, backgroundColor: "rgba(61, 64, 91, 0.1)", marginHorizontal: 24, borderRadius: 2, overflow: "hidden" }}>
+          <Animated.View style={[progressStyle, { height: "100%", backgroundColor: "#E07A5F", borderRadius: 2 }]} />
         </View>
 
         <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 24 }}>
-          <Text style={{ fontFamily: "Fraunces_600SemiBold", fontSize: 32, color: "#3D405B", textAlign: "center", lineHeight: 36, marginBottom: 24 }}>
+          <Animated.Text
+            entering={FadeInDown.duration(500)}
+            style={{ fontFamily: "Fraunces_600SemiBold", fontSize: 32, color: "#3D405B", textAlign: "center", lineHeight: 36, marginBottom: 24 }}
+          >
             How often do you{"\n"}want to chat?
-          </Text>
+          </Animated.Text>
 
           <Animated.View
             key={key}
-            entering={FadeInRight.duration(300)}
+            entering={SlideInRight.duration(400).springify()}
+            exiting={SlideOutLeft.duration(300)}
             style={{
               backgroundColor: "#FFF",
               borderRadius: 24,
@@ -102,7 +127,8 @@ export const OnboardingAssignOrbitsScreen = () => {
             }}
           >
             {currentFriend.photo ? (
-              <Image
+              <Animated.Image
+                entering={ZoomIn.delay(150).duration(400)}
                 source={{ uri: currentFriend.photo }}
                 style={{
                   width: 96,
@@ -114,87 +140,103 @@ export const OnboardingAssignOrbitsScreen = () => {
                 }}
               />
             ) : (
-              <View style={{
-                width: 96,
-                height: 96,
-                borderRadius: 48,
-                backgroundColor: "rgba(129, 178, 154, 0.2)",
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: 16,
-                borderWidth: 4,
-                borderColor: "rgba(129, 178, 154, 0.1)",
-              }}>
+              <Animated.View
+                entering={ZoomIn.delay(150).duration(400)}
+                style={{
+                  width: 96,
+                  height: 96,
+                  borderRadius: 48,
+                  backgroundColor: "rgba(129, 178, 154, 0.2)",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: 16,
+                  borderWidth: 4,
+                  borderColor: "rgba(129, 178, 154, 0.1)",
+                }}
+              >
                 <Text style={{ fontFamily: "Fraunces_600SemiBold", fontSize: 32, color: "#81B29A" }}>
                   {currentFriend.initials}
                 </Text>
-              </View>
+              </Animated.View>
             )}
-            <Text style={{ fontFamily: "Fraunces_600SemiBold", fontSize: 24, color: "#3D405B" }}>
+            <Animated.Text
+              entering={FadeIn.delay(250).duration(300)}
+              style={{ fontFamily: "Fraunces_600SemiBold", fontSize: 24, color: "#3D405B" }}
+            >
               {currentFriend.name}
-            </Text>
-            <Text style={{ fontFamily: "PlusJakartaSans_500Medium", fontSize: 14, color: "rgba(61, 64, 91, 0.6)", marginTop: 4 }}>
+            </Animated.Text>
+            <Animated.Text
+              entering={FadeIn.delay(350).duration(300)}
+              style={{ fontFamily: "PlusJakartaSans_500Medium", fontSize: 14, color: "rgba(61, 64, 91, 0.6)", marginTop: 4 }}
+            >
               {currentFriendIndex + 1} of {selectedFriends.length}
-            </Text>
+            </Animated.Text>
           </Animated.View>
 
           <View style={{ gap: 12 }}>
             {orbits.map((orbit, index) => {
               const isSelected = selectedOrbit === orbit.id;
               return (
-                <TouchableOpacity
+                <Animated.View
                   key={orbit.id}
-                  onPress={() => handleOrbitSelect(orbit.id)}
-                  activeOpacity={0.8}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    backgroundColor: isSelected ? "#81B29A" : "#FFF",
-                    borderRadius: 32,
-                    padding: 16,
-                    paddingHorizontal: 24,
-                    shadowColor: isSelected ? "#81B29A" : "#3D405B",
-                    shadowOffset: { width: 0, height: isSelected ? 8 : 2 },
-                    shadowOpacity: isSelected ? 0.3 : 0.05,
-                    shadowRadius: isSelected ? 16 : 8,
-                    elevation: isSelected ? 6 : 2,
-                  }}
+                  entering={SlideInRight.delay(400 + index * 100).duration(400).springify()}
+                  layout={Layout.springify()}
                 >
-                  <Text style={{
-                    fontFamily: "PlusJakartaSans_700Bold",
-                    fontSize: 16,
-                    color: isSelected ? "#FFF" : "#3D405B",
-                  }}>
-                    {orbit.label}
-                  </Text>
-                  <View style={{
-                    backgroundColor: isSelected ? "rgba(255,255,255,0.2)" : "#F4F1DE",
-                    paddingHorizontal: 12,
-                    paddingVertical: 6,
-                    borderRadius: 16,
-                  }}>
+                  <TouchableOpacity
+                    onPress={() => handleOrbitSelect(orbit.id)}
+                    activeOpacity={0.8}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      backgroundColor: isSelected ? "#81B29A" : "#FFF",
+                      borderRadius: 32,
+                      padding: 16,
+                      paddingHorizontal: 24,
+                      shadowColor: isSelected ? "#81B29A" : "#3D405B",
+                      shadowOffset: { width: 0, height: isSelected ? 8 : 2 },
+                      shadowOpacity: isSelected ? 0.3 : 0.05,
+                      shadowRadius: isSelected ? 16 : 8,
+                      elevation: isSelected ? 6 : 2,
+                    }}
+                  >
                     <Text style={{
-                      fontFamily: "PlusJakartaSans_500Medium",
-                      fontSize: 12,
-                      color: isSelected ? "rgba(255,255,255,0.9)" : "rgba(61, 64, 91, 0.5)",
+                      fontFamily: "PlusJakartaSans_700Bold",
+                      fontSize: 16,
+                      color: isSelected ? "#FFF" : "#3D405B",
                     }}>
-                      {orbit.frequency}
+                      {orbit.label}
                     </Text>
-                  </View>
-                </TouchableOpacity>
+                    <View style={{
+                      backgroundColor: isSelected ? "rgba(255,255,255,0.2)" : "#F4F1DE",
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 16,
+                    }}>
+                      <Text style={{
+                        fontFamily: "PlusJakartaSans_500Medium",
+                        fontSize: 12,
+                        color: isSelected ? "rgba(255,255,255,0.9)" : "rgba(61, 64, 91, 0.5)",
+                      }}>
+                        {orbit.frequency}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                </Animated.View>
               );
             })}
           </View>
 
-          <TouchableOpacity onPress={handleSkip} style={{ alignItems: "center", marginTop: 24 }}>
-            <Text style={{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 16, color: "rgba(61, 64, 91, 0.6)" }}>
-              Skip for now
-            </Text>
-          </TouchableOpacity>
+          <Animated.View entering={FadeIn.delay(800).duration(400)}>
+            <TouchableOpacity onPress={handleSkip} style={{ alignItems: "center", marginTop: 24 }}>
+              <Text style={{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 16, color: "rgba(61, 64, 91, 0.6)" }}>
+                Skip for now
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
         </View>
 
-        <View style={{ paddingHorizontal: 24, paddingBottom: 32, paddingTop: 16 }}>
+        <Animated.View entering={FadeInUp.delay(600).duration(500)} style={{ paddingHorizontal: 24, paddingBottom: 32, paddingTop: 16 }}>
           <TouchableOpacity
             onPress={handleNext}
             activeOpacity={0.9}
@@ -219,7 +261,7 @@ export const OnboardingAssignOrbitsScreen = () => {
             </Text>
             <MaterialCommunityIcons name="arrow-right" size={20} color="#F4F1DE" />
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </View>
     </SafeAreaView>
   );

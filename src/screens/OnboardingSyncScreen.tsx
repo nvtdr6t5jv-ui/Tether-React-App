@@ -4,7 +4,17 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  SlideInRight,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+  interpolate,
+  Extrapolation,
+} from "react-native-reanimated";
 import { useOnboarding } from "../context/OnboardingContext";
 import { RootStackParamList } from "../navigation/AppNavigator";
 
@@ -14,6 +24,7 @@ export const OnboardingSyncScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const { setSyncMode } = useOnboarding();
   const [syncEnabled, setSyncEnabled] = useState(true);
+  const cardScale = useSharedValue(1);
 
   const handleContinue = () => {
     if (syncEnabled) {
@@ -25,10 +36,17 @@ export const OnboardingSyncScreen = () => {
     }
   };
 
-  const handleManualAdd = () => {
-    setSyncMode("manual");
-    navigation.navigate("OnboardingManualAdd");
+  const handlePressIn = () => {
+    cardScale.value = withSpring(0.98);
   };
+
+  const handlePressOut = () => {
+    cardScale.value = withSpring(1);
+  };
+
+  const cardAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: cardScale.value }],
+  }));
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F4F1DE" }} edges={["top", "bottom"]}>
@@ -40,36 +58,44 @@ export const OnboardingSyncScreen = () => {
           >
             <MaterialCommunityIcons name="arrow-left" size={28} color="#3D405B" />
           </TouchableOpacity>
-          <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 12, color: "rgba(61, 64, 91, 0.7)", letterSpacing: 2, textTransform: "uppercase" }}>
+          <Animated.Text
+            entering={FadeInDown.delay(100).duration(400)}
+            style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 12, color: "rgba(61, 64, 91, 0.7)", letterSpacing: 2, textTransform: "uppercase" }}
+          >
             Step 1 of 4
-          </Text>
+          </Animated.Text>
         </View>
 
         <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 16 }}>
-          <Animated.View entering={FadeInDown.duration(500)} style={{ alignItems: "center", marginBottom: 40 }}>
+          <Animated.View entering={FadeInDown.delay(200).duration(600).springify()} style={{ alignItems: "center", marginBottom: 40 }}>
             <Text style={{ fontFamily: "Fraunces_600SemiBold", fontSize: 36, color: "#3D405B", textAlign: "center", lineHeight: 40 }}>
               Let's find your{"\n"}people.
             </Text>
-            <Text style={{ fontFamily: "PlusJakartaSans_400Regular", fontSize: 16, color: "rgba(61, 64, 91, 0.8)", textAlign: "center", marginTop: 16, maxWidth: 280, lineHeight: 24 }}>
+            <Animated.Text
+              entering={FadeInDown.delay(400).duration(500)}
+              style={{ fontFamily: "PlusJakartaSans_400Regular", fontSize: 16, color: "rgba(61, 64, 91, 0.8)", textAlign: "center", marginTop: 16, maxWidth: 280, lineHeight: 24 }}
+            >
               Tether helps you stay close to the friends who matter most. Sync your contacts to get started instantly.
-            </Text>
+            </Animated.Text>
           </Animated.View>
 
-          <Animated.View entering={FadeInUp.delay(200).duration(500)}>
-            <View style={{
-              backgroundColor: "#FFF",
-              borderRadius: 24,
-              padding: 20,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              shadowColor: "#3D405B",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.05,
-              shadowRadius: 8,
-              elevation: 2,
-              marginBottom: 24,
-            }}>
+          <Animated.View entering={SlideInRight.delay(500).duration(500).springify()}>
+            <Animated.View
+              style={[cardAnimatedStyle, {
+                backgroundColor: "#FFF",
+                borderRadius: 24,
+                padding: 20,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                shadowColor: "#3D405B",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.05,
+                shadowRadius: 8,
+                elevation: 2,
+                marginBottom: 24,
+              }]}
+            >
               <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
                 <View style={{
                   width: 56,
@@ -97,33 +123,15 @@ export const OnboardingSyncScreen = () => {
                 thumbColor="#FFF"
                 ios_backgroundColor="#E0E0E0"
               />
-            </View>
-
-            <View style={{ alignItems: "center", flex: 1 }}>
-              <TouchableOpacity
-                onPress={handleManualAdd}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  paddingHorizontal: 24,
-                  paddingVertical: 14,
-                  borderRadius: 9999,
-                  borderWidth: 2,
-                  borderColor: "rgba(129, 178, 154, 0.5)",
-                }}
-              >
-                <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 14, color: "#81B29A" }}>
-                  I'll add friends manually
-                </Text>
-              </TouchableOpacity>
-            </View>
+            </Animated.View>
           </Animated.View>
         </View>
 
-        <View style={{ paddingHorizontal: 24, paddingBottom: 32 }}>
+        <Animated.View entering={FadeInUp.delay(700).duration(500)} style={{ paddingHorizontal: 24, paddingBottom: 32 }}>
           <TouchableOpacity
             onPress={handleContinue}
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
             activeOpacity={0.9}
             style={{
               width: "100%",
@@ -146,10 +154,13 @@ export const OnboardingSyncScreen = () => {
             </Text>
             <MaterialCommunityIcons name="arrow-right" size={20} color="#F4F1DE" />
           </TouchableOpacity>
-          <Text style={{ fontFamily: "PlusJakartaSans_400Regular", fontSize: 10, color: "rgba(61, 64, 91, 0.4)", textAlign: "center", marginTop: 16, paddingHorizontal: 32 }}>
+          <Animated.Text
+            entering={FadeInUp.delay(900).duration(400)}
+            style={{ fontFamily: "PlusJakartaSans_400Regular", fontSize: 10, color: "rgba(61, 64, 91, 0.4)", textAlign: "center", marginTop: 16, paddingHorizontal: 32 }}
+          >
             By syncing, you agree to allow Tether to access your contact list securely. We never spam your friends.
-          </Text>
-        </View>
+          </Animated.Text>
+        </Animated.View>
       </View>
     </SafeAreaView>
   );

@@ -4,12 +4,24 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  SlideInRight,
+  ZoomIn,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+  Layout,
+} from "react-native-reanimated";
 import { useOnboarding } from "../context/OnboardingContext";
 import { mockContacts, getAvatarColor } from "../constants/mockData";
 import { RootStackParamList } from "../navigation/AppNavigator";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
 export const OnboardingSelectFriendsScreen = () => {
   const navigation = useNavigation<NavigationProp>();
@@ -33,19 +45,25 @@ export const OnboardingSelectFriendsScreen = () => {
           >
             <MaterialCommunityIcons name="arrow-left" size={28} color="#3D405B" />
           </TouchableOpacity>
-          <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 12, color: "rgba(61, 64, 91, 0.7)", letterSpacing: 2, textTransform: "uppercase" }}>
+          <Animated.Text
+            entering={FadeInDown.delay(100).duration(400)}
+            style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 12, color: "rgba(61, 64, 91, 0.7)", letterSpacing: 2, textTransform: "uppercase" }}
+          >
             Step 2 of 4
-          </Text>
+          </Animated.Text>
         </View>
 
         <View style={{ paddingHorizontal: 24, paddingTop: 8 }}>
-          <Animated.View entering={FadeInDown.duration(500)} style={{ alignItems: "center", marginBottom: 24 }}>
+          <Animated.View entering={FadeInDown.delay(200).duration(600).springify()} style={{ alignItems: "center", marginBottom: 24 }}>
             <Text style={{ fontFamily: "Fraunces_600SemiBold", fontSize: 32, color: "#3D405B", textAlign: "center", lineHeight: 36 }}>
               Who do you want{"\n"}to tether?
             </Text>
-            <Text style={{ fontFamily: "PlusJakartaSans_400Regular", fontSize: 16, color: "rgba(61, 64, 91, 0.8)", textAlign: "center", marginTop: 12, maxWidth: 280 }}>
+            <Animated.Text
+              entering={FadeInDown.delay(400).duration(500)}
+              style={{ fontFamily: "PlusJakartaSans_400Regular", fontSize: 16, color: "rgba(61, 64, 91, 0.8)", textAlign: "center", marginTop: 12, maxWidth: 280 }}
+            >
               Select the friends you want to keep in touch with. Ignore the rest.
-            </Text>
+            </Animated.Text>
           </Animated.View>
         </View>
 
@@ -57,7 +75,11 @@ export const OnboardingSelectFriendsScreen = () => {
           {mockContacts.map((contact, index) => {
             const selected = isSelected(contact.id);
             return (
-              <Animated.View key={contact.id} entering={FadeIn.delay(index * 50).duration(300)}>
+              <Animated.View
+                key={contact.id}
+                entering={SlideInRight.delay(300 + index * 80).duration(400).springify()}
+                layout={Layout.springify()}
+              >
                 <TouchableOpacity
                   onPress={() => toggleFriendSelection(contact)}
                   activeOpacity={0.7}
@@ -110,21 +132,28 @@ export const OnboardingSelectFriendsScreen = () => {
                       {contact.name}
                     </Text>
                   </View>
-                  <MaterialCommunityIcons
-                    name={selected ? "check-circle" : "checkbox-blank-circle-outline"}
-                    size={28}
-                    color={selected ? "#E07A5F" : "rgba(61, 64, 91, 0.2)"}
-                  />
+                  <Animated.View
+                    layout={Layout.springify()}
+                  >
+                    <MaterialCommunityIcons
+                      name={selected ? "check-circle" : "checkbox-blank-circle-outline"}
+                      size={28}
+                      color={selected ? "#E07A5F" : "rgba(61, 64, 91, 0.2)"}
+                    />
+                  </Animated.View>
                 </TouchableOpacity>
               </Animated.View>
             );
           })}
         </ScrollView>
 
-        <View style={{ paddingHorizontal: 24, paddingBottom: 32, paddingTop: 16 }}>
-          <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 14, color: "#3D405B", textAlign: "center", marginBottom: 16 }}>
+        <Animated.View entering={FadeInUp.delay(800).duration(500)} style={{ paddingHorizontal: 24, paddingBottom: 32, paddingTop: 16 }}>
+          <Animated.Text
+            layout={Layout.springify()}
+            style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 14, color: "#3D405B", textAlign: "center", marginBottom: 16 }}
+          >
             {selectedFriends.length} Friends Selected
-          </Text>
+          </Animated.Text>
           <TouchableOpacity
             onPress={handleNext}
             activeOpacity={0.9}
@@ -150,7 +179,7 @@ export const OnboardingSelectFriendsScreen = () => {
             </Text>
             <MaterialCommunityIcons name="arrow-right" size={20} color="#F4F1DE" />
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </View>
     </SafeAreaView>
   );

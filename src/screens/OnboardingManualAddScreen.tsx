@@ -4,7 +4,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import Animated, { FadeInDown, FadeIn, Layout } from "react-native-reanimated";
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  SlideInRight,
+  ZoomIn,
+  Layout,
+  FadeIn,
+} from "react-native-reanimated";
 import { useOnboarding } from "../context/OnboardingContext";
 import { getInitials, getAvatarColor, Friend } from "../constants/mockData";
 import { RootStackParamList } from "../navigation/AppNavigator";
@@ -88,19 +95,25 @@ export const OnboardingManualAddScreen = () => {
           >
             <MaterialCommunityIcons name="arrow-left" size={28} color="#3D405B" />
           </TouchableOpacity>
-          <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 12, color: "rgba(61, 64, 91, 0.7)", letterSpacing: 2, textTransform: "uppercase" }}>
+          <Animated.Text
+            entering={FadeInDown.delay(100).duration(400)}
+            style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 12, color: "rgba(61, 64, 91, 0.7)", letterSpacing: 2, textTransform: "uppercase" }}
+          >
             Step 2 of 4
-          </Text>
+          </Animated.Text>
         </View>
 
         <View style={{ paddingHorizontal: 24, paddingTop: 16 }}>
-          <Animated.View entering={FadeInDown.duration(500)} style={{ alignItems: "center", marginBottom: 32 }}>
+          <Animated.View entering={FadeInDown.delay(200).duration(600).springify()} style={{ alignItems: "center", marginBottom: 32 }}>
             <Text style={{ fontFamily: "Fraunces_600SemiBold", fontSize: 32, color: "#3D405B", textAlign: "center", lineHeight: 36 }}>
               Start with your{"\n"}Inner Circle.
             </Text>
-            <Text style={{ fontFamily: "PlusJakartaSans_400Regular", fontSize: 16, color: "rgba(61, 64, 91, 0.8)", textAlign: "center", marginTop: 12, maxWidth: 280 }}>
+            <Animated.Text
+              entering={FadeInDown.delay(400).duration(500)}
+              style={{ fontFamily: "PlusJakartaSans_400Regular", fontSize: 16, color: "rgba(61, 64, 91, 0.8)", textAlign: "center", marginTop: 12, maxWidth: 280 }}
+            >
               Who are the 3-5 people you want to talk to more often? You can add more later.
-            </Text>
+            </Animated.Text>
           </Animated.View>
         </View>
 
@@ -116,7 +129,7 @@ export const OnboardingManualAddScreen = () => {
             return (
               <Animated.View
                 key={index}
-                entering={FadeIn.delay(index * 50).duration(300)}
+                entering={SlideInRight.delay(300 + index * 80).duration(400).springify()}
                 layout={Layout.springify()}
               >
                 <View style={{
@@ -133,18 +146,21 @@ export const OnboardingManualAddScreen = () => {
                   elevation: 2,
                 }}>
                   {hasValue ? (
-                    <View style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 24,
-                      backgroundColor: getAvatarColor(index),
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}>
+                    <Animated.View
+                      entering={ZoomIn.duration(300)}
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 24,
+                        backgroundColor: getAvatarColor(index),
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
                       <Text style={{ fontFamily: "Fraunces_600SemiBold", fontSize: 16, color: "#FFF" }}>
                         {initials}
                       </Text>
-                    </View>
+                    </Animated.View>
                   ) : (
                     <View style={{
                       width: 48,
@@ -175,33 +191,37 @@ export const OnboardingManualAddScreen = () => {
                     }}
                   />
                   {hasValue && (
-                    <TouchableOpacity onPress={() => handleRemove(index)} style={{ padding: 8 }}>
-                      <MaterialCommunityIcons name="close" size={20} color="rgba(61, 64, 91, 0.2)" />
-                    </TouchableOpacity>
+                    <Animated.View entering={FadeIn.duration(200)}>
+                      <TouchableOpacity onPress={() => handleRemove(index)} style={{ padding: 8 }}>
+                        <MaterialCommunityIcons name="close" size={20} color="rgba(61, 64, 91, 0.2)" />
+                      </TouchableOpacity>
+                    </Animated.View>
                   )}
                 </View>
               </Animated.View>
             );
           })}
 
-          <TouchableOpacity
-            onPress={handleAddAnother}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 6,
-              paddingVertical: 12,
-            }}
-          >
-            <MaterialCommunityIcons name="plus" size={20} color="#81B29A" />
-            <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 14, color: "#81B29A" }}>
-              Add another
-            </Text>
-          </TouchableOpacity>
+          <Animated.View entering={FadeIn.delay(700).duration(400)}>
+            <TouchableOpacity
+              onPress={handleAddAnother}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                paddingVertical: 12,
+              }}
+            >
+              <MaterialCommunityIcons name="plus" size={20} color="#81B29A" />
+              <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 14, color: "#81B29A" }}>
+                Add another
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
         </ScrollView>
 
-        <View style={{ paddingHorizontal: 24, paddingBottom: 32, paddingTop: 16 }}>
+        <Animated.View entering={FadeInUp.delay(800).duration(500)} style={{ paddingHorizontal: 24, paddingBottom: 32, paddingTop: 16 }}>
           <TouchableOpacity
             onPress={handleNext}
             activeOpacity={0.9}
@@ -227,7 +247,7 @@ export const OnboardingManualAddScreen = () => {
             </Text>
             <MaterialCommunityIcons name="arrow-right" size={20} color="#F4F1DE" />
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </View>
     </SafeAreaView>
   );

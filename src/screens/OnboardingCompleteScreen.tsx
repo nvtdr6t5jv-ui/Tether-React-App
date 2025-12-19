@@ -7,12 +7,17 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Animated, {
   FadeIn,
   FadeInDown,
+  FadeInUp,
+  ZoomIn,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
   withTiming,
   withDelay,
+  withSpring,
+  withSequence,
   Easing,
+  interpolate,
 } from "react-native-reanimated";
 import { useOnboarding } from "../context/OnboardingContext";
 import { getAvatarColor } from "../constants/mockData";
@@ -31,20 +36,34 @@ const FloatingAvatar: React.FC<{
   colorIndex: number;
 }> = ({ name, initials, index, total, colorIndex }) => {
   const translateY = useSharedValue(0);
+  const scale = useSharedValue(0);
+  const opacity = useSharedValue(0);
 
   useEffect(() => {
+    const enterDelay = 600 + index * 200;
+    
+    scale.value = withDelay(enterDelay, withSpring(1, { damping: 12, stiffness: 100 }));
+    opacity.value = withDelay(enterDelay, withTiming(1, { duration: 400 }));
+    
     translateY.value = withDelay(
-      index * 300,
+      enterDelay + 400,
       withRepeat(
-        withTiming(-12, { duration: 2500, easing: Easing.inOut(Easing.ease) }),
+        withSequence(
+          withTiming(-10, { duration: 2000 + index * 200, easing: Easing.inOut(Easing.ease) }),
+          withTiming(0, { duration: 2000 + index * 200, easing: Easing.inOut(Easing.ease) })
+        ),
         -1,
-        true
+        false
       )
     );
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
+    transform: [
+      { translateY: translateY.value },
+      { scale: scale.value },
+    ],
+    opacity: opacity.value,
   }));
 
   const angle = (index / total) * 2 * Math.PI - Math.PI / 2;
@@ -107,6 +126,38 @@ const FloatingAvatar: React.FC<{
   );
 };
 
+const OrbitRing: React.FC<{ size: number; delay: number }> = ({ size, delay }) => {
+  const scale = useSharedValue(0.8);
+  const opacity = useSharedValue(0);
+
+  useEffect(() => {
+    scale.value = withDelay(delay, withSpring(1, { damping: 15, stiffness: 80 }));
+    opacity.value = withDelay(delay, withTiming(1, { duration: 600 }));
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
+  return (
+    <Animated.View
+      style={[
+        animatedStyle,
+        {
+          position: "absolute",
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          borderWidth: 1.5,
+          borderStyle: "dashed",
+          borderColor: "rgba(129, 178, 154, 0.3)",
+        },
+      ]}
+    />
+  );
+};
+
 export const OnboardingCompleteScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const { selectedFriends, resetOnboarding } = useOnboarding();
@@ -123,10 +174,10 @@ export const OnboardingCompleteScreen = () => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F4F1DE" }} edges={["top", "bottom"]}>
-      <View style={{ position: "absolute", top: "15%", left: "10%", width: 12, height: 12, backgroundColor: "#81B29A", borderRadius: 6, opacity: 0.4 }} />
-      <View style={{ position: "absolute", top: "12%", right: "20%", width: 8, height: 8, backgroundColor: "#E07A5F", borderRadius: 4, opacity: 0.4 }} />
-      <View style={{ position: "absolute", top: "8%", left: "40%", width: 8, height: 8, backgroundColor: "rgba(61, 64, 91, 0.2)", borderRadius: 2, transform: [{ rotate: "12deg" }] }} />
-      <View style={{ position: "absolute", top: "20%", right: "10%", width: 12, height: 12, borderWidth: 2, borderColor: "rgba(129, 178, 154, 0.4)", borderRadius: 6 }} />
+      <Animated.View entering={FadeIn.delay(200).duration(800)} style={{ position: "absolute", top: "15%", left: "10%", width: 12, height: 12, backgroundColor: "#81B29A", borderRadius: 6, opacity: 0.4 }} />
+      <Animated.View entering={FadeIn.delay(400).duration(800)} style={{ position: "absolute", top: "12%", right: "20%", width: 8, height: 8, backgroundColor: "#E07A5F", borderRadius: 4, opacity: 0.4 }} />
+      <Animated.View entering={FadeIn.delay(600).duration(800)} style={{ position: "absolute", top: "8%", left: "40%", width: 8, height: 8, backgroundColor: "rgba(61, 64, 91, 0.2)", borderRadius: 2, transform: [{ rotate: "12deg" }] }} />
+      <Animated.View entering={FadeIn.delay(800).duration(800)} style={{ position: "absolute", top: "20%", right: "10%", width: 12, height: 12, borderWidth: 2, borderColor: "rgba(129, 178, 154, 0.4)", borderRadius: 6 }} />
 
       <View style={{ flex: 1 }}>
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 24, paddingVertical: 16 }}>
@@ -136,14 +187,16 @@ export const OnboardingCompleteScreen = () => {
           >
             <MaterialCommunityIcons name="arrow-left" size={28} color="#3D405B" />
           </TouchableOpacity>
-          <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 12, color: "rgba(61, 64, 91, 0.6)", letterSpacing: 2, textTransform: "uppercase" }}>
+          <Animated.Text
+            entering={FadeInDown.delay(100).duration(400)}
+            style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 12, color: "rgba(61, 64, 91, 0.6)", letterSpacing: 2, textTransform: "uppercase" }}
+          >
             Step 4 of 4
-          </Text>
+          </Animated.Text>
         </View>
 
         <View style={{ flex: 1, alignItems: "center", paddingTop: 16 }}>
-          <Animated.View
-            entering={FadeIn.duration(800)}
+          <View
             style={{
               width: ORBIT_SIZE,
               height: ORBIT_SIZE,
@@ -151,40 +204,27 @@ export const OnboardingCompleteScreen = () => {
               justifyContent: "center",
             }}
           >
-            <View style={{
-              position: "absolute",
-              width: ORBIT_SIZE * 0.9,
-              height: ORBIT_SIZE * 0.9,
-              borderRadius: ORBIT_SIZE * 0.45,
-              borderWidth: 1.5,
-              borderStyle: "dashed",
-              borderColor: "rgba(129, 178, 154, 0.3)",
-            }} />
-            <View style={{
-              position: "absolute",
-              width: ORBIT_SIZE * 0.55,
-              height: ORBIT_SIZE * 0.55,
-              borderRadius: ORBIT_SIZE * 0.275,
-              borderWidth: 1.5,
-              borderStyle: "dashed",
-              borderColor: "rgba(129, 178, 154, 0.3)",
-            }} />
+            <OrbitRing size={ORBIT_SIZE * 0.9} delay={200} />
+            <OrbitRing size={ORBIT_SIZE * 0.55} delay={400} />
 
-            <View style={{
-              width: 80,
-              height: 80,
-              borderRadius: 40,
-              backgroundColor: "#F4F1DE",
-              borderWidth: 4,
-              borderColor: "rgba(61, 64, 91, 0.05)",
-              alignItems: "center",
-              justifyContent: "center",
-              shadowColor: "#81B29A",
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.1,
-              shadowRadius: 12,
-              elevation: 4,
-            }}>
+            <Animated.View
+              entering={ZoomIn.delay(300).duration(500).springify()}
+              style={{
+                width: 80,
+                height: 80,
+                borderRadius: 40,
+                backgroundColor: "#F4F1DE",
+                borderWidth: 4,
+                borderColor: "rgba(61, 64, 91, 0.05)",
+                alignItems: "center",
+                justifyContent: "center",
+                shadowColor: "#81B29A",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.1,
+                shadowRadius: 12,
+                elevation: 4,
+              }}
+            >
               <View style={{
                 width: 64,
                 height: 64,
@@ -197,7 +237,7 @@ export const OnboardingCompleteScreen = () => {
                   You
                 </Text>
               </View>
-            </View>
+            </Animated.View>
 
             {displayFriends.map((friend, index) => (
               <FloatingAvatar
@@ -209,19 +249,22 @@ export const OnboardingCompleteScreen = () => {
                 colorIndex={index}
               />
             ))}
-          </Animated.View>
+          </View>
 
-          <Animated.View entering={FadeInDown.delay(400).duration(600)} style={{ alignItems: "center", marginTop: 16, paddingHorizontal: 24 }}>
+          <Animated.View entering={FadeInDown.delay(1000).duration(600).springify()} style={{ alignItems: "center", marginTop: 16, paddingHorizontal: 24 }}>
             <Text style={{ fontFamily: "Fraunces_600SemiBold", fontSize: 32, color: "#3D405B", textAlign: "center", lineHeight: 38 }}>
               You're all set!
             </Text>
-            <Text style={{ fontFamily: "PlusJakartaSans_400Regular", fontSize: 16, color: "rgba(61, 64, 91, 0.7)", textAlign: "center", marginTop: 16, maxWidth: 280, lineHeight: 24 }}>
+            <Animated.Text
+              entering={FadeInDown.delay(1200).duration(500)}
+              style={{ fontFamily: "PlusJakartaSans_400Regular", fontSize: 16, color: "rgba(61, 64, 91, 0.7)", textAlign: "center", marginTop: 16, maxWidth: 280, lineHeight: 24 }}
+            >
               We've set your first reminders. We'll nudge you when it's time to reach out.
-            </Text>
+            </Animated.Text>
           </Animated.View>
         </View>
 
-        <View style={{ paddingHorizontal: 24, paddingBottom: 32, alignItems: "center", gap: 20 }}>
+        <Animated.View entering={FadeInUp.delay(1400).duration(500)} style={{ paddingHorizontal: 24, paddingBottom: 32, alignItems: "center", gap: 20 }}>
           <TouchableOpacity
             onPress={handleEnterTether}
             activeOpacity={0.9}
@@ -249,7 +292,7 @@ export const OnboardingCompleteScreen = () => {
               Customize Nudge Times
             </Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </View>
     </SafeAreaView>
   );
