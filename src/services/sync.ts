@@ -17,8 +17,8 @@ const mapDbFriendToLocal = (dbFriend: DbFriend): LocalFriend => ({
   photo: undefined,
   isFavorite: dbFriend.is_favorite,
   reminderFrequency: dbFriend.reminder_frequency,
-  lastContact: dbFriend.last_contact ? new Date(dbFriend.last_contact) : undefined,
-  nextNudge: undefined,
+  lastContact: dbFriend.last_contact ? new Date(dbFriend.last_contact) : null,
+  nextNudge: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
   tags: [],
   createdAt: new Date(dbFriend.created_at),
   updatedAt: new Date(dbFriend.updated_at),
@@ -37,7 +37,7 @@ const mapLocalFriendToDb = (localFriend: LocalFriend, userId: string): Partial<D
   how_met: localFriend.howMet || null,
   is_favorite: localFriend.isFavorite || false,
   reminder_frequency: (localFriend.reminderFrequency || 'monthly') as any,
-  last_contact: localFriend.lastContact?.toISOString() || null,
+  last_contact: localFriend.lastContact instanceof Date ? localFriend.lastContact.toISOString() : (localFriend.lastContact || null),
 });
 
 const mapDbInteractionToLocal = (dbInteraction: DbInteraction): LocalInteraction => ({
@@ -52,14 +52,22 @@ const mapDbInteractionToLocal = (dbInteraction: DbInteraction): LocalInteraction
 const mapDbEventToLocal = (dbEvent: DbCalendarEvent): LocalCalendarEvent => ({
   id: dbEvent.id,
   title: dbEvent.title,
-  description: dbEvent.description || undefined,
-  startDate: new Date(dbEvent.start_date),
+  notes: dbEvent.description || undefined,
+  date: new Date(dbEvent.start_date),
   endDate: dbEvent.end_date ? new Date(dbEvent.end_date) : undefined,
   friendId: dbEvent.friend_id || undefined,
-  type: 'hangout',
-  location: dbEvent.location || undefined,
-  isAllDay: dbEvent.is_all_day,
+  type: 'custom',
+  isRecurring: false,
+  isCompleted: false,
+  createdAt: new Date(),
 });
+
+const getDateString = (date: Date | string | undefined | null): string | null => {
+  if (!date) return null;
+  if (typeof date === 'string') return date;
+  if (date instanceof Date) return date.toISOString();
+  return null;
+};
 
 export const syncService = {
   async isAuthenticated(): Promise<boolean> {
@@ -93,27 +101,33 @@ export const syncService = {
       }
 
       for (const interaction of localInteractions) {
+        const dateStr = getDateString(interaction.date);
+        if (!dateStr) continue;
+        
         await supabase.from('interactions').upsert({
           id: interaction.id,
           user_id: user.id,
           friend_id: interaction.friendId,
           type: interaction.type as any,
           note: interaction.note || null,
-          date: typeof interaction.date === 'string' ? interaction.date : interaction.date.toISOString(),
+          date: dateStr,
         });
       }
 
       for (const event of localEvents) {
+        const startDateStr = getDateString(event.date);
+        if (!startDateStr) continue;
+        
         await supabase.from('calendar_events').upsert({
           id: event.id,
           user_id: user.id,
           friend_id: event.friendId || null,
           title: event.title,
-          description: event.description || null,
-          start_date: event.startDate.toISOString(),
-          end_date: event.endDate?.toISOString() || null,
-          is_all_day: event.isAllDay || false,
-          location: event.location || null,
+          description: event.notes || null,
+          start_date: startDateStr,
+          end_date: getDateString(event.endDate),
+          is_all_day: false,
+          location: null,
         });
       }
 
@@ -137,14 +151,51 @@ export const syncService = {
         api.calendarEvents.getAll(),
       ]);
 
-      const localFriends = dbFriends.map(mapDbFriendToLocal);
-      const localInteractions = dbInteractions.map(mapDbInteractionToLocal);
-      const localEvents = dbEvents.map(mapDbEventToLocal);
+      if (dbFriends.length === 0 && dbInteractions.length === 0 && dbEvents.length === 0) {
+        return { success: true };
+      }
+
+      const [localFriends, localInteractions, localEvents] = await Promise.all([
+        storageService.getFriends(),
+        storageService.getInteractions(),
+        storageService.getCalendarEvents(),
+      ]);
+
+      const cloudFriends = dbFriends.map(mapDbFriendToLocal);
+      const cloudInteractions = dbInteractions.map(mapDbInteractionToLocal);
+      const cloudEvents = dbEvents.map(mapDbEventToLocal);
+
+      const mergedFriends = [...localFriends];
+      for (const cloudFriend of cloudFriends) {
+        const existingIndex = mergedFriends.findIndex(f => f.id === cloudFriend.id);
+        if (existingIndex >= 0) {
+          const local = mergedFriends[existingIndex];
+          if (cloudFriend.updatedAt > local.updatedAt) {
+            mergedFriends[existingIndex] = cloudFriend;
+          }
+        } else {
+          mergedFriends.push(cloudFriend);
+        }
+      }
+
+      const mergedInteractions = [...localInteractions];
+      for (const cloudInt of cloudInteractions) {
+        if (!mergedInteractions.some(i => i.id === cloudInt.id)) {
+          mergedInteractions.push(cloudInt);
+        }
+      }
+
+      const mergedEvents = [...localEvents];
+      for (const cloudEvent of cloudEvents) {
+        if (!mergedEvents.some(e => e.id === cloudEvent.id)) {
+          mergedEvents.push(cloudEvent);
+        }
+      }
 
       await Promise.all([
-        storageService.saveFriends(localFriends),
-        storageService.saveInteractions(localInteractions),
-        storageService.saveCalendarEvents(localEvents),
+        storageService.saveFriends(mergedFriends),
+        storageService.saveInteractions(mergedInteractions),
+        storageService.saveCalendarEvents(mergedEvents),
       ]);
 
       return { success: true };
