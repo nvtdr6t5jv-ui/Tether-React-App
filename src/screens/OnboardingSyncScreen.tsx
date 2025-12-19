@@ -62,14 +62,20 @@ export const OnboardingSyncScreen = () => {
 
     return data
       .filter(contact => contact.name && contact.name.trim().length > 0)
-      .map(contact => ({
-        id: contact.id || `contact-${Date.now()}-${Math.random()}`,
-        name: contact.name || "Unknown",
-        initials: getInitials(contact.name || "UN"),
-        phone: contact.phoneNumbers?.[0]?.number,
-        email: contact.emails?.[0]?.email,
-        photo: contact.image?.uri || null,
-      }))
+      .map(contact => {
+        let photoUri = contact.image?.uri || null;
+        if (photoUri && !photoUri.startsWith('file://')) {
+          photoUri = `file://${photoUri}`;
+        }
+        return {
+          id: contact.id || `contact-${Date.now()}-${Math.random()}`,
+          name: contact.name || "Unknown",
+          initials: getInitials(contact.name || "UN"),
+          phone: contact.phoneNumbers?.[0]?.number,
+          email: contact.emails?.[0]?.email,
+          photo: photoUri,
+        };
+      })
       .slice(0, 100);
   };
 
