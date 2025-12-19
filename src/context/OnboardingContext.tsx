@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { Friend } from '../constants/mockData';
+import { FREE_CONTACT_LIMIT } from '../types';
 
 type SyncMode = 'contacts' | 'manual' | null;
 
@@ -14,7 +15,7 @@ interface OnboardingContextType extends OnboardingState {
   setSyncMode: (mode: SyncMode) => void;
   setSelectedFriends: (friends: Friend[]) => void;
   toggleFriendSelection: (friend: Friend) => void;
-  addManualFriend: (friend: Friend) => void;
+  addManualFriend: (friend: Friend) => boolean;
   removeManualFriend: (id: string) => void;
   assignOrbit: (friendId: string, orbitId: string) => void;
   nextFriend: () => boolean;
@@ -23,6 +24,8 @@ interface OnboardingContextType extends OnboardingState {
   resetOnboarding: () => void;
   currentFriend: Friend | null;
   isLastFriend: boolean;
+  canAddMore: boolean;
+  remainingSlots: number;
 }
 
 const initialState: OnboardingState = {
@@ -54,6 +57,9 @@ export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children
           selectedFriends: prev.selectedFriends.filter(f => f.id !== friend.id),
         };
       }
+      if (prev.selectedFriends.length >= FREE_CONTACT_LIMIT) {
+        return prev;
+      }
       return {
         ...prev,
         selectedFriends: [...prev.selectedFriends, friend],
@@ -61,11 +67,15 @@ export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children
     });
   };
 
-  const addManualFriend = (friend: Friend) => {
+  const addManualFriend = (friend: Friend): boolean => {
+    if (state.selectedFriends.length >= FREE_CONTACT_LIMIT) {
+      return false;
+    }
     setState(prev => ({
       ...prev,
       selectedFriends: [...prev.selectedFriends, friend],
     }));
+    return true;
   };
 
   const removeManualFriend = (id: string) => {
@@ -115,6 +125,8 @@ export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children
 
   const currentFriend = state.selectedFriends[state.currentFriendIndex] || null;
   const isLastFriend = state.currentFriendIndex === state.selectedFriends.length - 1;
+  const canAddMore = state.selectedFriends.length < FREE_CONTACT_LIMIT;
+  const remainingSlots = FREE_CONTACT_LIMIT - state.selectedFriends.length;
 
   return (
     <OnboardingContext.Provider
@@ -132,6 +144,8 @@ export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children
         resetOnboarding,
         currentFriend,
         isLastFriend,
+        canAddMore,
+        remainingSlots,
       }}
     >
       {children}

@@ -15,19 +15,18 @@ import Animated, {
 import { useOnboarding } from "../context/OnboardingContext";
 import { getInitials, getAvatarColor, Friend } from "../constants/mockData";
 import { RootStackParamList } from "../navigation/AppNavigator";
+import { FREE_CONTACT_LIMIT } from "../types";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
-
-const INITIAL_SLOTS = 5;
 
 export const OnboardingManualAddScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const { setSelectedFriends } = useOnboarding();
-  const [inputs, setInputs] = useState<string[]>(Array(INITIAL_SLOTS).fill(""));
+  const [inputs, setInputs] = useState<string[]>(Array(FREE_CONTACT_LIMIT).fill(""));
 
   useFocusEffect(
     useCallback(() => {
-      setInputs(Array(INITIAL_SLOTS).fill(""));
+      setInputs(Array(FREE_CONTACT_LIMIT).fill(""));
       setSelectedFriends([]);
     }, [])
   );
@@ -42,10 +41,6 @@ export const OnboardingManualAddScreen = () => {
     const newInputs = [...inputs];
     newInputs[index] = "";
     setInputs(newInputs);
-  };
-
-  const handleAddAnother = () => {
-    setInputs([...inputs, ""]);
   };
 
   const handleNext = () => {
@@ -186,22 +181,10 @@ export const OnboardingManualAddScreen = () => {
             );
           })}
 
-          <Animated.View entering={FadeIn.delay(700).duration(400)}>
-            <TouchableOpacity
-              onPress={handleAddAnother}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 6,
-                paddingVertical: 12,
-              }}
-            >
-              <MaterialCommunityIcons name="plus" size={20} color="#81B29A" />
-              <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 14, color: "#81B29A" }}>
-                Add another
-              </Text>
-            </TouchableOpacity>
+          <Animated.View entering={FadeIn.delay(700).duration(400)} style={{ paddingVertical: 8 }}>
+            <Text style={{ fontFamily: "PlusJakartaSans_500Medium", fontSize: 13, color: "rgba(61, 64, 91, 0.5)", textAlign: "center" }}>
+              Start with up to {FREE_CONTACT_LIMIT} friends. Upgrade anytime for unlimited.
+            </Text>
           </Animated.View>
         </ScrollView>
 
