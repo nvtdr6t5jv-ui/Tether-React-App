@@ -13,7 +13,7 @@ import Animated, { FadeInDown, FadeInUp, Layout } from "react-native-reanimated"
 import { useRoute, RouteProp } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { RootStackParamList } from "../navigation/AppNavigator";
-import { AppleLogo, GoogleLogo } from "./SocialIcons";
+import { AppleLogo, GoogleLogo } from "../components/SocialIcons";
 
 type AuthScreenRouteProp = RouteProp<RootStackParamList, "Auth">;
 
