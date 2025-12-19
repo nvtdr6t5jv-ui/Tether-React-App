@@ -86,7 +86,7 @@ export const api = {
       if (!profile) throw new Error('Profile not found');
 
       const newXp = profile.total_xp + amount;
-      const newLevel = Math.floor(newXp / 1000) + 1;
+      const newLevel = Math.floor(newXp / 100) + 1;
 
       await supabase
         .from('profiles')
