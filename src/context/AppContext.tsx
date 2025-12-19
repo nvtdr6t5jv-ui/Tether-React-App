@@ -75,6 +75,7 @@ interface AppContextType extends AppState {
   getRelationshipHealth: (friendId: string) => RelationshipHealth;
   getConversationStarter: (friendId: string) => string;
   syncWithCloud: () => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const getDefaultSettings = (): UserSettings => ({
@@ -750,6 +751,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
   };
 
+
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error("Error signing out from Supabase:", error);
+    }
+    await storageService.clearAllData();
+    setState({
+      ...initialState,
+      isLoading: false,
+    });
+  };
+
   const addCalendarEvent = async (event: CalendarEvent) => {
     await storageService.addCalendarEvent(event);
     setState(prev => ({ ...prev, calendarEvents: [...prev.calendarEvents, event] }));
@@ -922,6 +937,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         getInteractionsByFriendLimited,
         refreshData,
         resetApp,
+        logout,
         canAddMoreFriends,
         getRemainingFreeSlots,
         upgradeToPremium,

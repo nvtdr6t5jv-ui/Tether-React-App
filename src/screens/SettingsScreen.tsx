@@ -93,7 +93,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   onNavigateToPremium,
   onLogout,
 }) => {
-  const { userProfile, userSettings, updateUserSettings, getSocialHealthStats, resetApp } = useApp();
+  const { userProfile, userSettings, updateUserSettings, getSocialHealthStats, resetApp, logout } = useApp();
   const [isExporting, setIsExporting] = useState(false);
 
   const stats = getSocialHealthStats();
@@ -114,6 +114,24 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     } finally {
       setIsExporting(false);
     }
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      "Log Out",
+      "Are you sure you want to log out?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Log Out",
+          style: "destructive",
+          onPress: async () => {
+            await logout();
+            onLogout();
+          },
+        },
+      ]
+    );
   };
 
   const handleResetApp = () => {
@@ -146,7 +164,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             <Text style={{ fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 28, color: '#3D405B' }}>
               Settings
             </Text>
-            <TouchableOpacity onPress={handleResetApp}>
+            <TouchableOpacity onPress={handleLogout}>
               <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', fontSize: 14, color: 'rgba(61, 64, 91, 0.4)', marginBottom: 4 }}>
                 Log Out
               </Text>
@@ -374,6 +392,34 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 </TouchableOpacity>
               </View>
             </View>
+          </View>
+        </Animated.View>
+
+
+        <Animated.View entering={FadeInUp.delay(600).duration(400)} style={{ paddingHorizontal: 20, marginTop: 24 }}>
+          <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 10, color: "rgba(224, 122, 95, 0.6)", textTransform: "uppercase", letterSpacing: 1.5, marginLeft: 8, marginBottom: 8 }}>
+            Danger Zone
+          </Text>
+          <View
+            style={{
+              backgroundColor: "#FFF",
+              borderRadius: 16,
+              overflow: "hidden",
+              shadowColor: "#3D405B",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.04,
+              shadowRadius: 8,
+              elevation: 2,
+            }}
+          >
+            <SettingsRow
+              icon="delete-forever"
+              iconBg="rgba(224, 122, 95, 0.1)"
+              iconColor="#E07A5F"
+              title="Reset App"
+              subtitle="Delete all data and start fresh"
+              onPress={handleResetApp}
+            />
           </View>
         </Animated.View>
 
