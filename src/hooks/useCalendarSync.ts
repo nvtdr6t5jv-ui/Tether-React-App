@@ -203,6 +203,27 @@ export const useCalendarSync = () => {
     return synced;
   };
 
+  const normalizeTitle = (title: string): string => {
+    return title.toLowerCase().trim().replace(/\s+/g, ' ');
+  };
+
+  const isSameEvent = (event1Title: string, event1Date: Date, event2Title: string, event2Date: Date): boolean => {
+    const title1 = normalizeTitle(event1Title);
+    const title2 = normalizeTitle(event2Title);
+    
+    const date1 = new Date(event1Date);
+    const date2 = new Date(event2Date);
+    
+    const sameDay = date1.getFullYear() === date2.getFullYear() &&
+                    date1.getMonth() === date2.getMonth() &&
+                    date1.getDate() === date2.getDate();
+    
+    const timeDiff = Math.abs(date1.getTime() - date2.getTime());
+    const withinHour = timeDiff < 60 * 60 * 1000;
+    
+    return title1 === title2 && (sameDay || withinHour);
+  };
+
   const performAutoSync = async (
     addCalendarEvent: (event: CalendarEvent) => Promise<void>,
     existingEvents: CalendarEvent[]
@@ -222,14 +243,16 @@ export const useCalendarSync = () => {
       
       let imported = 0;
       for (const event of events) {
-        const exists = existingEvents.some(e => 
-          e.title === event.title && 
-          new Date(e.date).toDateString() === event.startDate.toDateString()
-        );
+        const exists = existingEvents.some(e => {
+          const existingDate = e.date instanceof Date ? e.date : new Date(e.date);
+          return isSameEvent(e.title, existingDate, event.title, event.startDate) ||
+                 e.id === `imported-${event.id}` ||
+                 e.id.startsWith(`imported-${event.id}-`);
+        });
         
         if (!exists) {
           await addCalendarEvent({
-            id: `imported-${event.id}-${Date.now()}`,
+            id: `imported-${event.id}`,
             title: event.title,
             date: event.startDate,
             type: 'custom',
@@ -237,6 +260,7 @@ export const useCalendarSync = () => {
             isRecurring: false,
             isCompleted: false,
             createdAt: new Date(),
+            sourceCalendarId: event.calendarId,
           });
           imported++;
         }

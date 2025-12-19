@@ -145,6 +145,7 @@ export interface CalendarEvent {
   location?: string;
   isCompleted: boolean;
   createdAt: Date;
+  sourceCalendarId?: string;
 }
 
 export type QuickTag = 'caught_up' | 'made_plans' | 'checked_in' | 'deep_talk' | 'quick_hello' | 'celebration';
