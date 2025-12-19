@@ -30,6 +30,12 @@ import { DailyCheckInModal } from "../components/DailyCheckInModal";
 import { MilestoneModal } from "../components/MilestoneModal";
 
 const { width } = Dimensions.get("window");
+const ORBIT_SIZE = width - 64;
+
+const getAvatarColor = (index: number) => {
+  const colors = ['#E07A5F', '#81B29A', '#3D405B', '#F2CC8F', '#6366F1', '#EC4899'];
+  return colors[index % colors.length];
+};
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -269,69 +275,79 @@ const StreakCard: React.FC<StreakCardProps> = ({ currentStreak, longestStreak, c
   );
 };
 
-interface OrbitCardProps {
-  orbit: Orbit;
-  count: number;
-  overdueCount: number;
+interface OrbitAvatarProps {
+  friend: Friend;
   index: number;
+  total: number;
+  orbitLevel: number;
   onPress: () => void;
 }
 
-const OrbitCard: React.FC<OrbitCardProps> = ({ orbit, count, overdueCount, index, onPress }) => {
+const OrbitAvatar: React.FC<OrbitAvatarProps> = ({ friend, index, total, orbitLevel, onPress }) => {
+  const translateY = useSharedValue(0);
+  const scale = useSharedValue(0);
+
+  useEffect(() => {
+    scale.value = withDelay(300 + index * 100, withSpring(1, { damping: 12 }));
+    translateY.value = withDelay(
+      500 + index * 100,
+      withRepeat(
+        withTiming(-4, { duration: 2000 + index * 300, easing: Easing.inOut(Easing.ease) }),
+        -1,
+        true
+      )
+    );
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }, { scale: scale.value }],
+  }));
+
+  const radius = ORBIT_SIZE * (0.18 + orbitLevel * 0.14);
+  const angleOffset = (index / Math.max(total, 1)) * 2 * Math.PI - Math.PI / 2;
+  const x = Math.cos(angleOffset) * radius;
+  const y = Math.sin(angleOffset) * radius;
+
+  const size = 36 - orbitLevel * 4;
+
   return (
-    <Animated.View entering={FadeInRight.delay(300 + index * 100).duration(400)}>
-      <TouchableOpacity
-        onPress={onPress}
-        activeOpacity={0.9}
-        style={{
-          backgroundColor: "#FFF",
-          borderRadius: 16,
-          padding: 16,
-          width: 140,
-          shadowColor: "#3D405B",
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.06,
-          shadowRadius: 12,
-          elevation: 3,
-          borderLeftWidth: 4,
-          borderLeftColor: orbit.color,
-        }}
-      >
-        <View
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 20,
-            backgroundColor: `${orbit.color}15`,
-            alignItems: "center",
-            justifyContent: "center",
-            marginBottom: 12,
-          }}
-        >
-          <MaterialCommunityIcons
-            name={orbit.id === 'inner' ? 'heart' : orbit.id === 'close' ? 'account-group' : 'account-multiple'}
-            size={20}
-            color={orbit.color}
+    <Animated.View
+      style={[
+        animatedStyle,
+        {
+          position: "absolute",
+          left: ORBIT_SIZE / 2 + x - size / 2,
+          top: ORBIT_SIZE / 2 + y - size / 2,
+        },
+      ]}
+    >
+      <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+        {friend.photo ? (
+          <Image
+            source={{ uri: friend.photo }}
+            style={{
+              width: size,
+              height: size,
+              borderRadius: size / 2,
+              borderWidth: 2,
+              borderColor: "#FFF",
+            }}
           />
-        </View>
-        <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 14, color: "#3D405B", marginBottom: 2 }}>
-          {orbit.name}
-        </Text>
-        <Text style={{ fontFamily: "PlusJakartaSans_500Medium", fontSize: 12, color: "rgba(61, 64, 91, 0.6)", marginBottom: 8 }}>
-          {count} {count === 1 ? 'person' : 'people'}
-        </Text>
-        {overdueCount > 0 ? (
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#F59E0B" }} />
-            <Text style={{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 11, color: "#F59E0B" }}>
-              {overdueCount} overdue
-            </Text>
-          </View>
         ) : (
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#81B29A" }} />
-            <Text style={{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 11, color: "#81B29A" }}>
-              On track
+          <View
+            style={{
+              width: size,
+              height: size,
+              borderRadius: size / 2,
+              backgroundColor: getAvatarColor(index),
+              alignItems: "center",
+              justifyContent: "center",
+              borderWidth: 2,
+              borderColor: "#FFF",
+            }}
+          >
+            <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: size * 0.35, color: "#FFF" }}>
+              {friend.initials}
             </Text>
           </View>
         )}
@@ -370,17 +386,11 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
   const overdueFriends = getOverdueFriends();
   const upcomingBirthdays = getUpcomingBirthdays();
 
-  const orbitStats = useMemo(() => {
-    return ORBITS.map(orbit => {
-      const orbitFriends = friends.filter(f => f.orbitId === orbit.id);
-      const overdueInOrbit = overdueFriends.filter(f => f.orbitId === orbit.id);
-      return {
-        orbit,
-        count: orbitFriends.length,
-        overdueCount: overdueInOrbit.length,
-      };
-    });
-  }, [friends, overdueFriends]);
+  const friendsByOrbit = useMemo(() => ({
+    inner: friends.filter(f => f.orbitId === "inner"),
+    close: friends.filter(f => f.orbitId === "close"),
+    catchup: friends.filter(f => f.orbitId === "catchup"),
+  }), [friends]);
 
   const todaysFocus = useMemo(() => {
     const today = new Date();
@@ -486,33 +496,86 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
           />
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(300).duration(500)} style={{ marginBottom: 24 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12, paddingHorizontal: 20 }}>
-            <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 20, color: "#3D405B" }}>
-              Your Orbits
-            </Text>
-            <TouchableOpacity onPress={() => onNavigate?.("people")}>
-              <Text style={{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 14, color: "#81B29A" }}>
-                View All
-              </Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false} 
-            contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
+        <Animated.View entering={FadeIn.delay(300).duration(600)} style={{ paddingHorizontal: 16, marginBottom: 24 }}>
+          <TouchableOpacity
+            onPress={() => onNavigate?.("people")}
+            activeOpacity={0.95}
+            style={{
+              width: "100%",
+              aspectRatio: 1,
+              backgroundColor: "#F4F1DE",
+              borderRadius: 24,
+              overflow: "hidden",
+              shadowColor: "#3D405B",
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.08,
+              shadowRadius: 24,
+              elevation: 4,
+            }}
           >
-            {orbitStats.map((item, index) => (
-              <OrbitCard
-                key={item.orbit.id}
-                orbit={item.orbit}
-                count={item.count}
-                overdueCount={item.overdueCount}
-                index={index}
-                onPress={() => onNavigate?.("people")}
-              />
-            ))}
-          </ScrollView>
+            <View style={{ position: "absolute", top: 16, left: 16, backgroundColor: "rgba(255,255,255,0.7)", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 9999 }}>
+              <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 11, color: "#3D405B", letterSpacing: 1, textTransform: "uppercase" }}>Your Orbit</Text>
+            </View>
+
+            <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+              <View style={{ width: ORBIT_SIZE, height: ORBIT_SIZE, alignItems: "center", justifyContent: "center" }}>
+                <View style={{ position: "absolute", width: ORBIT_SIZE * 0.85, height: ORBIT_SIZE * 0.85, borderRadius: ORBIT_SIZE * 0.425, borderWidth: 1, borderColor: "rgba(61, 64, 91, 0.06)", borderStyle: "dashed" }} />
+                <View style={{ position: "absolute", width: ORBIT_SIZE * 0.6, height: ORBIT_SIZE * 0.6, borderRadius: ORBIT_SIZE * 0.3, borderWidth: 1, borderColor: "rgba(61, 64, 91, 0.1)", borderStyle: "dashed" }} />
+                <View style={{ position: "absolute", width: ORBIT_SIZE * 0.35, height: ORBIT_SIZE * 0.35, borderRadius: ORBIT_SIZE * 0.175, borderWidth: 1, borderColor: "rgba(61, 64, 91, 0.15)", borderStyle: "dashed" }} />
+
+                <Animated.View
+                  entering={ZoomIn.delay(200).duration(500).springify()}
+                  style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 28,
+                    backgroundColor: "#E07A5F",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderWidth: 3,
+                    borderColor: "#FFF",
+                    shadowColor: "#E07A5F",
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 8,
+                    elevation: 4,
+                    zIndex: 10,
+                  }}
+                >
+                  <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 14, color: "#FFF" }}>
+                    {userProfile?.name?.charAt(0) || 'Me'}
+                  </Text>
+                </Animated.View>
+
+                {friendsByOrbit.inner.map((friend, i) => (
+                  <OrbitAvatar key={friend.id} friend={friend} index={i} total={friendsByOrbit.inner.length} orbitLevel={0} onPress={() => onNavigateToProfile?.(friend.id)} />
+                ))}
+                {friendsByOrbit.close.map((friend, i) => (
+                  <OrbitAvatar key={friend.id} friend={friend} index={i + friendsByOrbit.inner.length} total={friendsByOrbit.close.length} orbitLevel={1} onPress={() => onNavigateToProfile?.(friend.id)} />
+                ))}
+                {friendsByOrbit.catchup.map((friend, i) => (
+                  <OrbitAvatar key={friend.id} friend={friend} index={i + friendsByOrbit.inner.length + friendsByOrbit.close.length} total={friendsByOrbit.catchup.length} orbitLevel={2} onPress={() => onNavigateToProfile?.(friend.id)} />
+                ))}
+              </View>
+            </View>
+
+            <View style={{ position: "absolute", bottom: 16, left: 16, right: 16, flexDirection: "row", justifyContent: "space-between" }}>
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                {ORBITS.map(orbit => (
+                  <View key={orbit.id} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: orbit.color }} />
+                    <Text style={{ fontFamily: "PlusJakartaSans_500Medium", fontSize: 11, color: "rgba(61, 64, 91, 0.7)" }}>
+                      {friendsByOrbit[orbit.id as keyof typeof friendsByOrbit].length}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <Text style={{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 11, color: "#81B29A" }}>View All</Text>
+                <MaterialCommunityIcons name="chevron-right" size={14} color="#81B29A" />
+              </View>
+            </View>
+          </TouchableOpacity>
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(400).duration(500)} style={{ paddingHorizontal: 16, marginBottom: 24 }}>
