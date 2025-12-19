@@ -18,6 +18,7 @@ import {
 import { AppNavigator } from "./src/navigation/AppNavigator";
 import { OnboardingProvider } from "./src/context/OnboardingContext";
 import { AppProvider } from "./src/context/AppContext";
+import { GamificationProvider } from "./src/context/GamificationContext";
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -42,10 +43,12 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AppProvider>
-          <OnboardingProvider>
-            <StatusBar style="dark" />
-            <AppNavigator />
-          </OnboardingProvider>
+          <GamificationProvider>
+            <OnboardingProvider>
+              <StatusBar style="dark" />
+              <AppNavigator />
+            </OnboardingProvider>
+          </GamificationProvider>
         </AppProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

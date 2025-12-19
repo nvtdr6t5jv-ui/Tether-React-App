@@ -15,6 +15,7 @@ import { EditProfileScreen } from "./EditProfileScreen";
 import { SocialPulseScreen } from "./SocialPulseScreen";
 import { InsightsScreen } from "./InsightsScreen";
 import { PremiumScreen } from "./PremiumScreen";
+import { GamificationScreen } from "./GamificationScreen";
 import { BottomTabBar } from "../components/BottomTabBar";
 import { SwipeableScreen } from "../components/SwipeableScreen";
 import { useApp } from "../context/AppContext";
@@ -37,7 +38,8 @@ type SettingsStack =
 
 type TodayStack =
   | { screen: "main" }
-  | { screen: "socialPulse" };
+  | { screen: "socialPulse" }
+  | { screen: "progress" };
 
 type InsightsStack =
   | { screen: "main" }
@@ -127,6 +129,14 @@ export const MainTabsScreen = () => {
             />
           </SwipeableScreen>
         );
+      case "progress":
+        return (
+          <SwipeableScreen onSwipeBack={() => setTodayStack({ screen: "main" })}>
+            <GamificationScreen
+              onBack={() => setTodayStack({ screen: "main" })}
+            />
+          </SwipeableScreen>
+        );
       case "main":
       default:
         return (
@@ -139,6 +149,7 @@ export const MainTabsScreen = () => {
               }
             }}
             onNavigateToSocialPulse={() => setTodayStack({ screen: "socialPulse" })}
+            onNavigateToProgress={() => setTodayStack({ screen: "progress" })}
             onNavigateToProfile={(friendId) => {
               setActiveTab("people");
               setPeopleStack({ screen: "profile", friendId });

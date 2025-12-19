@@ -196,9 +196,10 @@ interface StreakCardProps {
   currentStreak: number;
   longestStreak: number;
   connectionsThisWeek: number;
+  onPress?: () => void;
 }
 
-const StreakCard: React.FC<StreakCardProps> = ({ currentStreak, longestStreak, connectionsThisWeek }) => {
+const StreakCard: React.FC<StreakCardProps> = ({ currentStreak, longestStreak, connectionsThisWeek, onPress }) => {
   const flameScale = useSharedValue(1);
 
   useEffect(() => {
@@ -218,7 +219,9 @@ const StreakCard: React.FC<StreakCardProps> = ({ currentStreak, longestStreak, c
 
   return (
     <Animated.View entering={FadeInUp.delay(300).duration(500)}>
-      <View
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.9}
         style={{
           backgroundColor: "#FFF",
           padding: 20,
@@ -259,8 +262,9 @@ const StreakCard: React.FC<StreakCardProps> = ({ currentStreak, longestStreak, c
           <Text style={{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 12, color: "rgba(61, 64, 91, 0.4)" }}>
             Best: {longestStreak}
           </Text>
+          <MaterialCommunityIcons name="chevron-right" size={20} color="rgba(61, 64, 91, 0.3)" style={{ marginTop: 4 }} />
         </View>
-      </View>
+      </TouchableOpacity>
     </Animated.View>
   );
 };
@@ -339,10 +343,11 @@ const OrbitCard: React.FC<OrbitCardProps> = ({ orbit, count, overdueCount, index
 interface TodayScreenProps {
   onNavigate?: (screen: string) => void;
   onNavigateToSocialPulse?: () => void;
+  onNavigateToProgress?: () => void;
   onNavigateToProfile?: (friendId: string) => void;
 }
 
-export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigateToSocialPulse, onNavigateToProfile }) => {
+export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigateToSocialPulse, onNavigateToProgress, onNavigateToProfile }) => {
   const { 
     friends, 
     interactions,
@@ -477,6 +482,7 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
             currentStreak={stats.currentStreak} 
             longestStreak={stats.longestStreak}
             connectionsThisWeek={stats.connectionsThisWeek}
+            onPress={onNavigateToProgress}
           />
         </Animated.View>
 
