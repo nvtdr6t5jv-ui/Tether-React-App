@@ -24,6 +24,7 @@ type FilterType = 'all' | 'overdue' | 'favorites' | 'inner' | 'close' | 'catchup
 interface PeopleScreenProps {
   onNavigateToProfile: (friendId: string) => void;
   onNavigateToNewConnection: () => void;
+  onPremiumRequired?: () => void;
 }
 
 const getTimeSince = (date: Date | null): { text: string; color: string; percentage: number } => {
@@ -197,8 +198,17 @@ const FriendCard: React.FC<{
 export const PeopleScreen: React.FC<PeopleScreenProps> = ({
   onNavigateToProfile,
   onNavigateToNewConnection,
+  onPremiumRequired,
 }) => {
-  const { friends, getOverdueFriends, refreshData, isLoading } = useApp();
+  const { friends, getOverdueFriends, refreshData, isLoading, canAddMoreFriends, getRemainingFreeSlots, premiumStatus } = useApp();
+
+  const handleAddConnection = () => {
+    if (!canAddMoreFriends()) {
+      onPremiumRequired?.();
+    } else {
+      onNavigateToNewConnection();
+    }
+  };
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [refreshing, setRefreshing] = useState(false);
@@ -264,7 +274,7 @@ export const PeopleScreen: React.FC<PeopleScreenProps> = ({
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F7F8F6' }} edges={['top']}>
       <Animated.View entering={FadeInDown.duration(400)} style={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
             <Text style={{ fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 28, color: '#3D405B' }}>
               My Universe
@@ -280,6 +290,38 @@ export const PeopleScreen: React.FC<PeopleScreenProps> = ({
             <MaterialCommunityIcons name="sort" size={24} color="#3D405B" />
           </TouchableOpacity>
         </View>
+
+        {!premiumStatus.isPremium && (
+          <TouchableOpacity 
+            onPress={onPremiumRequired}
+            style={{ 
+              flexDirection: 'row', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              gap: 8, 
+              backgroundColor: getRemainingFreeSlots() > 0 ? 'rgba(129, 178, 154, 0.1)' : 'rgba(224, 122, 95, 0.1)',
+              paddingVertical: 8,
+              paddingHorizontal: 16,
+              borderRadius: 9999,
+              marginBottom: 16,
+            }}
+          >
+            <MaterialCommunityIcons 
+              name={getRemainingFreeSlots() > 0 ? "account-plus" : "lock"} 
+              size={16} 
+              color={getRemainingFreeSlots() > 0 ? "#81B29A" : "#E07A5F"} 
+            />
+            <Text style={{ 
+              fontFamily: 'PlusJakartaSans_600SemiBold', 
+              fontSize: 13, 
+              color: getRemainingFreeSlots() > 0 ? "#81B29A" : "#E07A5F" 
+            }}>
+              {getRemainingFreeSlots() > 0 
+                ? `${getRemainingFreeSlots()} free slot${getRemainingFreeSlots() !== 1 ? 's' : ''} remaining`
+                : 'Upgrade for unlimited contacts'}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         <View
           style={{
@@ -424,7 +466,7 @@ export const PeopleScreen: React.FC<PeopleScreenProps> = ({
             </Text>
             {!searchQuery && (
               <TouchableOpacity
-                onPress={onNavigateToNewConnection}
+                onPress={handleAddConnection}
                 style={{
                   marginTop: 20,
                   paddingHorizontal: 24,
@@ -453,7 +495,7 @@ export const PeopleScreen: React.FC<PeopleScreenProps> = ({
       </ScrollView>
 
       <TouchableOpacity
-        onPress={onNavigateToNewConnection}
+        onPress={handleAddConnection}
         style={{
           position: 'absolute',
           bottom: 100,
@@ -461,17 +503,17 @@ export const PeopleScreen: React.FC<PeopleScreenProps> = ({
           width: 64,
           height: 64,
           borderRadius: 32,
-          backgroundColor: '#E07A5F',
+          backgroundColor: canAddMoreFriends() ? '#E07A5F' : '#81B29A',
           alignItems: 'center',
           justifyContent: 'center',
-          shadowColor: '#E07A5F',
+          shadowColor: canAddMoreFriends() ? '#E07A5F' : '#81B29A',
           shadowOffset: { width: 0, height: 8 },
           shadowOpacity: 0.4,
           shadowRadius: 16,
           elevation: 8,
         }}
       >
-        <MaterialCommunityIcons name="plus" size={32} color="#FFF" />
+        <MaterialCommunityIcons name={canAddMoreFriends() ? "plus" : "lock"} size={32} color="#FFF" />
       </TouchableOpacity>
     </SafeAreaView>
   );

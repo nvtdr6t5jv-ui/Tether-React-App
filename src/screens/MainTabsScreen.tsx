@@ -145,6 +145,7 @@ export const MainTabsScreen = () => {
           <PeopleScreen
             onNavigateToProfile={(friendId) => setPeopleStack({ screen: "profile", friendId })}
             onNavigateToNewConnection={() => setPeopleStack({ screen: "newConnection" })}
+            onPremiumRequired={() => showPremiumModal('contact_limit')}
           />
         );
       case "profile":
