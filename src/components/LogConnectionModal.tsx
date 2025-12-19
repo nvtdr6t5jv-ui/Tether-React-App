@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, TouchableOpacity, Modal, TextInput, ScrollView, KeyboardAvoidingView, Platform, Dimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -42,12 +42,22 @@ export const LogConnectionModal: React.FC<LogConnectionModalProps> = ({
   const [selectedType, setSelectedType] = useState("call");
   const [note, setNote] = useState("");
   const [followUp, setFollowUp] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   
   const translateY = useSharedValue(SCREEN_HEIGHT);
   const backdropOpacity = useSharedValue(0);
 
+  const resetForm = useCallback(() => {
+    setSearchQuery("");
+    setSelectedFriend(null);
+    setSelectedType("call");
+    setNote("");
+    setFollowUp(false);
+  }, []);
+
   useEffect(() => {
     if (visible) {
+      setIsClosing(false);
       translateY.value = withTiming(0, { duration: 300 });
       backdropOpacity.value = withTiming(1, { duration: 300 });
       if (preselectedFriendId) {
@@ -60,15 +70,25 @@ export const LogConnectionModal: React.FC<LogConnectionModalProps> = ({
     } else {
       translateY.value = SCREEN_HEIGHT;
       backdropOpacity.value = 0;
+      resetForm();
     }
-  }, [visible, preselectedFriendId, friends]);
+  }, [visible, preselectedFriendId, friends, resetForm]);
 
-  const closeDrawer = () => {
+  const handleCloseComplete = useCallback(() => {
+    setIsClosing(false);
+    onClose();
+  }, [onClose]);
+
+  const closeDrawer = useCallback(() => {
+    if (isClosing) return;
+    setIsClosing(true);
     translateY.value = withTiming(SCREEN_HEIGHT, { duration: 250 });
-    backdropOpacity.value = withTiming(0, { duration: 250 }, () => {
-      runOnJS(handleClose)();
+    backdropOpacity.value = withTiming(0, { duration: 250 }, (finished) => {
+      if (finished) {
+        runOnJS(handleCloseComplete)();
+      }
     });
-  };
+  }, [isClosing, handleCloseComplete]);
 
   const panGesture = Gesture.Pan()
     .onUpdate((event) => {
@@ -84,8 +104,10 @@ export const LogConnectionModal: React.FC<LogConnectionModalProps> = ({
     .onEnd((event) => {
       if (event.translationY > 100 || event.velocityY > 500) {
         translateY.value = withTiming(SCREEN_HEIGHT, { duration: 250 });
-        backdropOpacity.value = withTiming(0, { duration: 250 }, () => {
-          runOnJS(handleClose)();
+        backdropOpacity.value = withTiming(0, { duration: 250 }, (finished) => {
+          if (finished) {
+            runOnJS(handleCloseComplete)();
+          }
         });
       } else {
         translateY.value = withTiming(0, { duration: 200 });
@@ -100,22 +122,8 @@ export const LogConnectionModal: React.FC<LogConnectionModalProps> = ({
   const handleDone = () => {
     if (selectedFriend) {
       onLogConnection(selectedFriend.id, selectedType, note);
-      resetForm();
       closeDrawer();
     }
-  };
-
-  const resetForm = () => {
-    setSearchQuery("");
-    setSelectedFriend(null);
-    setSelectedType("call");
-    setNote("");
-    setFollowUp(false);
-  };
-
-  const handleClose = () => {
-    resetForm();
-    onClose();
   };
 
   const animatedSheetStyle = useAnimatedStyle(() => ({
@@ -146,7 +154,9 @@ export const LogConnectionModal: React.FC<LogConnectionModalProps> = ({
             },
             animatedBackdropStyle,
           ]}
-        />
+        >
+          <TouchableOpacity style={{ flex: 1 }} onPress={closeDrawer} activeOpacity={1} />
+        </Animated.View>
 
         <GestureDetector gesture={panGesture}>
           <Animated.View

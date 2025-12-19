@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useCallback } from "react";
 import { View, Text, TouchableOpacity, Modal, Dimensions } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Animated, {
@@ -44,12 +44,18 @@ export const EventModal: React.FC<EventModalProps> = ({
     }
   }, [visible]);
 
-  const closeDrawer = () => {
+  const handleCloseComplete = useCallback(() => {
+    onClose();
+  }, [onClose]);
+
+  const closeDrawer = useCallback(() => {
     translateY.value = withTiming(SCREEN_HEIGHT, { duration: 250 });
-    backdropOpacity.value = withTiming(0, { duration: 250 }, () => {
-      runOnJS(onClose)();
+    backdropOpacity.value = withTiming(0, { duration: 250 }, (finished) => {
+      if (finished) {
+        runOnJS(handleCloseComplete)();
+      }
     });
-  };
+  }, [handleCloseComplete]);
 
   const panGesture = Gesture.Pan()
     .onUpdate((event) => {
@@ -65,8 +71,10 @@ export const EventModal: React.FC<EventModalProps> = ({
     .onEnd((event) => {
       if (event.translationY > 100 || event.velocityY > 500) {
         translateY.value = withTiming(SCREEN_HEIGHT, { duration: 250 });
-        backdropOpacity.value = withTiming(0, { duration: 250 }, () => {
-          runOnJS(onClose)();
+        backdropOpacity.value = withTiming(0, { duration: 250 }, (finished) => {
+          if (finished) {
+            runOnJS(handleCloseComplete)();
+          }
         });
       } else {
         translateY.value = withTiming(0, { duration: 200 });

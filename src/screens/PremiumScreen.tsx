@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -69,12 +69,18 @@ export const PremiumScreen: React.FC<PremiumScreenProps> = ({ onClose }) => {
     backdropOpacity.value = withTiming(1, { duration: 300 });
   }, []);
 
-  const closeDrawer = () => {
+  const handleCloseComplete = useCallback(() => {
+    onClose();
+  }, [onClose]);
+
+  const closeDrawer = useCallback(() => {
     translateY.value = withTiming(SCREEN_HEIGHT, { duration: 250 });
-    backdropOpacity.value = withTiming(0, { duration: 250 }, () => {
-      runOnJS(onClose)();
+    backdropOpacity.value = withTiming(0, { duration: 250 }, (finished) => {
+      if (finished) {
+        runOnJS(handleCloseComplete)();
+      }
     });
-  };
+  }, [handleCloseComplete]);
 
   const panGesture = Gesture.Pan()
     .onUpdate((event) => {
@@ -90,8 +96,10 @@ export const PremiumScreen: React.FC<PremiumScreenProps> = ({ onClose }) => {
     .onEnd((event) => {
       if (event.translationY > 100 || event.velocityY > 500) {
         translateY.value = withTiming(SCREEN_HEIGHT, { duration: 250 });
-        backdropOpacity.value = withTiming(0, { duration: 250 }, () => {
-          runOnJS(onClose)();
+        backdropOpacity.value = withTiming(0, { duration: 250 }, (finished) => {
+          if (finished) {
+            runOnJS(handleCloseComplete)();
+          }
         });
       } else {
         translateY.value = withTiming(0, { duration: 200 });

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useCallback } from "react";
 import { View, Text, TouchableOpacity, Modal, Dimensions } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Animated, {
@@ -132,12 +132,28 @@ export const HealthStatusModal: React.FC<HealthStatusModalProps> = ({
     }
   }, [visible]);
 
-  const closeDrawer = () => {
+  const handleCloseComplete = useCallback(() => {
+    onClose();
+  }, [onClose]);
+
+  const closeDrawer = useCallback(() => {
     translateY.value = withTiming(SCREEN_HEIGHT, { duration: 250 });
-    backdropOpacity.value = withTiming(0, { duration: 250 }, () => {
-      runOnJS(onClose)();
+    backdropOpacity.value = withTiming(0, { duration: 250 }, (finished) => {
+      if (finished) {
+        runOnJS(handleCloseComplete)();
+      }
     });
-  };
+  }, [handleCloseComplete]);
+
+  const handleViewAnalytics = useCallback(() => {
+    translateY.value = withTiming(SCREEN_HEIGHT, { duration: 250 });
+    backdropOpacity.value = withTiming(0, { duration: 250 }, (finished) => {
+      if (finished) {
+        runOnJS(onClose)();
+        setTimeout(() => onViewAnalytics(), 50);
+      }
+    });
+  }, [onClose, onViewAnalytics]);
 
   const panGesture = Gesture.Pan()
     .onUpdate((event) => {
@@ -153,8 +169,10 @@ export const HealthStatusModal: React.FC<HealthStatusModalProps> = ({
     .onEnd((event) => {
       if (event.translationY > 100 || event.velocityY > 500) {
         translateY.value = withTiming(SCREEN_HEIGHT, { duration: 250 });
-        backdropOpacity.value = withTiming(0, { duration: 250 }, () => {
-          runOnJS(onClose)();
+        backdropOpacity.value = withTiming(0, { duration: 250 }, (finished) => {
+          if (finished) {
+            runOnJS(handleCloseComplete)();
+          }
         });
       } else {
         translateY.value = withTiming(0, { duration: 200 });
@@ -273,10 +291,7 @@ export const HealthStatusModal: React.FC<HealthStatusModalProps> = ({
             </View>
 
             <TouchableOpacity
-              onPress={() => {
-                closeDrawer();
-                setTimeout(() => onViewAnalytics(), 300);
-              }}
+              onPress={handleViewAnalytics}
               style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: 8 }}
             >
               <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 14, color: "#81B29A" }}>

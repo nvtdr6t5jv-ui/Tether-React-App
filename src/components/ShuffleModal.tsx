@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, TouchableOpacity, Dimensions, Image, Modal } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withRepeat,
   withSequence,
   withTiming,
   withSpring,
@@ -38,50 +37,7 @@ export const ShuffleModal: React.FC<ShuffleModalProps> = ({
   const translateY = useSharedValue(SCREEN_HEIGHT);
   const backdropOpacity = useSharedValue(0);
 
-  useEffect(() => {
-    if (visible) {
-      translateY.value = withTiming(0, { duration: 300 });
-      backdropOpacity.value = withTiming(1, { duration: 300 });
-      if (friends.length > 0) {
-        spinAndSelect();
-      }
-    } else {
-      translateY.value = SCREEN_HEIGHT;
-      backdropOpacity.value = 0;
-    }
-  }, [visible]);
-
-  const closeDrawer = () => {
-    translateY.value = withTiming(SCREEN_HEIGHT, { duration: 250 });
-    backdropOpacity.value = withTiming(0, { duration: 250 }, () => {
-      runOnJS(onClose)();
-    });
-  };
-
-  const panGesture = Gesture.Pan()
-    .onUpdate((event) => {
-      if (event.translationY > 0) {
-        translateY.value = event.translationY;
-        backdropOpacity.value = interpolate(
-          event.translationY,
-          [0, 300],
-          [1, 0]
-        );
-      }
-    })
-    .onEnd((event) => {
-      if (event.translationY > 100 || event.velocityY > 500) {
-        translateY.value = withTiming(SCREEN_HEIGHT, { duration: 250 });
-        backdropOpacity.value = withTiming(0, { duration: 250 }, () => {
-          runOnJS(onClose)();
-        });
-      } else {
-        translateY.value = withTiming(0, { duration: 200 });
-        backdropOpacity.value = withTiming(1, { duration: 200 });
-      }
-    });
-
-  const spinAndSelect = () => {
+  const spinAndSelect = useCallback(() => {
     if (friends.length === 0) return;
     
     setIsSpinning(true);
@@ -100,7 +56,58 @@ export const ShuffleModal: React.FC<ShuffleModalProps> = ({
       setSelectedFriend(friends[randomIndex]);
       setIsSpinning(false);
     }, 600);
-  };
+  }, [friends]);
+
+  useEffect(() => {
+    if (visible) {
+      translateY.value = withTiming(0, { duration: 300 });
+      backdropOpacity.value = withTiming(1, { duration: 300 });
+      if (friends.length > 0) {
+        spinAndSelect();
+      }
+    } else {
+      translateY.value = SCREEN_HEIGHT;
+      backdropOpacity.value = 0;
+    }
+  }, [visible, friends.length, spinAndSelect]);
+
+  const handleCloseComplete = useCallback(() => {
+    onClose();
+  }, [onClose]);
+
+  const closeDrawer = useCallback(() => {
+    translateY.value = withTiming(SCREEN_HEIGHT, { duration: 250 });
+    backdropOpacity.value = withTiming(0, { duration: 250 }, (finished) => {
+      if (finished) {
+        runOnJS(handleCloseComplete)();
+      }
+    });
+  }, [handleCloseComplete]);
+
+  const panGesture = Gesture.Pan()
+    .onUpdate((event) => {
+      if (event.translationY > 0) {
+        translateY.value = event.translationY;
+        backdropOpacity.value = interpolate(
+          event.translationY,
+          [0, 300],
+          [1, 0]
+        );
+      }
+    })
+    .onEnd((event) => {
+      if (event.translationY > 100 || event.velocityY > 500) {
+        translateY.value = withTiming(SCREEN_HEIGHT, { duration: 250 });
+        backdropOpacity.value = withTiming(0, { duration: 250 }, (finished) => {
+          if (finished) {
+            runOnJS(handleCloseComplete)();
+          }
+        });
+      } else {
+        translateY.value = withTiming(0, { duration: 200 });
+        backdropOpacity.value = withTiming(1, { duration: 200 });
+      }
+    });
 
   const avatarStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${rotation.value}deg` }, { scale: scale.value }],
