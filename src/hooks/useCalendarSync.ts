@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import * as Calendar from 'expo-calendar';
 import { Platform, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CalendarEvent } from '../types';
 
 interface DeviceCalendarEvent {
@@ -13,12 +14,58 @@ interface DeviceCalendarEvent {
   calendarId: string;
 }
 
+const CALENDAR_SYNC_KEY = '@tether_calendar_auto_sync';
+const LAST_SYNC_KEY = '@tether_calendar_last_sync';
+
 export const useCalendarSync = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [deviceCalendars, setDeviceCalendars] = useState<Calendar.Calendar[]>([]);
+  const [autoSyncEnabled, setAutoSyncEnabled] = useState(false);
+  const [lastSyncDate, setLastSyncDate] = useState<Date | null>(null);
+
+  useEffect(() => {
+    loadSyncSettings();
+  }, []);
+
+  const loadSyncSettings = async () => {
+    try {
+      const autoSync = await AsyncStorage.getItem(CALENDAR_SYNC_KEY);
+      const lastSync = await AsyncStorage.getItem(LAST_SYNC_KEY);
+      setAutoSyncEnabled(autoSync === 'true');
+      if (lastSync) setLastSyncDate(new Date(lastSync));
+    } catch (error) {
+      console.error('Failed to load calendar sync settings:', error);
+    }
+  };
+
+  const enableAutoSync = async (): Promise<boolean> => {
+    const hasPermission = await requestPermissions();
+    if (hasPermission) {
+      await AsyncStorage.setItem(CALENDAR_SYNC_KEY, 'true');
+      setAutoSyncEnabled(true);
+      return true;
+    }
+    return false;
+  };
+
+  const disableAutoSync = async () => {
+    await AsyncStorage.setItem(CALENDAR_SYNC_KEY, 'false');
+    setAutoSyncEnabled(false);
+  };
+
+  const updateLastSyncDate = async () => {
+    const now = new Date();
+    await AsyncStorage.setItem(LAST_SYNC_KEY, now.toISOString());
+    setLastSyncDate(now);
+  };
 
   const requestPermissions = async (): Promise<boolean> => {
     const { status } = await Calendar.requestCalendarPermissionsAsync();
+    return status === 'granted';
+  };
+
+  const checkPermissions = async (): Promise<boolean> => {
+    const { status } = await Calendar.getCalendarPermissionsAsync();
     return status === 'granted';
   };
 
@@ -156,13 +203,68 @@ export const useCalendarSync = () => {
     return synced;
   };
 
+  const performAutoSync = async (
+    addCalendarEvent: (event: CalendarEvent) => Promise<void>,
+    existingEvents: CalendarEvent[]
+  ): Promise<number> => {
+    if (!autoSyncEnabled) return 0;
+    
+    const hasPermission = await checkPermissions();
+    if (!hasPermission) return 0;
+
+    setIsSyncing(true);
+    try {
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + 3);
+
+      const events = await importEventsFromDevice(startDate, endDate);
+      
+      let imported = 0;
+      for (const event of events) {
+        const exists = existingEvents.some(e => 
+          e.title === event.title && 
+          new Date(e.date).toDateString() === event.startDate.toDateString()
+        );
+        
+        if (!exists) {
+          await addCalendarEvent({
+            id: `imported-${event.id}-${Date.now()}`,
+            title: event.title,
+            date: event.startDate,
+            type: 'custom',
+            notes: event.notes,
+            isRecurring: false,
+            isCompleted: false,
+            createdAt: new Date(),
+          });
+          imported++;
+        }
+      }
+
+      await updateLastSyncDate();
+      return imported;
+    } catch (error) {
+      console.error('Auto sync failed:', error);
+      return 0;
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   return {
     isSyncing,
     deviceCalendars,
+    autoSyncEnabled,
+    lastSyncDate,
     requestPermissions,
+    checkPermissions,
     getCalendars,
     importEventsFromDevice,
     exportEventToDevice,
     syncBirthdaysToDevice,
+    enableAutoSync,
+    disableAutoSync,
+    performAutoSync,
   };
 };

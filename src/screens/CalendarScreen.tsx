@@ -77,7 +77,23 @@ const getEventIcon = (type: CalendarEvent['type']) => {
 
 export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProfile }) => {
   const { friends, calendarEvents, addCalendarEvent, updateCalendarEvent, deleteCalendarEvent, getUpcomingBirthdays } = useApp();
-  const { isSyncing, importEventsFromDevice, exportEventToDevice, syncBirthdaysToDevice } = useCalendarSync();
+  const { 
+    isSyncing, 
+    importEventsFromDevice, 
+    exportEventToDevice, 
+    syncBirthdaysToDevice,
+    autoSyncEnabled,
+    enableAutoSync,
+    disableAutoSync,
+    performAutoSync,
+    lastSyncDate 
+  } = useCalendarSync();
+
+  React.useEffect(() => {
+    if (autoSyncEnabled) {
+      performAutoSync(addCalendarEvent, calendarEvents);
+    }
+  }, []);
   
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -970,7 +986,67 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
               </View>
             </TouchableOpacity>
 
-            <View style={{ height: 40 }} />
+            <View style={{ height: 16 }} />
+            
+            <TouchableOpacity
+              onPress={async () => {
+                if (autoSyncEnabled) {
+                  await disableAutoSync();
+                  Alert.alert('Auto Sync Disabled', 'Calendar auto-sync has been turned off.');
+                } else {
+                  const success = await enableAutoSync();
+                  if (success) {
+                    Alert.alert('Auto Sync Enabled', 'Your calendar will automatically sync when you open the app.');
+                  }
+                }
+              }}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                padding: 16,
+                backgroundColor: autoSyncEnabled ? 'rgba(129, 178, 154, 0.15)' : '#F4F1DE',
+                borderRadius: 12,
+                gap: 12,
+                borderWidth: autoSyncEnabled ? 1 : 0,
+                borderColor: '#81B29A',
+              }}
+            >
+              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: autoSyncEnabled ? '#81B29A' : 'rgba(61, 64, 91, 0.2)', alignItems: 'center', justifyContent: 'center' }}>
+                <MaterialCommunityIcons name="sync" size={22} color="#FFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 16, color: '#3D405B' }}>
+                  Auto Sync
+                </Text>
+                <Text style={{ fontFamily: 'PlusJakartaSans_400Regular', fontSize: 12, color: 'rgba(61, 64, 91, 0.6)' }}>
+                  {autoSyncEnabled ? 'Enabled - syncs on app open' : 'Automatically sync on app open'}
+                </Text>
+              </View>
+              <View style={{
+                width: 48,
+                height: 28,
+                borderRadius: 14,
+                backgroundColor: autoSyncEnabled ? '#81B29A' : 'rgba(61, 64, 91, 0.2)',
+                justifyContent: 'center',
+                paddingHorizontal: 2,
+              }}>
+                <View style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: 12,
+                  backgroundColor: '#FFF',
+                  alignSelf: autoSyncEnabled ? 'flex-end' : 'flex-start',
+                }} />
+              </View>
+            </TouchableOpacity>
+            
+            {lastSyncDate && (
+              <Text style={{ fontFamily: 'PlusJakartaSans_400Regular', fontSize: 11, color: 'rgba(61, 64, 91, 0.5)', textAlign: 'center', marginTop: 12 }}>
+                Last synced: {lastSyncDate.toLocaleDateString()} at {lastSyncDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </Text>
+            )}
+
+            <View style={{ height: 24 }} />
           </View>
         </TouchableOpacity>
       </Modal>
