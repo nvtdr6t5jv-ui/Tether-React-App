@@ -1,18 +1,35 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, TouchableOpacity, Modal, TextInput, ScrollView, KeyboardAvoidingView, Platform, Dimensions } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  Dimensions,
+  Keyboard,
+  Image,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Animated, {
+  FadeIn,
   FadeInDown,
+  FadeOut,
+  SlideInRight,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
+  withSpring,
   runOnJS,
   interpolate,
+  Easing,
 } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { Friend } from "../context/AppContext";
 import { getAvatarColor } from "../constants/mockData";
+import { LinearGradient } from "expo-linear-gradient";
 
 interface LogConnectionModalProps {
   visible: boolean;
@@ -23,9 +40,9 @@ interface LogConnectionModalProps {
 }
 
 const connectionTypes = [
-  { id: "call", label: "Call", icon: "phone" as const },
-  { id: "text", label: "Text", icon: "chat" as const },
-  { id: "meetup", label: "Met Up", icon: "account-group" as const },
+  { id: "call", label: "Call", icon: "phone" as const, filledIcon: "phone" as const },
+  { id: "text", label: "Text", icon: "chat-outline" as const, filledIcon: "chat" as const },
+  { id: "meetup", label: "Met Up", icon: "account-group-outline" as const, filledIcon: "account-group" as const },
 ];
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -41,30 +58,31 @@ export const LogConnectionModal: React.FC<LogConnectionModalProps> = ({
   const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
   const [selectedType, setSelectedType] = useState("call");
   const [note, setNote] = useState("");
-  const [followUp, setFollowUp] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
-  
+  const [showDropdown, setShowDropdown] = useState(false);
+
   const translateY = useSharedValue(SCREEN_HEIGHT);
   const backdropOpacity = useSharedValue(0);
+  const typeScale = useSharedValue(1);
 
   const resetForm = useCallback(() => {
     setSearchQuery("");
     setSelectedFriend(null);
     setSelectedType("call");
     setNote("");
-    setFollowUp(false);
+    setShowDropdown(false);
   }, []);
 
   useEffect(() => {
     if (visible) {
       setIsClosing(false);
-      translateY.value = withTiming(0, { duration: 300 });
+      translateY.value = withTiming(0, { duration: 350, easing: Easing.out(Easing.cubic) });
       backdropOpacity.value = withTiming(1, { duration: 300 });
       if (preselectedFriendId) {
-        const friend = friends.find(f => f.id === preselectedFriendId);
+        const friend = friends.find((f) => f.id === preselectedFriendId);
         if (friend) {
           setSelectedFriend(friend);
-          setSearchQuery(friend.name);
+          setSearchQuery("");
         }
       }
     } else {
@@ -81,8 +99,9 @@ export const LogConnectionModal: React.FC<LogConnectionModalProps> = ({
 
   const closeDrawer = useCallback(() => {
     if (isClosing) return;
+    Keyboard.dismiss();
     setIsClosing(true);
-    translateY.value = withTiming(SCREEN_HEIGHT, { duration: 250 });
+    translateY.value = withTiming(SCREEN_HEIGHT, { duration: 280, easing: Easing.in(Easing.cubic) });
     backdropOpacity.value = withTiming(0, { duration: 250 }, (finished) => {
       if (finished) {
         runOnJS(handleCloseComplete)();
@@ -94,11 +113,7 @@ export const LogConnectionModal: React.FC<LogConnectionModalProps> = ({
     .onUpdate((event) => {
       if (event.translationY > 0) {
         translateY.value = event.translationY;
-        backdropOpacity.value = interpolate(
-          event.translationY,
-          [0, 300],
-          [1, 0]
-        );
+        backdropOpacity.value = interpolate(event.translationY, [0, 300], [1, 0]);
       }
     })
     .onEnd((event) => {
@@ -110,12 +125,12 @@ export const LogConnectionModal: React.FC<LogConnectionModalProps> = ({
           }
         });
       } else {
-        translateY.value = withTiming(0, { duration: 200 });
+        translateY.value = withSpring(0, { damping: 20, stiffness: 300 });
         backdropOpacity.value = withTiming(1, { duration: 200 });
       }
     });
 
-  const filteredFriends = friends.filter(f =>
+  const filteredFriends = friends.filter((f) =>
     f.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -124,6 +139,13 @@ export const LogConnectionModal: React.FC<LogConnectionModalProps> = ({
       onLogConnection(selectedFriend.id, selectedType, note);
       closeDrawer();
     }
+  };
+
+  const handleSelectFriend = (friend: Friend) => {
+    setSelectedFriend(friend);
+    setSearchQuery("");
+    setShowDropdown(false);
+    Keyboard.dismiss();
   };
 
   const animatedSheetStyle = useAnimatedStyle(() => ({
@@ -140,103 +162,185 @@ export const LogConnectionModal: React.FC<LogConnectionModalProps> = ({
   if (!visible) return null;
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={closeDrawer}>
-      <View style={{ flex: 1 }}>
+    <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, elevation: 9999 }}>
+      <Animated.View
+        style={[
+          {
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(61, 64, 91, 0.4)",
+          },
+          animatedBackdropStyle,
+        ]}
+      >
+        <TouchableOpacity style={{ flex: 1 }} onPress={closeDrawer} activeOpacity={1} />
+      </Animated.View>
+
+      <GestureDetector gesture={panGesture}>
         <Animated.View
           style={[
             {
               position: "absolute",
-              top: 0,
+              bottom: 0,
               left: 0,
               right: 0,
-              bottom: 0,
-              backgroundColor: "rgba(0, 0, 0, 0.2)",
+              height: "92%",
+              backgroundColor: "#F4F1DE",
+              borderTopLeftRadius: 28,
+              borderTopRightRadius: 28,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: -10 },
+              shadowOpacity: 0.15,
+              shadowRadius: 20,
+              elevation: 20,
             },
-            animatedBackdropStyle,
+            animatedSheetStyle,
           ]}
         >
-          <TouchableOpacity style={{ flex: 1 }} onPress={closeDrawer} activeOpacity={1} />
-        </Animated.View>
+          <View
+            style={{
+              width: 48,
+              height: 5,
+              backgroundColor: "rgba(61, 64, 91, 0.15)",
+              borderRadius: 3,
+              alignSelf: "center",
+              marginTop: 12,
+            }}
+          />
 
-        <GestureDetector gesture={panGesture}>
-          <Animated.View
-            style={[
-              {
-                position: "absolute",
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: "92%",
-                backgroundColor: "#F4F1DE",
-                borderTopLeftRadius: 32,
-                borderTopRightRadius: 32,
-              },
-              animatedSheetStyle,
-            ]}
-          >
-            <View style={{ width: 40, height: 4, backgroundColor: "rgba(61, 64, 91, 0.2)", borderRadius: 2, alignSelf: "center", marginTop: 12 }} />
-            
-            <SafeAreaView style={{ flex: 1 }} edges={["bottom"]}>
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 24, paddingTop: 16, paddingBottom: 16 }}>
-                <TouchableOpacity onPress={closeDrawer}>
-                  <Text style={{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 16, color: "#81B29A" }}>
-                    Cancel
-                  </Text>
-                </TouchableOpacity>
-                <Text style={{ fontFamily: "Fraunces_600SemiBold", fontSize: 22, color: "#3D405B" }}>
-                  Log Connection
+          <SafeAreaView style={{ flex: 1 }} edges={["bottom"]}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingHorizontal: 20,
+                paddingTop: 16,
+                paddingBottom: 12,
+              }}
+            >
+              <TouchableOpacity onPress={closeDrawer} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Text style={{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 16, color: "#81B29A" }}>
+                  Cancel
                 </Text>
-                <TouchableOpacity onPress={handleDone} disabled={!selectedFriend}>
+              </TouchableOpacity>
+              <Text style={{ fontFamily: "Fraunces_700Bold", fontSize: 20, color: "#3D405B", letterSpacing: -0.3 }}>
+                Log Connection
+              </Text>
+              <TouchableOpacity
+                onPress={handleDone}
+                disabled={!selectedFriend}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={selectedFriend ? ["#E07A5F", "#D66A4F"] : ["rgba(224,122,95,0.4)", "rgba(214,106,79,0.4)"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{
+                    paddingHorizontal: 20,
+                    paddingVertical: 10,
+                    borderRadius: 9999,
+                    shadowColor: selectedFriend ? "#E07A5F" : "transparent",
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: selectedFriend ? 0.3 : 0,
+                    shadowRadius: 8,
+                    elevation: selectedFriend ? 4 : 0,
+                  }}
+                >
+                  <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 14, color: "#FFF" }}>
+                    Done
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+
+            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+              <ScrollView
+                style={{ flex: 1 }}
+                contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40, gap: 28 }}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              >
+                <Animated.View entering={FadeInDown.delay(50).duration(350)} style={{ gap: 12 }}>
+                  <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 15, color: "#3D405B", letterSpacing: -0.2 }}>
+                    Who did you connect with?
+                  </Text>
+
                   <View
                     style={{
-                      backgroundColor: selectedFriend ? "#E07A5F" : "rgba(224, 122, 95, 0.4)",
-                      paddingHorizontal: 20,
-                      paddingVertical: 8,
-                      borderRadius: 9999,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      backgroundColor: "#FFF",
+                      borderRadius: 16,
+                      paddingHorizontal: 14,
+                      shadowColor: "#3D405B",
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.06,
+                      shadowRadius: 12,
+                      elevation: 3,
                     }}
                   >
-                    <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 14, color: "#FFF" }}>
-                      Done
-                    </Text>
+                    <MaterialCommunityIcons name="magnify" size={22} color="rgba(61, 64, 91, 0.35)" />
+                    <TextInput
+                      value={selectedFriend ? "" : searchQuery}
+                      onChangeText={(text) => {
+                        setSearchQuery(text);
+                        setShowDropdown(text.length > 0);
+                      }}
+                      onFocus={() => {
+                        if (searchQuery.length > 0) setShowDropdown(true);
+                      }}
+                      placeholder={selectedFriend ? "" : "Search friend..."}
+                      placeholderTextColor="rgba(61, 64, 91, 0.35)"
+                      editable={!selectedFriend}
+                      style={{
+                        flex: 1,
+                        fontFamily: "PlusJakartaSans_500Medium",
+                        fontSize: 15,
+                        color: "#3D405B",
+                        paddingVertical: 14,
+                        paddingHorizontal: 10,
+                        opacity: selectedFriend ? 0 : 1,
+                      }}
+                    />
                   </View>
-                </TouchableOpacity>
-              </View>
 
-              <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
-                style={{ flex: 1 }}
-              >
-                <ScrollView
-                  style={{ flex: 1 }}
-                  contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 32, gap: 32 }}
-                  showsVerticalScrollIndicator={false}
-                  keyboardShouldPersistTaps="handled"
-                >
-                  <Animated.View entering={FadeInDown.delay(100).duration(400)} style={{ gap: 12 }}>
-                    <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 18, color: "#3D405B" }}>
-                      Who did you connect with?
-                    </Text>
-                    
-                    {selectedFriend ? (
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            backgroundColor: "#81B29A",
-                            borderRadius: 9999,
-                            paddingLeft: 4,
-                            paddingRight: 12,
-                            paddingVertical: 4,
-                            gap: 8,
-                          }}
-                        >
+                  {selectedFriend && (
+                    <Animated.View entering={FadeIn.duration(200)} style={{ flexDirection: "row", gap: 8, marginTop: 4 }}>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          backgroundColor: "#FFF",
+                          borderRadius: 9999,
+                          paddingLeft: 6,
+                          paddingRight: 12,
+                          paddingVertical: 6,
+                          gap: 10,
+                          shadowColor: "#3D405B",
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.06,
+                          shadowRadius: 8,
+                          elevation: 2,
+                          borderWidth: 1,
+                          borderColor: "rgba(61, 64, 91, 0.06)",
+                        }}
+                      >
+                        {selectedFriend.avatarUri ? (
+                          <Image
+                            source={{ uri: selectedFriend.avatarUri }}
+                            style={{ width: 32, height: 32, borderRadius: 16 }}
+                          />
+                        ) : (
                           <View
                             style={{
                               width: 32,
                               height: 32,
                               borderRadius: 16,
-                              backgroundColor: "rgba(255,255,255,0.3)",
+                              backgroundColor: getAvatarColor(friends.indexOf(selectedFriend)),
                               alignItems: "center",
                               justifyContent: "center",
                             }}
@@ -245,110 +349,116 @@ export const LogConnectionModal: React.FC<LogConnectionModalProps> = ({
                               {selectedFriend.initials}
                             </Text>
                           </View>
-                          <Text style={{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 14, color: "#FFF" }}>
-                            {selectedFriend.name}
-                          </Text>
-                          <TouchableOpacity
-                            onPress={() => {
-                              setSelectedFriend(null);
-                              setSearchQuery("");
-                            }}
-                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                          >
-                            <MaterialCommunityIcons name="close-circle" size={18} color="rgba(255,255,255,0.8)" />
-                          </TouchableOpacity>
-                        </View>
+                        )}
+                        <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 14, color: "#3D405B" }}>
+                          {selectedFriend.name}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setSelectedFriend(null);
+                            setSearchQuery("");
+                          }}
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          style={{
+                            marginLeft: 2,
+                            width: 22,
+                            height: 22,
+                            borderRadius: 11,
+                            backgroundColor: "rgba(61, 64, 91, 0.08)",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <MaterialCommunityIcons name="close" size={14} color="rgba(61, 64, 91, 0.5)" />
+                        </TouchableOpacity>
                       </View>
-                    ) : (
-                      <>
-                        <View
+                    </Animated.View>
+                  )}
+
+                  {showDropdown && !selectedFriend && filteredFriends.length > 0 && (
+                    <Animated.View
+                      entering={FadeInDown.duration(200)}
+                      style={{
+                        backgroundColor: "#FFF",
+                        borderRadius: 16,
+                        overflow: "hidden",
+                        shadowColor: "#3D405B",
+                        shadowOffset: { width: 0, height: 6 },
+                        shadowOpacity: 0.08,
+                        shadowRadius: 16,
+                        elevation: 4,
+                        marginTop: -4,
+                      }}
+                    >
+                      {filteredFriends.slice(0, 5).map((friend, index) => (
+                        <TouchableOpacity
+                          key={friend.id}
+                          onPress={() => handleSelectFriend(friend)}
+                          activeOpacity={0.7}
                           style={{
                             flexDirection: "row",
                             alignItems: "center",
-                            backgroundColor: "#FFF",
-                            borderRadius: 9999,
-                            paddingHorizontal: 16,
-                            shadowColor: "#3D405B",
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.05,
-                            shadowRadius: 8,
-                            elevation: 2,
+                            gap: 12,
+                            paddingHorizontal: 14,
+                            paddingVertical: 12,
+                            borderBottomWidth: index < Math.min(filteredFriends.length, 5) - 1 ? 1 : 0,
+                            borderBottomColor: "rgba(61, 64, 91, 0.06)",
                           }}
                         >
-                          <MaterialCommunityIcons name="magnify" size={24} color="rgba(61, 64, 91, 0.4)" />
-                          <TextInput
-                            value={searchQuery}
-                            onChangeText={setSearchQuery}
-                            placeholder="Search friend..."
-                            placeholderTextColor="rgba(61, 64, 91, 0.4)"
-                            style={{
-                              flex: 1,
-                              fontFamily: "PlusJakartaSans_500Medium",
-                              fontSize: 16,
-                              color: "#3D405B",
-                              paddingVertical: 14,
-                              paddingHorizontal: 12,
-                            }}
-                          />
-                        </View>
-
-                        {searchQuery.length > 0 && filteredFriends.length > 0 && (
-                          <View style={{ backgroundColor: "#FFF", borderRadius: 16, overflow: "hidden" }}>
-                            {filteredFriends.slice(0, 4).map((friend, index) => (
-                              <TouchableOpacity
-                                key={friend.id}
-                                onPress={() => {
-                                  setSelectedFriend(friend);
-                                  setSearchQuery("");
-                                }}
-                                style={{
-                                  flexDirection: "row",
-                                  alignItems: "center",
-                                  gap: 12,
-                                  padding: 12,
-                                  borderBottomWidth: index < Math.min(filteredFriends.length, 4) - 1 ? 1 : 0,
-                                  borderBottomColor: "rgba(61, 64, 91, 0.1)",
-                                }}
-                              >
-                                <View
-                                  style={{
-                                    width: 40,
-                                    height: 40,
-                                    borderRadius: 20,
-                                    backgroundColor: getAvatarColor(index),
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                  }}
-                                >
-                                  <Text style={{ fontFamily: "Fraunces_600SemiBold", fontSize: 16, color: "#FFF" }}>
-                                    {friend.initials}
-                                  </Text>
-                                </View>
-                                <Text style={{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 16, color: "#3D405B" }}>
-                                  {friend.name}
-                                </Text>
-                              </TouchableOpacity>
-                            ))}
+                          {friend.avatarUri ? (
+                            <Image
+                              source={{ uri: friend.avatarUri }}
+                              style={{ width: 40, height: 40, borderRadius: 20 }}
+                            />
+                          ) : (
+                            <View
+                              style={{
+                                width: 40,
+                                height: 40,
+                                borderRadius: 20,
+                                backgroundColor: getAvatarColor(index),
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <Text style={{ fontFamily: "Fraunces_600SemiBold", fontSize: 15, color: "#FFF" }}>
+                                {friend.initials}
+                              </Text>
+                            </View>
+                          )}
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 15, color: "#3D405B" }}>
+                              {friend.name}
+                            </Text>
+                            {friend.tier && (
+                              <Text style={{ fontFamily: "PlusJakartaSans_500Medium", fontSize: 12, color: "rgba(61, 64, 91, 0.5)", marginTop: 1 }}>
+                                {friend.tier}
+                              </Text>
+                            )}
                           </View>
-                        )}
-                      </>
-                    )}
-                  </Animated.View>
+                          <MaterialCommunityIcons name="chevron-right" size={20} color="rgba(61, 64, 91, 0.25)" />
+                        </TouchableOpacity>
+                      ))}
+                    </Animated.View>
+                  )}
+                </Animated.View>
 
-                  <Animated.View entering={FadeInDown.delay(200).duration(400)} style={{ gap: 12 }}>
-                    <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 18, color: "#3D405B" }}>
-                      How did you connect?
-                    </Text>
-                    <View style={{ flexDirection: "row", gap: 12 }}>
-                      {connectionTypes.map((type) => {
-                        const isSelected = selectedType === type.id;
-                        return (
-                          <TouchableOpacity
-                            key={type.id}
-                            onPress={() => setSelectedType(type.id)}
-                            activeOpacity={0.8}
+                <Animated.View entering={FadeInDown.delay(100).duration(350)} style={{ gap: 12 }}>
+                  <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 15, color: "#3D405B", letterSpacing: -0.2 }}>
+                    How did you connect?
+                  </Text>
+                  <View style={{ flexDirection: "row", gap: 12 }}>
+                    {connectionTypes.map((type) => {
+                      const isSelected = selectedType === type.id;
+                      return (
+                        <TouchableOpacity
+                          key={type.id}
+                          onPress={() => setSelectedType(type.id)}
+                          activeOpacity={0.85}
+                          style={{ flex: 1 }}
+                        >
+                          <Animated.View
                             style={{
-                              flex: 1,
                               aspectRatio: 1,
                               backgroundColor: isSelected ? "#E07A5F" : "#F4F1DE",
                               borderRadius: 20,
@@ -356,141 +466,169 @@ export const LogConnectionModal: React.FC<LogConnectionModalProps> = ({
                               justifyContent: "center",
                               gap: 8,
                               borderWidth: isSelected ? 0 : 2,
-                              borderColor: "rgba(224, 122, 95, 0.2)",
+                              borderColor: "rgba(224, 122, 95, 0.15)",
                               shadowColor: isSelected ? "#E07A5F" : "transparent",
-                              shadowOffset: { width: 0, height: 4 },
-                              shadowOpacity: isSelected ? 0.3 : 0,
-                              shadowRadius: 8,
-                              elevation: isSelected ? 4 : 0,
+                              shadowOffset: { width: 0, height: isSelected ? 8 : 0 },
+                              shadowOpacity: isSelected ? 0.35 : 0,
+                              shadowRadius: isSelected ? 16 : 0,
+                              elevation: isSelected ? 8 : 0,
+                              transform: [{ scale: isSelected ? 1.02 : 1 }],
                             }}
                           >
+                            {isSelected && (
+                              <View
+                                style={{
+                                  position: "absolute",
+                                  top: 0,
+                                  left: 0,
+                                  right: 0,
+                                  bottom: 0,
+                                  borderRadius: 20,
+                                  borderWidth: 3,
+                                  borderColor: "#E07A5F",
+                                  shadowColor: "#E07A5F",
+                                  shadowOffset: { width: 0, height: 0 },
+                                  shadowOpacity: 0.5,
+                                  shadowRadius: 0,
+                                }}
+                              />
+                            )}
                             <MaterialCommunityIcons
-                              name={type.icon}
-                              size={32}
+                              name={isSelected ? type.filledIcon : type.icon}
+                              size={34}
                               color={isSelected ? "#FFF" : "#E07A5F"}
                             />
                             <Text
                               style={{
                                 fontFamily: "PlusJakartaSans_700Bold",
-                                fontSize: 14,
+                                fontSize: 13,
                                 color: isSelected ? "#FFF" : "#3D405B",
                               }}
                             >
                               {type.label}
                             </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  </Animated.View>
+                          </Animated.View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </Animated.View>
 
-                  <Animated.View entering={FadeInDown.delay(300).duration(400)}>
+                <Animated.View entering={FadeInDown.delay(150).duration(350)} style={{ gap: 12 }}>
+                  <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 15, color: "#3D405B", letterSpacing: -0.2 }}>
+                    Details
+                  </Text>
+                  <View
+                    style={{
+                      backgroundColor: "#FFF",
+                      borderRadius: 20,
+                      overflow: "hidden",
+                      shadowColor: "#3D405B",
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.05,
+                      shadowRadius: 12,
+                      elevation: 3,
+                    }}
+                  >
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        paddingHorizontal: 18,
+                        paddingVertical: 16,
+                        borderBottomWidth: 1,
+                        borderBottomColor: "rgba(61, 64, 91, 0.06)",
+                      }}
+                    >
+                      <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 15, color: "#3D405B" }}>
+                        Date
+                      </Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                        <Text style={{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 14, color: "#E07A5F" }}>
+                          {dateString}
+                        </Text>
+                        <MaterialCommunityIcons name="calendar-month" size={20} color="#E07A5F" />
+                      </View>
+                    </TouchableOpacity>
+
                     <View
                       style={{
-                        backgroundColor: "#FFF",
-                        borderRadius: 20,
-                        overflow: "hidden",
-                        shadowColor: "#3D405B",
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 0.05,
-                        shadowRadius: 8,
-                        elevation: 2,
+                        paddingHorizontal: 18,
+                        paddingTop: 14,
+                        paddingBottom: 16,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontFamily: "PlusJakartaSans_700Bold",
+                          fontSize: 11,
+                          color: "rgba(61, 64, 91, 0.45)",
+                          letterSpacing: 0.8,
+                          textTransform: "uppercase",
+                          marginBottom: 10,
+                        }}
+                      >
+                        Quick Note (Optional)
+                      </Text>
+                      <TextInput
+                        value={note}
+                        onChangeText={setNote}
+                        placeholder="What did you talk about?"
+                        placeholderTextColor="rgba(61, 64, 91, 0.3)"
+                        multiline
+                        numberOfLines={3}
+                        style={{
+                          fontFamily: "PlusJakartaSans_400Regular",
+                          fontSize: 15,
+                          color: "#3D405B",
+                          lineHeight: 22,
+                          minHeight: 70,
+                          textAlignVertical: "top",
+                        }}
+                      />
+                    </View>
+                  </View>
+                </Animated.View>
+
+                {selectedFriend && (
+                  <Animated.View entering={FadeInDown.delay(200).duration(350)}>
+                    <View
+                      style={{
+                        backgroundColor: "rgba(129, 178, 154, 0.1)",
+                        borderRadius: 16,
+                        padding: 16,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 12,
                       }}
                     >
                       <View
                         style={{
-                          flexDirection: "row",
+                          width: 40,
+                          height: 40,
+                          borderRadius: 20,
+                          backgroundColor: "rgba(129, 178, 154, 0.2)",
                           alignItems: "center",
-                          justifyContent: "space-between",
-                          paddingHorizontal: 20,
-                          paddingVertical: 16,
-                          borderBottomWidth: 1,
-                          borderBottomColor: "rgba(61, 64, 91, 0.1)",
+                          justifyContent: "center",
                         }}
                       >
-                        <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 16, color: "#3D405B" }}>
-                          Date
-                        </Text>
-                        <Text style={{ fontFamily: "PlusJakartaSans_500Medium", fontSize: 14, color: "#81B29A" }}>
-                          {dateString}
-                        </Text>
+                        <MaterialCommunityIcons name="lightbulb-outline" size={22} color="#81B29A" />
                       </View>
-
-                      <View
-                        style={{
-                          paddingHorizontal: 20,
-                          paddingVertical: 16,
-                          borderBottomWidth: 1,
-                          borderBottomColor: "rgba(61, 64, 91, 0.1)",
-                        }}
-                      >
-                        <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 16, color: "#3D405B", marginBottom: 8 }}>
-                          Quick Note
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontFamily: "PlusJakartaSans_500Medium", fontSize: 13, color: "#3D405B", lineHeight: 18 }}>
+                          Logging connections helps you remember when you last talked and strengthens your relationships.
                         </Text>
-                        <TextInput
-                          value={note}
-                          onChangeText={setNote}
-                          placeholder="What did you talk about?"
-                          placeholderTextColor="rgba(61, 64, 91, 0.3)"
-                          multiline
-                          numberOfLines={3}
-                          style={{
-                            fontFamily: "PlusJakartaSans_400Regular",
-                            fontSize: 14,
-                            color: "#3D405B",
-                            lineHeight: 22,
-                            minHeight: 80,
-                            textAlignVertical: "top",
-                          }}
-                        />
-                      </View>
-
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          paddingHorizontal: 20,
-                          paddingVertical: 16,
-                        }}
-                      >
-                        <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 16, color: "#3D405B" }}>
-                          Set specific follow-up?
-                        </Text>
-                        <TouchableOpacity
-                          onPress={() => setFollowUp(!followUp)}
-                          style={{
-                            width: 48,
-                            height: 28,
-                            backgroundColor: followUp ? "#81B29A" : "rgba(61, 64, 91, 0.2)",
-                            borderRadius: 14,
-                            padding: 2,
-                          }}
-                        >
-                          <View
-                            style={{
-                              width: 24,
-                              height: 24,
-                              backgroundColor: "#FFF",
-                              borderRadius: 12,
-                              shadowColor: "#000",
-                              shadowOffset: { width: 0, height: 1 },
-                              shadowOpacity: 0.2,
-                              shadowRadius: 2,
-                              elevation: 2,
-                              transform: [{ translateX: followUp ? 20 : 0 }],
-                            }}
-                          />
-                        </TouchableOpacity>
                       </View>
                     </View>
                   </Animated.View>
-                </ScrollView>
-              </KeyboardAvoidingView>
-            </SafeAreaView>
-          </Animated.View>
-        </GestureDetector>
-      </View>
-    </Modal>
+                )}
+              </ScrollView>
+            </KeyboardAvoidingView>
+          </SafeAreaView>
+        </Animated.View>
+      </GestureDetector>
+    </View>
   );
 };
