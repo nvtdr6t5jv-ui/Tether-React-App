@@ -49,7 +49,7 @@ interface AppContextType extends AppState {
   addNote: (friendId: string, type: NoteType, content: string) => Promise<Note>;
   updateNote: (noteId: string, content: string) => Promise<void>;
   deleteNote: (noteId: string) => Promise<void>;
-  logInteraction: (friendId: string, type: InteractionType, note?: string, duration?: number) => Promise<void>;
+  logInteraction: (friendId: string, type: InteractionType, note?: string, duration?: number, date?: Date) => Promise<void>;
   addDraft: (friendId: string, content: string) => Promise<Draft>;
   deleteDraft: (draftId: string) => Promise<void>;
   sendDraft: (draftId: string) => Promise<void>;
@@ -442,12 +442,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setState(prev => ({ ...prev, notes: prev.notes.filter(n => n.id !== noteId) }));
   };
 
-  const logInteraction = async (friendId: string, type: InteractionType, note?: string, duration?: number) => {
+  const logInteraction = async (friendId: string, type: InteractionType, note?: string, duration?: number, date?: Date) => {
     if (!friendId) {
       console.error('logInteraction called without a valid friendId');
       return;
     }
     
+    const interactionDate = date || new Date();
     const now = new Date();
     const interaction: Interaction = {
       id: storageService.generateId(),
@@ -455,7 +456,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       type,
       note,
       duration,
-      date: now,
+      date: interactionDate,
       createdAt: now,
     };
 
@@ -467,7 +468,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const newStreak = calculateStreak(friendInteractions, friend.orbitId);
       
       await storageService.updateFriend(friendId, {
-        lastContact: now,
+        lastContact: interactionDate,
         nextNudge: getNextNudgeDate(friend.orbitId),
         streak: newStreak,
       });
@@ -477,7 +478,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         interactions: [...prev.interactions, interaction],
         friends: prev.friends.map(f => f.id === friendId ? {
           ...f,
-          lastContact: now,
+          lastContact: interactionDate,
           nextNudge: getNextNudgeDate(f.orbitId),
           streak: newStreak,
         } : f),
@@ -791,15 +792,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     if (userId) {
       try {
+        const startDate = event.date instanceof Date ? event.date : new Date(event.date);
+        const endDate = event.endDate ? (event.endDate instanceof Date ? event.endDate : new Date(event.endDate)) : null;
+        
         await api.calendarEvents.create({
           id: event.id,
           user_id: userId,
           friend_id: event.friendId || null,
           title: event.title,
-          description: event.description || null,
-          start_date: new Date(event.date).toISOString(),
-          end_date: event.endDate?.toISOString() || null,
-          is_all_day: event.isAllDay || false,
+          description: event.notes || null,
+          start_date: startDate.toISOString(),
+          end_date: endDate ? endDate.toISOString() : null,
+          is_all_day: false,
           location: event.location || null,
         });
       } catch (e) {
@@ -817,13 +821,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     if (userId) {
       try {
+        const startDate = updates.date ? (updates.date instanceof Date ? updates.date : new Date(updates.date)) : undefined;
+        const endDate = updates.endDate ? (updates.endDate instanceof Date ? updates.endDate : new Date(updates.endDate)) : undefined;
+        
         await api.calendarEvents.update(eventId, {
           friend_id: updates.friendId || null,
           title: updates.title,
-          description: updates.description || null,
-          start_date: updates.date ? new Date(updates.date).toISOString() : undefined,
-          end_date: updates.endDate?.toISOString() || null,
-          is_all_day: updates.isAllDay,
+          description: updates.notes || null,
+          start_date: startDate ? startDate.toISOString() : undefined,
+          end_date: endDate ? endDate.toISOString() : null,
           location: updates.location || null,
         });
       } catch (e) {

@@ -704,8 +704,8 @@ export const PersonProfileScreen: React.FC<PersonProfileScreenProps> = ({
         visible={showLogModal}
         onClose={() => setShowLogModal(false)}
         friends={friends}
-        onLogConnection={async (fId, type, note) => {
-          await logInteraction(fId, type as any, note);
+        onLogConnection={async (fId, type, note, date) => {
+          await logInteraction(fId, type as any, note, undefined, date);
           await updateGamificationOnInteraction(type);
           setShowLogModal(false);
         }}

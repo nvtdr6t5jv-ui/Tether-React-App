@@ -340,8 +340,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onNavigateTo
     }
   }, [recordDailyActivity, checkAndUpdateAchievements, updateChallengeProgress, interactions, streakData, gamificationState]);
 
-  const handleLogConnection = async (friendId: string, type: string, note: string) => {
-    await logInteraction(friendId, type as any, note);
+  const handleLogConnection = async (friendId: string, type: string, note: string, date?: Date) => {
+    await logInteraction(friendId, type as any, note, undefined, date);
     await updateGamificationOnInteraction(type);
   };
 

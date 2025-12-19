@@ -557,8 +557,8 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
     await updateGamificationOnInteraction('text');
   };
 
-  const handleLogConnection = async (friendId: string, type: string, note: string) => {
-    await logInteraction(friendId, type as any, note);
+  const handleLogConnection = async (friendId: string, type: string, note: string, date?: Date) => {
+    await logInteraction(friendId, type as any, note, undefined, date);
     await updateGamificationOnInteraction(type);
   };
 

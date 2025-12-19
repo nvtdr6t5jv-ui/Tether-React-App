@@ -10,14 +10,13 @@ import {
   Dimensions,
   Keyboard,
   Image,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Animated, {
   FadeIn,
   FadeInDown,
-  FadeOut,
-  SlideInRight,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -35,7 +34,7 @@ interface LogConnectionModalProps {
   visible: boolean;
   onClose: () => void;
   friends: Friend[];
-  onLogConnection: (friendId: string, type: string, note: string) => void;
+  onLogConnection: (friendId: string, type: string, note: string, date?: Date) => void;
   preselectedFriendId?: string;
 }
 
@@ -46,6 +45,31 @@ const connectionTypes = [
 ];
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+
+const getRecentDays = () => {
+  const days = [];
+  const today = new Date();
+  for (let i = 0; i < 14; i++) {
+    const date = new Date(today);
+    date.setDate(today.getDate() - i);
+    days.push(date);
+  }
+  return days;
+};
+
+const formatDateLabel = (date: Date) => {
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  
+  if (date.toDateString() === today.toDateString()) {
+    return "Today";
+  } else if (date.toDateString() === yesterday.toDateString()) {
+    return "Yesterday";
+  } else {
+    return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  }
+};
 
 export const LogConnectionModal: React.FC<LogConnectionModalProps> = ({
   visible,
@@ -58,19 +82,24 @@ export const LogConnectionModal: React.FC<LogConnectionModalProps> = ({
   const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
   const [selectedType, setSelectedType] = useState("call");
   const [note, setNote] = useState("");
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
 
   const translateY = useSharedValue(SCREEN_HEIGHT);
   const backdropOpacity = useSharedValue(0);
-  const typeScale = useSharedValue(1);
+
+  const recentDays = getRecentDays();
 
   const resetForm = useCallback(() => {
     setSearchQuery("");
     setSelectedFriend(null);
     setSelectedType("call");
     setNote("");
+    setSelectedDate(new Date());
     setShowDropdown(false);
+    setShowDatePicker(false);
   }, []);
 
   useEffect(() => {
@@ -136,7 +165,7 @@ export const LogConnectionModal: React.FC<LogConnectionModalProps> = ({
 
   const handleDone = () => {
     if (selectedFriend) {
-      onLogConnection(selectedFriend.id, selectedType, note);
+      onLogConnection(selectedFriend.id, selectedType, note, selectedDate);
       closeDrawer();
     }
   };
@@ -156,8 +185,9 @@ export const LogConnectionModal: React.FC<LogConnectionModalProps> = ({
     opacity: backdropOpacity.value,
   }));
 
-  const today = new Date();
-  const dateString = `Today, ${today.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+  const dateString = formatDateLabel(selectedDate) + 
+    (selectedDate.toDateString() === new Date().toDateString() ? "" : 
+      `, ${selectedDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`);
 
   if (!visible) return null;
 
@@ -532,6 +562,7 @@ export const LogConnectionModal: React.FC<LogConnectionModalProps> = ({
                   >
                     <TouchableOpacity
                       activeOpacity={0.7}
+                      onPress={() => setShowDatePicker(true)}
                       style={{
                         flexDirection: "row",
                         alignItems: "center",
@@ -549,7 +580,7 @@ export const LogConnectionModal: React.FC<LogConnectionModalProps> = ({
                         <Text style={{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 14, color: "#E07A5F" }}>
                           {dateString}
                         </Text>
-                        <MaterialCommunityIcons name="calendar-month" size={20} color="#E07A5F" />
+                        <MaterialCommunityIcons name="chevron-down" size={20} color="#E07A5F" />
                       </View>
                     </TouchableOpacity>
 
@@ -629,6 +660,72 @@ export const LogConnectionModal: React.FC<LogConnectionModalProps> = ({
           </SafeAreaView>
         </Animated.View>
       </GestureDetector>
+
+      <Modal
+        visible={showDatePicker}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDatePicker(false)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setShowDatePicker(false)}
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" }}
+        >
+          <View style={{ backgroundColor: "#FFF", borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 40 }}>
+            <View style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: "rgba(61, 64, 91, 0.1)" }}>
+              <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 18, color: "#3D405B", textAlign: "center" }}>
+                Select Date
+              </Text>
+            </View>
+            <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false}>
+              {recentDays.map((date, index) => {
+                const isSelected = date.toDateString() === selectedDate.toDateString();
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() => {
+                      setSelectedDate(date);
+                      setShowDatePicker(false);
+                    }}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      paddingHorizontal: 20,
+                      paddingVertical: 16,
+                      backgroundColor: isSelected ? "rgba(224, 122, 95, 0.1)" : "transparent",
+                    }}
+                  >
+                    <View>
+                      <Text style={{ 
+                        fontFamily: isSelected ? "PlusJakartaSans_700Bold" : "PlusJakartaSans_600SemiBold", 
+                        fontSize: 16, 
+                        color: isSelected ? "#E07A5F" : "#3D405B" 
+                      }}>
+                        {formatDateLabel(date)}
+                      </Text>
+                      {date.toDateString() !== new Date().toDateString() && (
+                        <Text style={{ 
+                          fontFamily: "PlusJakartaSans_400Regular", 
+                          fontSize: 13, 
+                          color: "rgba(61, 64, 91, 0.5)",
+                          marginTop: 2,
+                        }}>
+                          {date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                        </Text>
+                      )}
+                    </View>
+                    {isSelected && (
+                      <MaterialCommunityIcons name="check-circle" size={24} color="#E07A5F" />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };
