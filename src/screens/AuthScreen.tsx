@@ -8,10 +8,12 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, { FadeInDown, FadeInUp, Layout } from "react-native-reanimated";
 import { useRoute, RouteProp } from "@react-navigation/native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { RootStackParamList } from "../navigation/AppNavigator";
+import { AppleLogo, GoogleLogo } from "./SocialIcons";
 
 type AuthScreenRouteProp = RouteProp<RootStackParamList, "Auth">;
 
@@ -24,86 +26,106 @@ export const AuthScreen = () => {
   const [password, setPassword] = useState("");
 
   return (
-    <SafeAreaView className="flex-1 bg-background-light">
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#F4F1DE" }} edges={["top", "bottom"]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
+        style={{ flex: 1 }}
       >
         <ScrollView
-          className="flex-1"
-          contentContainerClassName="flex-grow justify-between px-6 py-8"
+          style={{ flex: 1 }}
+          contentContainerStyle={{ flexGrow: 1, justifyContent: "space-between", paddingHorizontal: 24, paddingVertical: 32 }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
           <Animated.View
             entering={FadeInDown.duration(600)}
-            className="items-center pt-8 pb-6"
+            style={{ alignItems: "center", paddingTop: 32, paddingBottom: 24 }}
           >
-            <Text className="text-primary font-serif-semibold text-[40px] tracking-tight text-center">
+            <Text style={{ color: "#E07A5F", fontFamily: "Fraunces_600SemiBold", fontSize: 40, textAlign: "center" }}>
               Tether
             </Text>
-            <Text className="text-text-main/80 font-serif text-lg text-center mt-2">
+            <Text style={{ color: "rgba(61, 64, 91, 0.8)", fontFamily: "Fraunces_400Regular", fontSize: 18, textAlign: "center", marginTop: 8 }}>
               Cultivate better connections.
             </Text>
           </Animated.View>
 
           <Animated.View
             entering={FadeInUp.delay(200).duration(500)}
-            className="flex-1 justify-center"
+            style={{ flex: 1, justifyContent: "center" }}
           >
-            <View className="bg-secondary/10 p-1.5 rounded-full flex-row mb-6">
+            <View style={{ backgroundColor: "rgba(129, 178, 154, 0.1)", padding: 6, borderRadius: 9999, flexDirection: "row", marginBottom: 24 }}>
               <TouchableOpacity
                 onPress={() => setIsLogin(false)}
-                className={`flex-1 py-3 px-6 rounded-full items-center justify-center ${
-                  !isLogin ? "bg-primary shadow-md" : ""
-                }`}
+                style={{
+                  flex: 1,
+                  paddingVertical: 12,
+                  paddingHorizontal: 24,
+                  borderRadius: 9999,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: !isLogin ? "#E07A5F" : "transparent",
+                }}
               >
-                <Text
-                  className={`font-display-bold text-sm tracking-wide ${
-                    !isLogin ? "text-surface-light" : "text-secondary"
-                  }`}
-                >
+                <Text style={{
+                  fontFamily: "PlusJakartaSans_700Bold",
+                  fontSize: 14,
+                  color: !isLogin ? "#FDFCF8" : "#81B29A",
+                }}>
                   Create Account
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => setIsLogin(true)}
-                className={`flex-1 py-3 px-6 rounded-full items-center justify-center ${
-                  isLogin ? "bg-primary shadow-md" : ""
-                }`}
+                style={{
+                  flex: 1,
+                  paddingVertical: 12,
+                  paddingHorizontal: 24,
+                  borderRadius: 9999,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: isLogin ? "#E07A5F" : "transparent",
+                }}
               >
-                <Text
-                  className={`font-display-bold text-sm tracking-wide ${
-                    isLogin ? "text-surface-light" : "text-secondary"
-                  }`}
-                >
+                <Text style={{
+                  fontFamily: "PlusJakartaSans_700Bold",
+                  fontSize: 14,
+                  color: isLogin ? "#FDFCF8" : "#81B29A",
+                }}>
                   Log In
                 </Text>
               </TouchableOpacity>
             </View>
 
-            <Animated.View layout={Layout.springify()} className="gap-4">
+            <Animated.View layout={Layout.springify()} style={{ gap: 16 }}>
               {!isLogin && (
-                <Animated.View
-                  entering={FadeInDown.duration(300)}
-                  className="relative"
-                >
-                  <View className="absolute left-5 top-0 bottom-0 justify-center z-10">
-                    <Text className="text-secondary text-xl">👤</Text>
+                <Animated.View entering={FadeInDown.duration(300)} style={{ position: "relative" }}>
+                  <View style={{ position: "absolute", left: 20, top: 0, bottom: 0, justifyContent: "center", zIndex: 10 }}>
+                    <MaterialCommunityIcons name="account-outline" size={20} color="#81B29A" />
                   </View>
                   <TextInput
                     value={fullName}
                     onChangeText={setFullName}
                     placeholder="Full Name"
                     placeholderTextColor="rgba(61, 64, 91, 0.4)"
-                    className="w-full bg-surface-light rounded-full py-4 pl-14 pr-4 text-text-main text-base border border-secondary/20"
+                    style={{
+                      width: "100%",
+                      backgroundColor: "#FDFCF8",
+                      borderRadius: 9999,
+                      paddingVertical: 16,
+                      paddingLeft: 52,
+                      paddingRight: 16,
+                      color: "#3D405B",
+                      fontSize: 16,
+                      borderWidth: 1,
+                      borderColor: "rgba(129, 178, 154, 0.2)",
+                    }}
                   />
                 </Animated.View>
               )}
 
-              <View className="relative">
-                <View className="absolute left-5 top-0 bottom-0 justify-center z-10">
-                  <Text className="text-secondary text-xl">✉️</Text>
+              <View style={{ position: "relative" }}>
+                <View style={{ position: "absolute", left: 20, top: 0, bottom: 0, justifyContent: "center", zIndex: 10 }}>
+                  <MaterialCommunityIcons name="email-outline" size={20} color="#81B29A" />
                 </View>
                 <TextInput
                   value={email}
@@ -112,13 +134,24 @@ export const AuthScreen = () => {
                   placeholderTextColor="rgba(61, 64, 91, 0.4)"
                   keyboardType="email-address"
                   autoCapitalize="none"
-                  className="w-full bg-surface-light rounded-full py-4 pl-14 pr-4 text-text-main text-base border border-secondary/20"
+                  style={{
+                    width: "100%",
+                    backgroundColor: "#FDFCF8",
+                    borderRadius: 9999,
+                    paddingVertical: 16,
+                    paddingLeft: 52,
+                    paddingRight: 16,
+                    color: "#3D405B",
+                    fontSize: 16,
+                    borderWidth: 1,
+                    borderColor: "rgba(129, 178, 154, 0.2)",
+                  }}
                 />
               </View>
 
-              <View className="relative">
-                <View className="absolute left-5 top-0 bottom-0 justify-center z-10">
-                  <Text className="text-secondary text-xl">🔒</Text>
+              <View style={{ position: "relative" }}>
+                <View style={{ position: "absolute", left: 20, top: 0, bottom: 0, justifyContent: "center", zIndex: 10 }}>
+                  <MaterialCommunityIcons name="lock-outline" size={20} color="#81B29A" />
                 </View>
                 <TextInput
                   value={password}
@@ -126,24 +159,42 @@ export const AuthScreen = () => {
                   placeholder="Password"
                   placeholderTextColor="rgba(61, 64, 91, 0.4)"
                   secureTextEntry={!showPassword}
-                  className="w-full bg-surface-light rounded-full py-4 pl-14 pr-14 text-text-main text-base border border-secondary/20"
+                  style={{
+                    width: "100%",
+                    backgroundColor: "#FDFCF8",
+                    borderRadius: 9999,
+                    paddingVertical: 16,
+                    paddingLeft: 52,
+                    paddingRight: 52,
+                    color: "#3D405B",
+                    fontSize: 16,
+                    borderWidth: 1,
+                    borderColor: "rgba(129, 178, 154, 0.2)",
+                  }}
                 />
                 <TouchableOpacity
                   onPress={() => setShowPassword(!showPassword)}
-                  className="absolute right-5 top-0 bottom-0 justify-center"
+                  style={{ position: "absolute", right: 20, top: 0, bottom: 0, justifyContent: "center" }}
                 >
-                  <Text className="text-secondary text-xl">
-                    {showPassword ? "🙈" : "👁️"}
-                  </Text>
+                  <MaterialCommunityIcons
+                    name={showPassword ? "eye-off-outline" : "eye-outline"}
+                    size={20}
+                    color="#81B29A"
+                  />
                 </TouchableOpacity>
               </View>
             </Animated.View>
 
-            <View className="mt-6 gap-4">
+            <View style={{ marginTop: 24, gap: 16 }}>
               <TouchableOpacity
                 activeOpacity={0.9}
-                className="w-full h-14 bg-primary rounded-full items-center justify-center shadow-lg"
                 style={{
+                  width: "100%",
+                  height: 56,
+                  backgroundColor: "#E07A5F",
+                  borderRadius: 9999,
+                  alignItems: "center",
+                  justifyContent: "center",
                   shadowColor: "#E07A5F",
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.3,
@@ -151,40 +202,62 @@ export const AuthScreen = () => {
                   elevation: 6,
                 }}
               >
-                <Text className="text-surface-light font-display-bold text-lg">
+                <Text style={{ color: "#FDFCF8", fontFamily: "PlusJakartaSans_700Bold", fontSize: 18 }}>
                   {isLogin ? "Log In" : "Get Started"}
                 </Text>
               </TouchableOpacity>
 
               {isLogin && (
-                <TouchableOpacity className="items-center">
-                  <Text className="text-sm font-display-medium text-text-main/70">
+                <TouchableOpacity style={{ alignItems: "center" }}>
+                  <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_500Medium", color: "rgba(61, 64, 91, 0.7)" }}>
                     Forgot Password?
                   </Text>
                 </TouchableOpacity>
               )}
             </View>
 
-            <View className="my-6">
-              <View className="flex-row items-center">
-                <View className="flex-1 h-px bg-text-main/10" />
-                <Text className="px-4 text-sm text-text-main/60 font-display-medium">
+            <View style={{ marginVertical: 24 }}>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <View style={{ flex: 1, height: 1, backgroundColor: "rgba(61, 64, 91, 0.1)" }} />
+                <Text style={{ paddingHorizontal: 16, fontSize: 14, color: "rgba(61, 64, 91, 0.6)", fontFamily: "PlusJakartaSans_500Medium" }}>
                   Or continue with
                 </Text>
-                <View className="flex-1 h-px bg-text-main/10" />
+                <View style={{ flex: 1, height: 1, backgroundColor: "rgba(61, 64, 91, 0.1)" }} />
               </View>
             </View>
 
-            <View className="flex-row gap-4">
-              <TouchableOpacity className="flex-1 flex-row items-center justify-center gap-3 bg-surface-light rounded-full py-3.5 border border-text-main/10">
-                <Text className="text-xl">🍎</Text>
-                <Text className="font-display-semibold text-sm text-text-main">
+            <View style={{ flexDirection: "row", gap: 16 }}>
+              <TouchableOpacity style={{
+                flex: 1,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 12,
+                backgroundColor: "#FDFCF8",
+                borderRadius: 9999,
+                paddingVertical: 14,
+                borderWidth: 1,
+                borderColor: "rgba(61, 64, 91, 0.1)",
+              }}>
+                <AppleLogo size={20} color="#3D405B" />
+                <Text style={{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 14, color: "#3D405B" }}>
                   Apple
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity className="flex-1 flex-row items-center justify-center gap-3 bg-surface-light rounded-full py-3.5 border border-text-main/10">
-                <Text className="text-xl">🔵</Text>
-                <Text className="font-display-semibold text-sm text-text-main">
+              <TouchableOpacity style={{
+                flex: 1,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 12,
+                backgroundColor: "#FDFCF8",
+                borderRadius: 9999,
+                paddingVertical: 14,
+                borderWidth: 1,
+                borderColor: "rgba(61, 64, 91, 0.1)",
+              }}>
+                <GoogleLogo size={20} />
+                <Text style={{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 14, color: "#3D405B" }}>
                   Google
                 </Text>
               </TouchableOpacity>
@@ -193,12 +266,12 @@ export const AuthScreen = () => {
 
           <Animated.View
             entering={FadeInUp.delay(800).duration(400)}
-            className="pt-6"
+            style={{ paddingTop: 24 }}
           >
-            <Text className="text-xs text-text-main/50 font-display-medium text-center">
+            <Text style={{ fontSize: 12, color: "rgba(61, 64, 91, 0.5)", fontFamily: "PlusJakartaSans_500Medium", textAlign: "center" }}>
               By continuing, you agree to our{" "}
-              <Text className="text-primary">Terms</Text> &{" "}
-              <Text className="text-primary">Privacy Policy</Text>.
+              <Text style={{ color: "#E07A5F" }}>Terms</Text> &{" "}
+              <Text style={{ color: "#E07A5F" }}>Privacy Policy</Text>.
             </Text>
           </Animated.View>
         </ScrollView>

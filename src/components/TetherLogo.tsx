@@ -1,15 +1,16 @@
 import React from "react";
 import { View, Text } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 export const TetherLogo = () => {
   return (
     <Animated.View
       entering={FadeIn.duration(600)}
-      className="flex-row items-center gap-2"
+      style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
     >
-      <Text className="text-primary text-3xl">∞</Text>
-      <Text className="font-serif-semibold text-2xl text-primary tracking-tight">
+      <MaterialCommunityIcons name="infinity" size={28} color="#E07A5F" />
+      <Text style={{ fontFamily: "Fraunces_600SemiBold", fontSize: 24, color: "#E07A5F", letterSpacing: -0.5 }}>
         Tether
       </Text>
     </Animated.View>
