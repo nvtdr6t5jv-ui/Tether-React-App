@@ -17,12 +17,14 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.tether.app",
       "usesAppleSignIn": true,
+      "entitlements": {
+        "aps-environment": "development"
+      },
       "infoPlist": {
         "NSContactsUsageDescription": "Tether needs access to your contacts to help you find and add friends quickly.",
         "NSCalendarsUsageDescription": "Tether needs access to your calendar to help you schedule meetups and remember important dates.",
         "NSCalendarsFullAccessUsageDescription": "Tether needs full access to your calendar to create and manage events with friends.",
-        "NSCalendarsWriteOnlyAccessUsageDescription": "Tether needs access to add events to your calendar.",
-        "UIBackgroundModes": ["remote-notification"]
+        "NSCalendarsWriteOnlyAccessUsageDescription": "Tether needs access to add events to your calendar."
       }
     },
     "android": {
