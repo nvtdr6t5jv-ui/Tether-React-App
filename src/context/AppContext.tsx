@@ -9,11 +9,14 @@ import {
   UserSettings,
   SocialHealthStats,
   PremiumStatus,
+  CalendarEvent,
+  RelationshipHealth,
   ORBITS,
   InteractionType,
   NoteType,
   FREE_CONTACT_LIMIT,
   FREE_HISTORY_DAYS,
+  CONVERSATION_STARTERS,
 } from '../types';
 import { storageService } from '../services/StorageService';
 
@@ -25,6 +28,7 @@ interface AppState {
   interactions: Interaction[];
   nudges: Nudge[];
   drafts: Draft[];
+  calendarEvents: CalendarEvent[];
   userProfile: UserProfile | null;
   userSettings: UserSettings;
   premiumStatus: PremiumStatus;
@@ -61,6 +65,11 @@ interface AppContextType extends AppState {
   getRemainingFreeSlots: () => number;
   upgradeToPremium: (plan: 'monthly' | 'yearly') => Promise<void>;
   getSmartSuggestion: (friendId: string) => string | null;
+  addCalendarEvent: (event: CalendarEvent) => Promise<void>;
+  updateCalendarEvent: (eventId: string, updates: Partial<CalendarEvent>) => Promise<void>;
+  deleteCalendarEvent: (eventId: string) => Promise<void>;
+  getRelationshipHealth: (friendId: string) => RelationshipHealth;
+  getConversationStarter: (friendId: string) => string;
 }
 
 const getDefaultSettings = (): UserSettings => ({
@@ -86,6 +95,7 @@ const initialState: AppState = {
   interactions: [],
   nudges: [],
   drafts: [],
+  calendarEvents: [],
   userProfile: null,
   userSettings: getDefaultSettings(),
   premiumStatus: getDefaultPremiumStatus(),
@@ -139,6 +149,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         interactions,
         nudges,
         drafts,
+        calendarEvents,
         userProfile,
         userSettings,
         premiumStatus,
@@ -149,6 +160,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         storageService.getInteractions(),
         storageService.getNudges(),
         storageService.getDrafts(),
+        storageService.getCalendarEvents(),
         storageService.getUserProfile(),
         storageService.getUserSettings(),
         storageService.getPremiumStatus(),
@@ -162,6 +174,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         interactions,
         nudges,
         drafts,
+        calendarEvents,
         userProfile,
         userSettings,
         premiumStatus: premiumStatus || getDefaultPremiumStatus(),
@@ -557,6 +570,106 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
   };
 
+  const addCalendarEvent = async (event: CalendarEvent) => {
+    await storageService.addCalendarEvent(event);
+    setState(prev => ({ ...prev, calendarEvents: [...prev.calendarEvents, event] }));
+  };
+
+  const updateCalendarEvent = async (eventId: string, updates: Partial<CalendarEvent>) => {
+    await storageService.updateCalendarEvent(eventId, updates);
+    setState(prev => ({
+      ...prev,
+      calendarEvents: prev.calendarEvents.map(e => e.id === eventId ? { ...e, ...updates } : e),
+    }));
+  };
+
+  const deleteCalendarEvent = async (eventId: string) => {
+    await storageService.deleteCalendarEvent(eventId);
+    setState(prev => ({ ...prev, calendarEvents: prev.calendarEvents.filter(e => e.id !== eventId) }));
+  };
+
+  const getRelationshipHealth = (friendId: string): RelationshipHealth => {
+    const friend = state.friends.find(f => f.id === friendId);
+    const friendInteractions = state.interactions.filter(i => i.friendId === friendId);
+    const orbit = ORBITS.find(o => o.id === friend?.orbitId);
+    
+    const now = new Date();
+    const lastInteraction = friendInteractions.length > 0 
+      ? new Date(Math.max(...friendInteractions.map(i => new Date(i.date).getTime())))
+      : null;
+    const lastInteractionDays = lastInteraction 
+      ? Math.floor((now.getTime() - lastInteraction.getTime()) / (1000 * 60 * 60 * 24))
+      : 999;
+    
+    const expectedInterval = orbit?.daysInterval || 30;
+    const score = Math.max(0, Math.min(100, 100 - (lastInteractionDays / expectedInterval) * 50));
+    
+    const recentInteractions = friendInteractions.filter(i => {
+      const daysAgo = (now.getTime() - new Date(i.date).getTime()) / (1000 * 60 * 60 * 24);
+      return daysAgo <= 90;
+    });
+    
+    let trend: 'improving' | 'stable' | 'declining' = 'stable';
+    if (recentInteractions.length >= 3) {
+      const recent30 = recentInteractions.filter(i => {
+        const daysAgo = (now.getTime() - new Date(i.date).getTime()) / (1000 * 60 * 60 * 24);
+        return daysAgo <= 30;
+      }).length;
+      const prev30 = recentInteractions.filter(i => {
+        const daysAgo = (now.getTime() - new Date(i.date).getTime()) / (1000 * 60 * 60 * 24);
+        return daysAgo > 30 && daysAgo <= 60;
+      }).length;
+      if (recent30 > prev30) trend = 'improving';
+      else if (recent30 < prev30) trend = 'declining';
+    }
+    
+    const averageFrequency = friendInteractions.length > 1
+      ? Math.round(90 / Math.max(recentInteractions.length, 1))
+      : 0;
+    
+    const suggestions: string[] = [];
+    if (lastInteractionDays > expectedInterval) {
+      suggestions.push(`It's been ${lastInteractionDays} days - time to reach out!`);
+    }
+    if (trend === 'declining') {
+      suggestions.push('Your connection frequency has decreased recently.');
+    }
+    if (friend?.birthday) {
+      const [, month, day] = friend.birthday.split('-').map(Number);
+      const birthdayThisYear = new Date(now.getFullYear(), month - 1, day);
+      const daysUntil = Math.ceil((birthdayThisYear.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      if (daysUntil > 0 && daysUntil <= 14) {
+        suggestions.push(`Birthday coming up in ${daysUntil} days!`);
+      }
+    }
+    
+    return {
+      friendId,
+      score: Math.round(score),
+      trend,
+      lastInteractionDays,
+      averageFrequency,
+      suggestions,
+    };
+  };
+
+  const getConversationStarter = (friendId: string): string => {
+    const friend = state.friends.find(f => f.id === friendId);
+    const friendInteractions = state.interactions.filter(i => i.friendId === friendId);
+    
+    if (friendInteractions.length === 0) {
+      return "What have you been up to lately?";
+    }
+    
+    const lastInteraction = friendInteractions[0];
+    if (lastInteraction.note) {
+      return `Last time you talked about: "${lastInteraction.note.slice(0, 50)}${lastInteraction.note.length > 50 ? '...' : ''}"`;
+    }
+    
+    const randomIndex = Math.floor(Math.random() * CONVERSATION_STARTERS.length);
+    return CONVERSATION_STARTERS[randomIndex].text;
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -591,6 +704,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         getRemainingFreeSlots,
         upgradeToPremium,
         getSmartSuggestion,
+        addCalendarEvent,
+        updateCalendarEvent,
+        deleteCalendarEvent,
+        getRelationshipHealth,
+        getConversationStarter,
       }}
     >
       {children}

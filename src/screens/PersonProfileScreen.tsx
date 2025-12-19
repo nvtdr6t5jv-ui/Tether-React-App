@@ -71,6 +71,8 @@ export const PersonProfileScreen: React.FC<PersonProfileScreenProps> = ({
     friends,
     premiumStatus,
     getSmartSuggestion,
+    getRelationshipHealth,
+    getConversationStarter,
   } = useApp();
 
   const [showLogModal, setShowLogModal] = useState(false);
@@ -122,6 +124,8 @@ export const PersonProfileScreen: React.FC<PersonProfileScreenProps> = ({
 
   const smartSuggestion = getSmartSuggestion(friendId);
   const displayedInteractions = getInteractionsByFriendLimited(friendId);
+  const relationshipHealth = getRelationshipHealth(friendId);
+  const conversationStarter = getConversationStarter(friendId);
 
   const handleDelete = () => {
     Alert.alert(
@@ -330,6 +334,124 @@ export const PersonProfileScreen: React.FC<PersonProfileScreenProps> = ({
             <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: 'rgba(61, 64, 91, 0.2)' }} />
             <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12, color: '#3D405B' }}>
               Orbit: {orbit?.frequency || 'Unknown'}
+            </Text>
+          </View>
+        </Animated.View>
+
+        <Animated.View entering={FadeInUp.delay(350).duration(500)} style={{ paddingHorizontal: 24, marginTop: 24 }}>
+          <View
+            style={{
+              backgroundColor: '#FFF',
+              padding: 20,
+              borderRadius: 20,
+              shadowColor: '#3D405B',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.06,
+              shadowRadius: 12,
+              elevation: 3,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 16, color: '#3D405B' }}>
+                Relationship Health
+              </Text>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  backgroundColor: relationshipHealth.trend === 'improving' ? 'rgba(129, 178, 154, 0.1)' : relationshipHealth.trend === 'declining' ? 'rgba(224, 122, 95, 0.1)' : 'rgba(61, 64, 91, 0.1)',
+                  paddingHorizontal: 8,
+                  paddingVertical: 4,
+                  borderRadius: 9999,
+                }}
+              >
+                <MaterialCommunityIcons
+                  name={relationshipHealth.trend === 'improving' ? 'trending-up' : relationshipHealth.trend === 'declining' ? 'trending-down' : 'minus'}
+                  size={14}
+                  color={relationshipHealth.trend === 'improving' ? '#81B29A' : relationshipHealth.trend === 'declining' ? '#E07A5F' : 'rgba(61, 64, 91, 0.6)'}
+                />
+                <Text
+                  style={{
+                    fontFamily: 'PlusJakartaSans_600SemiBold',
+                    fontSize: 11,
+                    color: relationshipHealth.trend === 'improving' ? '#81B29A' : relationshipHealth.trend === 'declining' ? '#E07A5F' : 'rgba(61, 64, 91, 0.6)',
+                    textTransform: 'capitalize',
+                  }}
+                >
+                  {relationshipHealth.trend}
+                </Text>
+              </View>
+            </View>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+              <View
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: 32,
+                  backgroundColor: relationshipHealth.score >= 70 ? 'rgba(129, 178, 154, 0.1)' : relationshipHealth.score >= 40 ? 'rgba(249, 115, 22, 0.1)' : 'rgba(224, 122, 95, 0.1)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: 'Fraunces_600SemiBold',
+                    fontSize: 24,
+                    color: relationshipHealth.score >= 70 ? '#81B29A' : relationshipHealth.score >= 40 ? '#F97316' : '#E07A5F',
+                  }}
+                >
+                  {relationshipHealth.score}
+                </Text>
+              </View>
+              <View style={{ flex: 1, gap: 4 }}>
+                <View style={{ height: 8, backgroundColor: '#F4F1DE', borderRadius: 4, overflow: 'hidden' }}>
+                  <View
+                    style={{
+                      height: '100%',
+                      width: `${relationshipHealth.score}%`,
+                      backgroundColor: relationshipHealth.score >= 70 ? '#81B29A' : relationshipHealth.score >= 40 ? '#F97316' : '#E07A5F',
+                      borderRadius: 4,
+                    }}
+                  />
+                </View>
+                <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', fontSize: 12, color: 'rgba(61, 64, 91, 0.6)' }}>
+                  {relationshipHealth.lastInteractionDays === 999 ? 'Never connected' : relationshipHealth.lastInteractionDays === 0 ? 'Connected today' : `${relationshipHealth.lastInteractionDays} days since last contact`}
+                </Text>
+              </View>
+            </View>
+
+            {relationshipHealth.suggestions.length > 0 && (
+              <View style={{ marginTop: 12, gap: 6 }}>
+                {relationshipHealth.suggestions.slice(0, 2).map((suggestion, index) => (
+                  <View key={index} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <MaterialCommunityIcons name="lightbulb-outline" size={14} color="#F97316" />
+                    <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', fontSize: 12, color: 'rgba(61, 64, 91, 0.7)', flex: 1 }}>
+                      {suggestion}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        </Animated.View>
+
+        <Animated.View entering={FadeInUp.delay(380).duration(500)} style={{ paddingHorizontal: 24, marginTop: 16 }}>
+          <View
+            style={{
+              backgroundColor: '#F4F1DE',
+              padding: 16,
+              borderRadius: 16,
+              borderLeftWidth: 4,
+              borderLeftColor: '#81B29A',
+            }}
+          >
+            <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12, color: 'rgba(61, 64, 91, 0.5)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              Conversation Starter
+            </Text>
+            <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', fontSize: 14, color: '#3D405B', fontStyle: 'italic', lineHeight: 20 }}>
+              "{conversationStarter}"
             </Text>
           </View>
         </Animated.View>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,13 @@ import {
   Image,
   Switch,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useApp } from '../context/AppContext';
+import { exportService } from '../services/ExportService';
 
 interface SettingsScreenProps {
   onNavigateToNotifications: () => void;
@@ -92,11 +94,26 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   onLogout,
 }) => {
   const { userProfile, userSettings, updateUserSettings, getSocialHealthStats, resetApp } = useApp();
+  const [isExporting, setIsExporting] = useState(false);
 
   const stats = getSocialHealthStats();
 
   const handleVacationToggle = async (value: boolean) => {
     await updateUserSettings({ vacationMode: value });
+  };
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const success = await exportService.shareExport();
+      if (!success) {
+        Alert.alert('Export', 'Export feature is not available on this device.');
+      }
+    } catch (error) {
+      Alert.alert('Export Failed', 'There was an error exporting your data. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleResetApp = () => {
@@ -299,8 +316,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               iconBg="rgba(0,0,0,0.05)"
               iconColor="rgba(61, 64, 91, 0.6)"
               title="Export My Data"
-              showChevron={true}
-              onPress={() => Alert.alert('Coming Soon', 'Data export will be available in a future update.')}
+              showChevron={!isExporting}
+              onPress={handleExport}
+              rightElement={isExporting ? <ActivityIndicator size="small" color="#81B29A" /> : undefined}
             />
           </View>
         </Animated.View>

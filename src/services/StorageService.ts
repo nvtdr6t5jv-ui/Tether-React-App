@@ -8,6 +8,9 @@ import {
   UserProfile,
   UserSettings,
   PremiumStatus,
+  CalendarEvent,
+  Milestone,
+  DailyCheckIn,
 } from '../types';
 
 const STORAGE_KEYS = {
@@ -21,6 +24,9 @@ const STORAGE_KEYS = {
   PREMIUM_STATUS: '@tether/premium_status',
   IS_ONBOARDED: '@tether/is_onboarded',
   MANUAL_CONTACTS_ADDED: '@tether/manual_contacts_added',
+  CALENDAR_EVENTS: '@tether/calendar_events',
+  MILESTONES: '@tether/milestones',
+  DAILY_CHECKINS: '@tether/daily_checkins',
 };
 
 const parseDate = (dateString: string | Date | null): Date | null => {
@@ -366,6 +372,106 @@ class StorageService {
     } catch (error) {
       console.error('Error clearing all data:', error);
     }
+  }
+
+  async getCalendarEvents(): Promise<CalendarEvent[]> {
+    try {
+      const data = await AsyncStorage.getItem(STORAGE_KEYS.CALENDAR_EVENTS);
+      if (!data) return [];
+      return JSON.parse(data).map((e: any) => ({
+        ...e,
+        date: parseDate(e.date) || new Date(),
+        endDate: parseDate(e.endDate),
+        createdAt: parseDate(e.createdAt) || new Date(),
+      }));
+    } catch (error) {
+      console.error('Error getting calendar events:', error);
+      return [];
+    }
+  }
+
+  async saveCalendarEvents(events: CalendarEvent[]): Promise<void> {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.CALENDAR_EVENTS, JSON.stringify(events));
+    } catch (error) {
+      console.error('Error saving calendar events:', error);
+    }
+  }
+
+  async addCalendarEvent(event: CalendarEvent): Promise<void> {
+    const events = await this.getCalendarEvents();
+    events.push(event);
+    await this.saveCalendarEvents(events);
+  }
+
+  async updateCalendarEvent(eventId: string, updates: Partial<CalendarEvent>): Promise<void> {
+    const events = await this.getCalendarEvents();
+    const index = events.findIndex(e => e.id === eventId);
+    if (index !== -1) {
+      events[index] = { ...events[index], ...updates };
+      await this.saveCalendarEvents(events);
+    }
+  }
+
+  async deleteCalendarEvent(eventId: string): Promise<void> {
+    const events = await this.getCalendarEvents();
+    await this.saveCalendarEvents(events.filter(e => e.id !== eventId));
+  }
+
+  async getMilestones(): Promise<Milestone[]> {
+    try {
+      const data = await AsyncStorage.getItem(STORAGE_KEYS.MILESTONES);
+      if (!data) return [];
+      return JSON.parse(data).map((m: any) => ({
+        ...m,
+        achievedAt: parseDate(m.achievedAt) || new Date(),
+      }));
+    } catch (error) {
+      console.error('Error getting milestones:', error);
+      return [];
+    }
+  }
+
+  async saveMilestones(milestones: Milestone[]): Promise<void> {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.MILESTONES, JSON.stringify(milestones));
+    } catch (error) {
+      console.error('Error saving milestones:', error);
+    }
+  }
+
+  async addMilestone(milestone: Milestone): Promise<void> {
+    const milestones = await this.getMilestones();
+    milestones.push(milestone);
+    await this.saveMilestones(milestones);
+  }
+
+  async getDailyCheckIns(): Promise<DailyCheckIn[]> {
+    try {
+      const data = await AsyncStorage.getItem(STORAGE_KEYS.DAILY_CHECKINS);
+      if (!data) return [];
+      return JSON.parse(data).map((c: any) => ({
+        ...c,
+        date: parseDate(c.date) || new Date(),
+      }));
+    } catch (error) {
+      console.error('Error getting daily check-ins:', error);
+      return [];
+    }
+  }
+
+  async saveDailyCheckIns(checkIns: DailyCheckIn[]): Promise<void> {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.DAILY_CHECKINS, JSON.stringify(checkIns));
+    } catch (error) {
+      console.error('Error saving daily check-ins:', error);
+    }
+  }
+
+  async addDailyCheckIn(checkIn: DailyCheckIn): Promise<void> {
+    const checkIns = await this.getDailyCheckIns();
+    checkIns.push(checkIn);
+    await this.saveDailyCheckIns(checkIns);
   }
 
   generateId(): string {

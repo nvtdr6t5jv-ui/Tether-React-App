@@ -1,12 +1,12 @@
 import React, { useState, useCallback } from "react";
 import { View, BackHandler, Modal } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
-import { HomeScreen } from "./HomeScreen";
+import { TodayScreen } from "./TodayScreen";
 import { PeopleScreen } from "./PeopleScreen";
 import { PersonProfileScreen } from "./PersonProfileScreen";
 import { NewConnectionScreen } from "./NewConnectionScreen";
 import { EditPersonScreen } from "./EditPersonScreen";
-import { ActionsScreen } from "./ActionsScreen";
+import { CalendarScreen } from "./CalendarScreen";
 import { SettingsScreen } from "./SettingsScreen";
 import { NotificationsScreen } from "./NotificationsScreen";
 import { AppearanceScreen } from "./AppearanceScreen";
@@ -18,7 +18,7 @@ import { BottomTabBar } from "../components/BottomTabBar";
 import { SwipeableScreen } from "../components/SwipeableScreen";
 import { useApp } from "../context/AppContext";
 
-type TabType = "home" | "people" | "actions" | "settings";
+type TabType = "people" | "today" | "calendar" | "insights" | "settings";
 
 type PeopleStack = 
   | { screen: "list" }
@@ -34,24 +34,28 @@ type SettingsStack =
   | { screen: "editProfile" }
   | { screen: "premium" };
 
-type HomeStack =
+type TodayStack =
   | { screen: "main" }
   | { screen: "socialPulse" };
 
-type ActionsStack =
+type InsightsStack =
   | { screen: "main" }
-  | { screen: "newNote" };
+  | { screen: "detail" };
+
+type CalendarStack =
+  | { screen: "main" };
 
 type PremiumTrigger = 'contact_limit' | 'deep_link' | 'templates' | 'analytics' | 'history' | 'bulk_actions' | 'general';
 
 export const MainTabsScreen = () => {
   const { resetApp } = useApp();
-  const [activeTab, setActiveTab] = useState<TabType>("home");
+  const [activeTab, setActiveTab] = useState<TabType>("today");
   
   const [peopleStack, setPeopleStack] = useState<PeopleStack>({ screen: "list" });
   const [settingsStack, setSettingsStack] = useState<SettingsStack>({ screen: "main" });
-  const [actionsStack, setActionsStack] = useState<ActionsStack>({ screen: "main" });
-  const [homeStack, setHomeStack] = useState<HomeStack>({ screen: "main" });
+  const [todayStack, setTodayStack] = useState<TodayStack>({ screen: "main" });
+  const [insightsStack, setInsightsStack] = useState<InsightsStack>({ screen: "main" });
+  const [calendarStack, setCalendarStack] = useState<CalendarStack>({ screen: "main" });
   const [showPremium, setShowPremium] = useState(false);
   const [premiumTrigger, setPremiumTrigger] = useState<PremiumTrigger>('general');
 
@@ -67,8 +71,8 @@ export const MainTabsScreen = () => {
           setShowPremium(false);
           return true;
         }
-        if (activeTab === "home" && homeStack.screen !== "main") {
-          setHomeStack({ screen: "main" });
+        if (activeTab === "today" && todayStack.screen !== "main") {
+          setTodayStack({ screen: "main" });
           return true;
         }
         if (activeTab === "people" && peopleStack.screen !== "list") {
@@ -83,12 +87,12 @@ export const MainTabsScreen = () => {
           setSettingsStack({ screen: "main" });
           return true;
         }
-        if (activeTab === "actions" && actionsStack.screen !== "main") {
-          setActionsStack({ screen: "main" });
+        if (activeTab === "insights" && insightsStack.screen !== "main") {
+          setInsightsStack({ screen: "main" });
           return true;
         }
-        if (activeTab !== "home") {
-          setActiveTab("home");
+        if (activeTab !== "today") {
+          setActiveTab("today");
           return true;
         }
         return false;
@@ -96,27 +100,28 @@ export const MainTabsScreen = () => {
 
       const subscription = BackHandler.addEventListener("hardwareBackPress", onBackPress);
       return () => subscription.remove();
-    }, [activeTab, peopleStack, settingsStack, actionsStack, homeStack, showPremium])
+    }, [activeTab, peopleStack, settingsStack, todayStack, insightsStack, showPremium])
   );
 
   const handleTabPress = (tab: string) => {
     if (tab === activeTab) {
-      if (tab === "home") setHomeStack({ screen: "main" });
+      if (tab === "today") setTodayStack({ screen: "main" });
       if (tab === "people") setPeopleStack({ screen: "list" });
       if (tab === "settings") setSettingsStack({ screen: "main" });
-      if (tab === "actions") setActionsStack({ screen: "main" });
+      if (tab === "insights") setInsightsStack({ screen: "main" });
+      if (tab === "calendar") setCalendarStack({ screen: "main" });
     } else {
       setActiveTab(tab as TabType);
     }
   };
 
-  const renderHomeScreen = () => {
-    switch (homeStack.screen) {
+  const renderTodayScreen = () => {
+    switch (todayStack.screen) {
       case "socialPulse":
         return (
-          <SwipeableScreen onSwipeBack={() => setHomeStack({ screen: "main" })}>
+          <SwipeableScreen onSwipeBack={() => setTodayStack({ screen: "main" })}>
             <SocialPulseScreen
-              onBack={() => setHomeStack({ screen: "main" })}
+              onBack={() => setTodayStack({ screen: "main" })}
               onPremiumRequired={() => showPremiumModal('analytics')}
             />
           </SwipeableScreen>
@@ -124,18 +129,42 @@ export const MainTabsScreen = () => {
       case "main":
       default:
         return (
-          <HomeScreen
+          <TodayScreen
             onNavigate={(screen) => {
               if (screen === "people") {
                 setActiveTab("people");
-              } else if (screen === "actions") {
-                setActiveTab("actions");
+              } else if (screen === "calendar") {
+                setActiveTab("calendar");
               }
             }}
-            onNavigateToSocialPulse={() => setHomeStack({ screen: "socialPulse" })}
+            onNavigateToSocialPulse={() => setTodayStack({ screen: "socialPulse" })}
+            onNavigateToProfile={(friendId) => {
+              setActiveTab("people");
+              setPeopleStack({ screen: "profile", friendId });
+            }}
           />
         );
     }
+  };
+
+  const renderCalendarScreen = () => {
+    return (
+      <CalendarScreen
+        onNavigateToProfile={(friendId) => {
+          setActiveTab("people");
+          setPeopleStack({ screen: "profile", friendId });
+        }}
+      />
+    );
+  };
+
+  const renderInsightsScreen = () => {
+    return (
+      <SocialPulseScreen
+        onBack={() => setInsightsStack({ screen: "main" })}
+        onPremiumRequired={() => showPremiumModal('analytics')}
+      />
+    );
   };
 
   const renderPeopleScreen = () => {
@@ -184,37 +213,6 @@ export const MainTabsScreen = () => {
           <PeopleScreen
             onNavigateToProfile={(friendId) => setPeopleStack({ screen: "profile", friendId })}
             onNavigateToNewConnection={() => setPeopleStack({ screen: "newConnection" })}
-          />
-        );
-    }
-  };
-
-  const renderActionsScreen = () => {
-    switch (actionsStack.screen) {
-      case "main":
-        return (
-          <ActionsScreen
-            onNavigateToProfile={(friendId) => {
-              setActiveTab("people");
-              setPeopleStack({ screen: "profile", friendId });
-            }}
-            onNavigateToNewNote={() => {
-              setActiveTab("people");
-              setPeopleStack({ screen: "newConnection" });
-            }}
-          />
-        );
-      default:
-        return (
-          <ActionsScreen
-            onNavigateToProfile={(friendId) => {
-              setActiveTab("people");
-              setPeopleStack({ screen: "profile", friendId });
-            }}
-            onNavigateToNewNote={() => {
-              setActiveTab("people");
-              setPeopleStack({ screen: "newConnection" });
-            }}
           />
         );
     }
@@ -286,24 +284,27 @@ export const MainTabsScreen = () => {
 
   const renderScreen = () => {
     switch (activeTab) {
-      case "home":
-        return renderHomeScreen();
+      case "today":
+        return renderTodayScreen();
       case "people":
         return renderPeopleScreen();
-      case "actions":
-        return renderActionsScreen();
+      case "calendar":
+        return renderCalendarScreen();
+      case "insights":
+        return renderInsightsScreen();
       case "settings":
         return renderSettingsScreen();
       default:
-        return renderHomeScreen();
+        return renderTodayScreen();
     }
   };
 
   const showTabBar = 
     (activeTab === "people" && peopleStack.screen === "list") ||
     (activeTab === "settings" && settingsStack.screen === "main") ||
-    (activeTab === "actions" && actionsStack.screen === "main") ||
-    (activeTab === "home" && homeStack.screen === "main");
+    (activeTab === "calendar" && calendarStack.screen === "main") ||
+    (activeTab === "insights" && insightsStack.screen === "main") ||
+    (activeTab === "today" && todayStack.screen === "main");
 
   return (
     <View style={{ flex: 1, backgroundColor: "#F7F8F6" }}>

@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { View, TouchableOpacity, Dimensions, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, Dimensions, StyleSheet } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -17,6 +17,7 @@ interface DrawerModalProps {
   children: React.ReactNode;
   height?: number | "auto";
   backgroundColor?: string;
+  title?: string;
 }
 
 export const DrawerModal: React.FC<DrawerModalProps> = ({
@@ -25,6 +26,7 @@ export const DrawerModal: React.FC<DrawerModalProps> = ({
   children,
   height = "auto",
   backgroundColor = "#F4F1DE",
+  title,
 }) => {
   const translateY = useSharedValue(SCREEN_HEIGHT);
   const backdropOpacity = useSharedValue(0);
@@ -99,7 +101,12 @@ export const DrawerModal: React.FC<DrawerModalProps> = ({
           ]}
         >
           <View style={styles.handle} />
-          {children}
+          {title && (
+            <Text style={styles.title}>{title}</Text>
+          )}
+          <View style={styles.content}>
+            {children}
+          </View>
         </Animated.View>
       </GestureDetector>
     </View>
@@ -127,5 +134,17 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     alignSelf: "center",
     marginBottom: 12,
+  },
+  title: {
+    fontFamily: "Fraunces_600SemiBold",
+    fontSize: 20,
+    color: "#3D405B",
+    textAlign: "center",
+    paddingHorizontal: 24,
+    marginBottom: 16,
+  },
+  content: {
+    paddingHorizontal: 24,
+    paddingBottom: 40,
   },
 });

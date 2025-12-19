@@ -130,6 +130,80 @@ export interface SocialHealthStats {
   upcomingBirthdays: number;
 }
 
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  date: Date;
+  endDate?: Date;
+  friendId?: string;
+  type: 'birthday' | 'anniversary' | 'meetup' | 'call' | 'reminder' | 'custom';
+  isRecurring: boolean;
+  recurringType?: 'yearly' | 'monthly' | 'weekly';
+  color?: string;
+  notes?: string;
+  isCompleted: boolean;
+  createdAt: Date;
+}
+
+export type QuickTag = 'caught_up' | 'made_plans' | 'checked_in' | 'deep_talk' | 'quick_hello' | 'celebration';
+
+export const QUICK_TAGS: { id: QuickTag; label: string; icon: string; color: string }[] = [
+  { id: 'caught_up', label: 'Caught up', icon: 'coffee', color: '#81B29A' },
+  { id: 'made_plans', label: 'Made plans', icon: 'calendar-check', color: '#6366F1' },
+  { id: 'checked_in', label: 'Checked in', icon: 'hand-wave', color: '#E07A5F' },
+  { id: 'deep_talk', label: 'Deep talk', icon: 'heart', color: '#EC4899' },
+  { id: 'quick_hello', label: 'Quick hello', icon: 'message-text', color: '#F59E0B' },
+  { id: 'celebration', label: 'Celebration', icon: 'party-popper', color: '#8B5CF6' },
+];
+
+export interface ConversationStarter {
+  id: string;
+  text: string;
+  category: 'catch_up' | 'deep' | 'fun' | 'support';
+}
+
+export const CONVERSATION_STARTERS: ConversationStarter[] = [
+  { id: '1', text: "What's been the highlight of your week?", category: 'catch_up' },
+  { id: '2', text: "Any exciting plans coming up?", category: 'catch_up' },
+  { id: '3', text: "How's work/school been treating you?", category: 'catch_up' },
+  { id: '4', text: "What's something you've been thinking about lately?", category: 'deep' },
+  { id: '5', text: "What's a goal you're working towards right now?", category: 'deep' },
+  { id: '6', text: "If you could change one thing about your routine, what would it be?", category: 'deep' },
+  { id: '7', text: "Seen any good movies or shows recently?", category: 'fun' },
+  { id: '8', text: "What's the best thing you ate this week?", category: 'fun' },
+  { id: '9', text: "If we could go anywhere right now, where would you pick?", category: 'fun' },
+  { id: '10', text: "How are you really doing?", category: 'support' },
+  { id: '11', text: "Is there anything I can help you with?", category: 'support' },
+  { id: '12', text: "I've been thinking about you - wanted to check in.", category: 'support' },
+];
+
+export interface Milestone {
+  id: string;
+  type: 'streak' | 'connections' | 'relationship' | 'first_contact';
+  title: string;
+  description: string;
+  achievedAt: Date;
+  friendId?: string;
+  value?: number;
+}
+
+export interface DailyCheckIn {
+  id: string;
+  date: Date;
+  friendsContacted: string[];
+  mood?: 'great' | 'good' | 'okay' | 'low';
+  note?: string;
+}
+
+export interface RelationshipHealth {
+  friendId: string;
+  score: number;
+  trend: 'improving' | 'stable' | 'declining';
+  lastInteractionDays: number;
+  averageFrequency: number;
+  suggestions: string[];
+}
+
 export interface Orbit {
   id: OrbitId;
   name: string;

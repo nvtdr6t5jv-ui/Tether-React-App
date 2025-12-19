@@ -15,7 +15,12 @@ import Animated, {
   FadeInDown,
   FadeInRight,
   Layout,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  runOnJS,
 } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useApp, Friend } from '../context/AppContext';
 import { ORBITS } from '../types';
 
@@ -48,34 +53,81 @@ const FriendCard: React.FC<{
   index: number;
   onPress: () => void;
   isOverdue: boolean;
-}> = ({ friend, index, onPress, isOverdue }) => {
+  onSwipeLog?: () => void;
+}> = ({ friend, index, onPress, isOverdue, onSwipeLog }) => {
   const timeInfo = getTimeSince(friend.lastContact);
   const orbit = ORBITS.find(o => o.id === friend.orbitId);
+  const translateX = useSharedValue(0);
+  const cardOpacity = useSharedValue(1);
+
+  const panGesture = Gesture.Pan()
+    .onUpdate((event) => {
+      if (event.translationX > 0) {
+        translateX.value = Math.min(event.translationX, 100);
+      }
+    })
+    .onEnd((event) => {
+      if (event.translationX > 80 && onSwipeLog) {
+        translateX.value = withSpring(0);
+        runOnJS(onSwipeLog)();
+      } else {
+        translateX.value = withSpring(0);
+      }
+    });
+
+  const animatedCardStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
+  const swipeIndicatorStyle = useAnimatedStyle(() => ({
+    opacity: Math.min(translateX.value / 80, 1),
+    transform: [{ scale: Math.min(translateX.value / 80, 1) }],
+  }));
 
   return (
     <Animated.View
       entering={FadeInRight.delay(index * 50).duration(300)}
       layout={Layout.springify()}
     >
-      <TouchableOpacity
-        onPress={onPress}
-        activeOpacity={0.95}
-        style={{
-          backgroundColor: '#FFF',
-          padding: 16,
-          borderRadius: 16,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 16,
-          shadowColor: '#3D405B',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.06,
-          shadowRadius: 12,
-          elevation: 3,
-          borderWidth: isOverdue ? 1 : 0,
-          borderColor: 'rgba(224, 122, 95, 0.2)',
-        }}
-      >
+      <View style={{ position: 'relative' }}>
+        <View
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 80,
+            backgroundColor: '#81B29A',
+            borderRadius: 16,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Animated.View style={swipeIndicatorStyle}>
+            <MaterialCommunityIcons name="check" size={28} color="#FFF" />
+          </Animated.View>
+        </View>
+        <GestureDetector gesture={panGesture}>
+          <Animated.View style={animatedCardStyle}>
+            <TouchableOpacity
+              onPress={onPress}
+              activeOpacity={0.95}
+              style={{
+                backgroundColor: '#FFF',
+                padding: 16,
+                borderRadius: 16,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 16,
+                shadowColor: '#3D405B',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.06,
+                shadowRadius: 12,
+                elevation: 3,
+                borderWidth: isOverdue ? 1 : 0,
+                borderColor: 'rgba(224, 122, 95, 0.2)',
+              }}
+            >
         <View style={{ position: 'relative' }}>
           {friend.photo ? (
             <Image
@@ -190,7 +242,10 @@ const FriendCard: React.FC<{
         >
           <MaterialCommunityIcons name="dots-horizontal" size={20} color="rgba(61, 64, 91, 0.4)" />
         </TouchableOpacity>
-      </TouchableOpacity>
+            </TouchableOpacity>
+          </Animated.View>
+        </GestureDetector>
+      </View>
     </Animated.View>
   );
 };
@@ -200,7 +255,7 @@ export const PeopleScreen: React.FC<PeopleScreenProps> = ({
   onNavigateToNewConnection,
   onPremiumRequired,
 }) => {
-  const { friends, getOverdueFriends, refreshData, isLoading, canAddMoreFriends, getRemainingFreeSlots, premiumStatus } = useApp();
+  const { friends, getOverdueFriends, refreshData, isLoading, canAddMoreFriends, getRemainingFreeSlots, premiumStatus, logInteraction } = useApp();
 
   const handleAddConnection = () => {
     if (!canAddMoreFriends()) {
@@ -489,6 +544,7 @@ export const PeopleScreen: React.FC<PeopleScreenProps> = ({
               index={index}
               onPress={() => onNavigateToProfile(friend.id)}
               isOverdue={overdueIds.has(friend.id)}
+              onSwipeLog={() => logInteraction(friend.id, 'text', 'Quick check-in')}
             />
           ))
         )}
