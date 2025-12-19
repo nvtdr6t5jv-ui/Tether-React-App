@@ -16,7 +16,7 @@ import Animated, {
   withSpring,
   Easing,
 } from "react-native-reanimated";
-import { useApp, TetheredFriend } from "../context/AppContext";
+import { useApp, Friend } from "../context/AppContext";
 import { orbits, getAvatarColor } from "../constants/mockData";
 import { ShuffleModal } from "../components/ShuffleModal";
 import { LogConnectionModal } from "../components/LogConnectionModal";
@@ -41,7 +41,7 @@ const getDateString = () => {
 };
 
 const OrbitAvatar: React.FC<{
-  friend: TetheredFriend;
+  friend: Friend;
   index: number;
   total: number;
   orbitLevel: number;
@@ -117,7 +117,7 @@ const OrbitAvatar: React.FC<{
 };
 
 interface NudgeCardProps {
-  friend: TetheredFriend;
+  friend: Friend;
   index: number;
   onAction: () => void;
 }
@@ -271,7 +271,7 @@ interface HomeScreenProps {
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
-  const { friends, updateLastContact } = useApp();
+  const { friends, logInteraction } = useApp();
   const [activeTab, setActiveTab] = useState<"overdue" | "drafts" | "events">("overdue");
   
   const [showShuffle, setShowShuffle] = useState(false);
@@ -291,11 +291,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
   };
 
   const handleNudgeAction = (friendId: string) => {
-    updateLastContact(friendId);
+    const friend = friends.find(f => f.id === friendId);
+    const type = friend?.orbitId === 'inner' ? 'call' : 'text';
+    logInteraction(friendId, type as any);
   };
 
   const handleLogConnection = (friendId: string, type: string, note: string) => {
-    updateLastContact(friendId);
+    logInteraction(friendId, type as any, note);
   };
 
   const healthPercentage = friends.length > 0
@@ -579,7 +581,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
         friends={friends}
         onMessage={(friend) => {
           setShowShuffle(false);
-          updateLastContact(friend.id);
+          logInteraction(friend.id, 'text');
         }}
       />
 

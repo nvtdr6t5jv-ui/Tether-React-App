@@ -9,14 +9,15 @@ import Animated, {
   SlideOutDown,
   FadeInDown,
 } from "react-native-reanimated";
-import { TetheredFriend } from "../context/AppContext";
+import { Friend } from "../context/AppContext";
 import { getAvatarColor } from "../constants/mockData";
 
 interface LogConnectionModalProps {
   visible: boolean;
   onClose: () => void;
-  friends: TetheredFriend[];
+  friends: Friend[];
   onLogConnection: (friendId: string, type: string, note: string) => void;
+  preselectedFriendId?: string;
 }
 
 const connectionTypes = [
@@ -30,12 +31,23 @@ export const LogConnectionModal: React.FC<LogConnectionModalProps> = ({
   onClose,
   friends,
   onLogConnection,
+  preselectedFriendId,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedFriend, setSelectedFriend] = useState<TetheredFriend | null>(null);
+  const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
   const [selectedType, setSelectedType] = useState("call");
   const [note, setNote] = useState("");
   const [followUp, setFollowUp] = useState(false);
+
+  React.useEffect(() => {
+    if (visible && preselectedFriendId) {
+      const friend = friends.find(f => f.id === preselectedFriendId);
+      if (friend) {
+        setSelectedFriend(friend);
+        setSearchQuery(friend.name);
+      }
+    }
+  }, [visible, preselectedFriendId, friends]);
 
   const filteredFriends = friends.filter(f =>
     f.name.toLowerCase().includes(searchQuery.toLowerCase())

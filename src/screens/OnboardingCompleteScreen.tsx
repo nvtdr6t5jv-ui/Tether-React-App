@@ -19,7 +19,7 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import { useOnboarding } from "../context/OnboardingContext";
-import { useApp, TetheredFriend } from "../context/AppContext";
+import { useApp, Friend } from "../context/AppContext";
 import { RootStackParamList } from "../navigation/AppNavigator";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -177,13 +177,22 @@ export const OnboardingCompleteScreen = () => {
   const { completeOnboarding } = useApp();
 
   const handleEnterTether = () => {
-    const tetheredFriends: TetheredFriend[] = selectedFriends.map(friend => {
+    const now = new Date();
+    const tetheredFriends: Friend[] = selectedFriends.map(friend => {
       const orbitId = orbitAssignments[friend.id] || "close";
       return {
-        ...friend,
-        orbitId,
+        id: friend.id,
+        name: friend.name,
+        initials: friend.initials,
+        photo: friend.photo ?? undefined,
+        orbitId: orbitId as 'inner' | 'close' | 'catchup',
         lastContact: null,
         nextNudge: getNextNudgeDate(orbitId),
+        isFavorite: orbitId === "inner",
+        tags: [] as string[],
+        streak: 0,
+        createdAt: now,
+        updatedAt: now,
       };
     });
 

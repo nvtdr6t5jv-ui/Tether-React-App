@@ -14,14 +14,14 @@ import Animated, {
   withSpring,
   Easing,
 } from "react-native-reanimated";
-import { TetheredFriend } from "../context/AppContext";
+import { Friend } from "../context/AppContext";
 import { getAvatarColor } from "../constants/mockData";
 
 interface ShuffleModalProps {
   visible: boolean;
   onClose: () => void;
-  friends: TetheredFriend[];
-  onMessage: (friend: TetheredFriend) => void;
+  friends: Friend[];
+  onMessage: (friend: Friend) => void;
 }
 
 const { width } = Dimensions.get("window");
@@ -32,7 +32,7 @@ export const ShuffleModal: React.FC<ShuffleModalProps> = ({
   friends,
   onMessage,
 }) => {
-  const [selectedFriend, setSelectedFriend] = useState<TetheredFriend | null>(null);
+  const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
   const [isSpinning, setIsSpinning] = useState(false);
   const rotation = useSharedValue(0);
   const scale = useSharedValue(0.8);
@@ -72,7 +72,7 @@ export const ShuffleModal: React.FC<ShuffleModalProps> = ({
     return null;
   }
 
-  const getTimeSince = (friend: TetheredFriend) => {
+  const getTimeSince = (friend: Friend) => {
     if (!friend.lastContact) return "You haven't connected yet.";
     const diff = Date.now() - friend.lastContact.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));

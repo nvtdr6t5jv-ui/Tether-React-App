@@ -8,13 +8,13 @@ import Animated, {
   SlideOutDown,
   FadeInUp,
 } from "react-native-reanimated";
-import { TetheredFriend } from "../context/AppContext";
+import { Friend } from "../context/AppContext";
 import Svg, { Circle } from "react-native-svg";
 
 interface HealthStatusModalProps {
   visible: boolean;
   onClose: () => void;
-  friends: TetheredFriend[];
+  friends: Friend[];
   onViewAnalytics: () => void;
 }
 
