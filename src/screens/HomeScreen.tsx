@@ -268,9 +268,10 @@ const ToolkitCard: React.FC<ToolkitCardProps> = ({
 
 interface HomeScreenProps {
   onNavigate?: (screen: string) => void;
+  onNavigateToSocialPulse?: () => void;
 }
 
-export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
+export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onNavigateToSocialPulse }) => {
   const { friends, logInteraction } = useApp();
   const [activeTab, setActiveTab] = useState<"overdue" | "drafts" | "events">("overdue");
   
@@ -598,6 +599,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
         friends={friends}
         onViewAnalytics={() => {
           setShowHealth(false);
+          onNavigateToSocialPulse?.();
         }}
       />
 

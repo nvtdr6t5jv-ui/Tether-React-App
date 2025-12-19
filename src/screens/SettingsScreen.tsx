@@ -18,6 +18,7 @@ interface SettingsScreenProps {
   onNavigateToAppearance: () => void;
   onNavigateToAnalytics: () => void;
   onNavigateToEditProfile: () => void;
+  onNavigateToPremium: () => void;
   onLogout: () => void;
 }
 
@@ -87,6 +88,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   onNavigateToAppearance,
   onNavigateToAnalytics,
   onNavigateToEditProfile,
+  onNavigateToPremium,
   onLogout,
 }) => {
   const { userProfile, userSettings, updateUserSettings, getSocialHealthStats, resetApp } = useApp();
@@ -339,6 +341,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   View your full relationship timeline and never miss a memory.
                 </Text>
                 <TouchableOpacity
+                  onPress={onNavigateToPremium}
                   style={{
                     alignSelf: 'flex-start',
                     backgroundColor: '#FFF',

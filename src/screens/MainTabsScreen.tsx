@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { View, BackHandler } from "react-native";
+import { View, BackHandler, Modal } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { HomeScreen } from "./HomeScreen";
 import { PeopleScreen } from "./PeopleScreen";
@@ -12,6 +12,8 @@ import { NotificationsScreen } from "./NotificationsScreen";
 import { AppearanceScreen } from "./AppearanceScreen";
 import { AnalyticsScreen } from "./AnalyticsScreen";
 import { EditProfileScreen } from "./EditProfileScreen";
+import { SocialPulseScreen } from "./SocialPulseScreen";
+import { PremiumScreen } from "./PremiumScreen";
 import { BottomTabBar } from "../components/BottomTabBar";
 import { useApp } from "../context/AppContext";
 
@@ -28,7 +30,12 @@ type SettingsStack =
   | { screen: "notifications" }
   | { screen: "appearance" }
   | { screen: "analytics" }
-  | { screen: "editProfile" };
+  | { screen: "editProfile" }
+  | { screen: "premium" };
+
+type HomeStack =
+  | { screen: "main" }
+  | { screen: "socialPulse" };
 
 type ActionsStack =
   | { screen: "main" }
@@ -41,10 +48,20 @@ export const MainTabsScreen = () => {
   const [peopleStack, setPeopleStack] = useState<PeopleStack>({ screen: "list" });
   const [settingsStack, setSettingsStack] = useState<SettingsStack>({ screen: "main" });
   const [actionsStack, setActionsStack] = useState<ActionsStack>({ screen: "main" });
+  const [homeStack, setHomeStack] = useState<HomeStack>({ screen: "main" });
+  const [showPremium, setShowPremium] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
+        if (showPremium) {
+          setShowPremium(false);
+          return true;
+        }
+        if (activeTab === "home" && homeStack.screen !== "main") {
+          setHomeStack({ screen: "main" });
+          return true;
+        }
         if (activeTab === "people" && peopleStack.screen !== "list") {
           if (peopleStack.screen === "editPerson") {
             setPeopleStack({ screen: "profile", friendId: (peopleStack as any).friendId });
@@ -70,11 +87,12 @@ export const MainTabsScreen = () => {
 
       const subscription = BackHandler.addEventListener("hardwareBackPress", onBackPress);
       return () => subscription.remove();
-    }, [activeTab, peopleStack, settingsStack, actionsStack])
+    }, [activeTab, peopleStack, settingsStack, actionsStack, homeStack, showPremium])
   );
 
   const handleTabPress = (tab: string) => {
     if (tab === activeTab) {
+      if (tab === "home") setHomeStack({ screen: "main" });
       if (tab === "people") setPeopleStack({ screen: "list" });
       if (tab === "settings") setSettingsStack({ screen: "main" });
       if (tab === "actions") setActionsStack({ screen: "main" });
@@ -83,17 +101,30 @@ export const MainTabsScreen = () => {
     }
   };
 
-  const renderHomeScreen = () => (
-    <HomeScreen
-      onNavigate={(screen) => {
-        if (screen === "people") {
-          setActiveTab("people");
-        } else if (screen === "actions") {
-          setActiveTab("actions");
-        }
-      }}
-    />
-  );
+  const renderHomeScreen = () => {
+    switch (homeStack.screen) {
+      case "socialPulse":
+        return (
+          <SocialPulseScreen
+            onBack={() => setHomeStack({ screen: "main" })}
+          />
+        );
+      case "main":
+      default:
+        return (
+          <HomeScreen
+            onNavigate={(screen) => {
+              if (screen === "people") {
+                setActiveTab("people");
+              } else if (screen === "actions") {
+                setActiveTab("actions");
+              }
+            }}
+            onNavigateToSocialPulse={() => setHomeStack({ screen: "socialPulse" })}
+          />
+        );
+    }
+  };
 
   const renderPeopleScreen = () => {
     switch (peopleStack.screen) {
@@ -177,6 +208,7 @@ export const MainTabsScreen = () => {
             onNavigateToAppearance={() => setSettingsStack({ screen: "appearance" })}
             onNavigateToAnalytics={() => setSettingsStack({ screen: "analytics" })}
             onNavigateToEditProfile={() => setSettingsStack({ screen: "editProfile" })}
+            onNavigateToPremium={() => setShowPremium(true)}
             onLogout={async () => {
               await resetApp();
             }}
@@ -214,6 +246,7 @@ export const MainTabsScreen = () => {
             onNavigateToAppearance={() => setSettingsStack({ screen: "appearance" })}
             onNavigateToAnalytics={() => setSettingsStack({ screen: "analytics" })}
             onNavigateToEditProfile={() => setSettingsStack({ screen: "editProfile" })}
+            onNavigateToPremium={() => setShowPremium(true)}
             onLogout={async () => {
               await resetApp();
             }}
@@ -241,7 +274,7 @@ export const MainTabsScreen = () => {
     (activeTab === "people" && peopleStack.screen === "list") ||
     (activeTab === "settings" && settingsStack.screen === "main") ||
     (activeTab === "actions" && actionsStack.screen === "main") ||
-    activeTab === "home";
+    (activeTab === "home" && homeStack.screen === "main");
 
   return (
     <View style={{ flex: 1, backgroundColor: "#F7F8F6" }}>
@@ -249,6 +282,15 @@ export const MainTabsScreen = () => {
       {showTabBar && (
         <BottomTabBar activeTab={activeTab} onTabPress={handleTabPress} />
       )}
+      <Modal
+        visible={showPremium}
+        transparent
+        animationType="none"
+        statusBarTranslucent
+        onRequestClose={() => setShowPremium(false)}
+      >
+        <PremiumScreen onClose={() => setShowPremium(false)} />
+      </Modal>
     </View>
   );
 };
