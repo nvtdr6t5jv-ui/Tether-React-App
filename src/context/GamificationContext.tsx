@@ -19,14 +19,24 @@ import {
 } from '../types/gamification';
 
 const STORAGE_KEY = '@tether_gamification';
+const STREAK_KEY = '@tether_daily_streak';
+
+interface StreakData {
+  currentStreak: number;
+  lastActiveDate: string | null;
+  longestStreak: number;
+}
 
 interface GamificationContextType {
   state: GamificationState;
+  streakData: StreakData;
+  recordDailyActivity: () => Promise<boolean>;
   addXP: (amount: number, source: string) => void;
   updateChallengeProgress: (challengeId: string, progress: number) => void;
   completeChallenge: (challengeId: string) => void;
   unlockAchievement: (achievementId: string) => void;
   updateAchievementProgress: (achievementId: string, progress: number) => void;
+  checkAndUpdateAchievements: (stats: AchievementStats) => void;
   addRelationshipMilestone: (milestone: Omit<RelationshipMilestone, 'id' | 'achievedAt' | 'celebrated'>) => void;
   celebrateMilestone: (milestoneId: string) => void;
   toggleLeaderboardOptIn: () => void;
@@ -35,6 +45,17 @@ interface GamificationContextType {
   getUnlockedAchievements: () => Achievement[];
   getLockedAchievements: () => Achievement[];
   getActiveSeasonalEvent: () => SeasonalEvent | null;
+}
+
+interface AchievementStats {
+  totalInteractions: number;
+  callCount: number;
+  textCount: number;
+  inPersonCount: number;
+  uniquePeopleThisWeek: number;
+  reconnections: number;
+  currentStreak: number;
+  challengesCompleted: number;
 }
 
 const defaultLevel: UserLevel = {
@@ -62,6 +83,12 @@ const defaultGarden: UserGarden = {
   gardenHealth: 100,
 };
 
+const defaultStreakData: StreakData = {
+  currentStreak: 0,
+  lastActiveDate: null,
+  longestStreak: 0,
+};
+
 const initializeAchievements = (): Achievement[] => {
   return ACHIEVEMENTS.map(a => ({
     ...a,
@@ -82,6 +109,8 @@ const initializeWeeklyChallenges = (): WeeklyChallenge[] => {
 
   return MOCK_WEEKLY_CHALLENGES.map(c => ({
     ...c,
+    progress: 0,
+    isCompleted: false,
     startDate: startOfWeek,
     endDate: endOfWeek,
   }));
@@ -110,41 +139,24 @@ const defaultState: GamificationState = {
       lastUpdated: new Date(),
     },
   ],
-  relationshipMilestones: [
-    {
-      id: 'rm_1',
-      friendId: 'friend_1',
-      friendName: 'Sarah',
-      type: 'one_year',
-      title: '1 Year of Friendship',
-      description: "You've been tracking your friendship with Sarah for 1 year!",
-      achievedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-      xpReward: 100,
-      celebrated: true,
-    },
-    {
-      id: 'rm_2',
-      friendId: 'friend_2',
-      friendName: 'Mike',
-      type: 'interactions_100',
-      title: '100 Interactions',
-      description: "You've logged 100 interactions with Mike!",
-      achievedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-      xpReward: 150,
-      celebrated: false,
-    },
-  ],
+  relationshipMilestones: [],
   garden: defaultGarden,
   leaderboardOptIn: false,
 };
 
 const GamificationContext = createContext<GamificationContextType | undefined>(undefined);
 
+const getDateString = (date: Date): string => {
+  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+};
+
 export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, setState] = useState<GamificationState>(defaultState);
+  const [streakData, setStreakData] = useState<StreakData>(defaultStreakData);
 
   useEffect(() => {
     loadState();
+    loadStreakData();
   }, []);
 
   const loadState = async () => {
@@ -156,12 +168,45 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
           ...defaultState,
           ...parsed,
           level: parsed.level || defaultLevel,
-          achievements: parsed.achievements || initializeAchievements(),
-          weeklyChallenges: parsed.weeklyChallenges || initializeWeeklyChallenges(),
+          achievements: parsed.achievements?.length > 0 ? parsed.achievements : initializeAchievements(),
+          weeklyChallenges: parsed.weeklyChallenges?.length > 0 ? parsed.weeklyChallenges : initializeWeeklyChallenges(),
         });
       }
     } catch (error) {
       console.error('Failed to load gamification state:', error);
+    }
+  };
+
+  const loadStreakData = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(STREAK_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const today = getDateString(new Date());
+        const lastActive = parsed.lastActiveDate;
+        
+        if (lastActive) {
+          const lastDate = new Date(lastActive);
+          const todayDate = new Date(today);
+          const diffDays = Math.floor((todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (diffDays > 1) {
+            const resetData = {
+              currentStreak: 0,
+              lastActiveDate: null,
+              longestStreak: parsed.longestStreak || 0,
+            };
+            setStreakData(resetData);
+            await AsyncStorage.setItem(STREAK_KEY, JSON.stringify(resetData));
+          } else {
+            setStreakData(parsed);
+          }
+        } else {
+          setStreakData(parsed);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load streak data:', error);
     }
   };
 
@@ -172,6 +217,72 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
       console.error('Failed to save gamification state:', error);
     }
   };
+
+  const saveStreakData = async (data: StreakData) => {
+    try {
+      await AsyncStorage.setItem(STREAK_KEY, JSON.stringify(data));
+    } catch (error) {
+      console.error('Failed to save streak data:', error);
+    }
+  };
+
+  const recordDailyActivity = useCallback(async (): Promise<boolean> => {
+    const today = getDateString(new Date());
+    
+    if (streakData.lastActiveDate === today) {
+      return false;
+    }
+    
+    let newStreak = 1;
+    
+    if (streakData.lastActiveDate) {
+      const lastDate = new Date(streakData.lastActiveDate);
+      const todayDate = new Date();
+      todayDate.setHours(0, 0, 0, 0);
+      lastDate.setHours(0, 0, 0, 0);
+      
+      const diffDays = Math.floor((todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 1) {
+        newStreak = streakData.currentStreak + 1;
+      } else if (diffDays > 1) {
+        newStreak = 1;
+      } else {
+        return false;
+      }
+    }
+    
+    const newLongest = Math.max(newStreak, streakData.longestStreak);
+    
+    const newStreakData: StreakData = {
+      currentStreak: newStreak,
+      lastActiveDate: today,
+      longestStreak: newLongest,
+    };
+    
+    setStreakData(newStreakData);
+    await saveStreakData(newStreakData);
+    
+    const plantStage = getPlantStage(newStreak);
+    setState(prev => {
+      const newState = {
+        ...prev,
+        garden: {
+          ...prev.garden,
+          currentStreak: newStreak,
+          plants: prev.garden.plants.map(p => ({
+            ...p,
+            stage: plantStage,
+            icon: plantStage,
+          })),
+        },
+      };
+      saveState(newState);
+      return newState;
+    });
+    
+    return true;
+  }, [streakData]);
 
   const addXP = useCallback((amount: number, source: string) => {
     setState(prev => {
@@ -251,24 +362,26 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
   const updateAchievementProgress = useCallback((achievementId: string, progress: number) => {
     setState(prev => {
+      const achievement = prev.achievements.find(a => a.id === achievementId);
+      if (!achievement || achievement.unlockedAt) return prev;
+
+      const newProgress = Math.min(progress, achievement.requirement);
+      const shouldUnlock = newProgress >= achievement.requirement;
+
       const newAchievements = prev.achievements.map(a => {
-        if (a.id === achievementId && !a.unlockedAt) {
-          const newProgress = Math.min(progress, a.requirement);
-          if (newProgress >= a.requirement) {
-            return { ...a, progress: newProgress, unlockedAt: new Date() };
-          }
-          return { ...a, progress: newProgress };
+        if (a.id === achievementId) {
+          return {
+            ...a,
+            progress: newProgress,
+            unlockedAt: shouldUnlock ? new Date() : undefined,
+          };
         }
         return a;
       });
 
-      const justUnlocked = newAchievements.find(
-        a => a.id === achievementId && a.unlockedAt && !prev.achievements.find(pa => pa.id === achievementId)?.unlockedAt
-      );
-
       let newLevel = prev.level;
-      if (justUnlocked) {
-        const newTotalXP = prev.level.totalXP + justUnlocked.xpReward + XP_PER_ACTION.achievement_unlock;
+      if (shouldUnlock) {
+        const newTotalXP = prev.level.totalXP + achievement.xpReward + XP_PER_ACTION.achievement_unlock;
         newLevel = calculateLevel(newTotalXP);
       }
 
@@ -281,6 +394,51 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
       return newState;
     });
   }, []);
+
+  const checkAndUpdateAchievements = useCallback((stats: AchievementStats) => {
+    updateAchievementProgress('first_steps', stats.totalInteractions > 0 ? 1 : 0);
+    updateAchievementProgress('social_butterfly', stats.uniquePeopleThisWeek);
+    updateAchievementProgress('super_connector', stats.uniquePeopleThisWeek);
+    
+    updateAchievementProgress('streak_starter', stats.currentStreak);
+    updateAchievementProgress('week_warrior', stats.currentStreak);
+    updateAchievementProgress('consistency_champion', stats.currentStreak);
+    updateAchievementProgress('streak_legend', stats.currentStreak);
+    updateAchievementProgress('eternal_flame', stats.currentStreak);
+    
+    updateAchievementProgress('phone_friend', stats.callCount);
+    updateAchievementProgress('call_master', stats.callCount);
+    updateAchievementProgress('voice_virtuoso', stats.callCount);
+    
+    updateAchievementProgress('texter', stats.textCount);
+    updateAchievementProgress('messenger', stats.textCount);
+    updateAchievementProgress('text_titan', stats.textCount);
+    
+    updateAchievementProgress('face_to_face', stats.inPersonCount);
+    updateAchievementProgress('social_star', stats.inPersonCount);
+    updateAchievementProgress('gathering_guru', stats.inPersonCount);
+    
+    updateAchievementProgress('reconnector', stats.reconnections > 0 ? 1 : 0);
+    updateAchievementProgress('bridge_builder', stats.reconnections);
+    updateAchievementProgress('no_one_forgotten', stats.reconnections);
+    
+    updateAchievementProgress('centurion', stats.totalInteractions);
+    updateAchievementProgress('five_hundred_club', stats.totalInteractions);
+    updateAchievementProgress('thousand_touches', stats.totalInteractions);
+    
+    updateAchievementProgress('challenge_crusher', stats.challengesCompleted);
+    updateAchievementProgress('challenge_master', stats.challengesCompleted);
+    
+    const hour = new Date().getHours();
+    if (stats.totalInteractions > 0) {
+      if (hour < 9) {
+        updateAchievementProgress('early_bird', 1);
+      }
+      if (hour >= 22) {
+        updateAchievementProgress('night_owl', 1);
+      }
+    }
+  }, [updateAchievementProgress]);
 
   const addRelationshipMilestone = useCallback(
     (milestone: Omit<RelationshipMilestone, 'id' | 'achievedAt' | 'celebrated'>) => {
@@ -371,11 +529,14 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     <GamificationContext.Provider
       value={{
         state,
+        streakData,
+        recordDailyActivity,
         addXP,
         updateChallengeProgress,
         completeChallenge,
         unlockAchievement,
         updateAchievementProgress,
+        checkAndUpdateAchievements,
         addRelationshipMilestone,
         celebrateMilestone,
         toggleLeaderboardOptIn,

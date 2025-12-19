@@ -23,6 +23,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useApp, Friend } from "../context/AppContext";
+import { useGamification } from "../context/GamificationContext";
 import { ORBITS, QUICK_TAGS, CONVERSATION_STARTERS, QuickTag, Orbit } from "../types";
 import { ShuffleModal } from "../components/ShuffleModal";
 import { LogConnectionModal } from "../components/LogConnectionModal";
@@ -387,6 +388,15 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
     userProfile,
   } = useApp();
   
+  const {
+    streakData,
+    recordDailyActivity,
+    addXP,
+    checkAndUpdateAchievements,
+    updateChallengeProgress,
+    state: gamificationState,
+  } = useGamification();
+  
   const [showShuffle, setShowShuffle] = useState(false);
   const [showLogConnection, setShowLogConnection] = useState(false);
   const [showQuickLog, setShowQuickLog] = useState(false);
@@ -467,12 +477,64 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
     setShowQuickLog(true);
   };
 
+  const updateGamificationOnInteraction = useCallback(async (type: string) => {
+    await recordDailyActivity();
+    
+    const xpMap: Record<string, number> = {
+      text: 5,
+      call: 15,
+      video_call: 20,
+      in_person: 30,
+      social_media: 3,
+      email: 5,
+      other: 5,
+    };
+    addXP(xpMap[type] || 5, type);
+    
+    const callCount = interactions.filter(i => i.type === 'call').length + (type === 'call' ? 1 : 0);
+    const textCount = interactions.filter(i => i.type === 'text').length + (type === 'text' ? 1 : 0);
+    const inPersonCount = interactions.filter(i => i.type === 'in_person').length + (type === 'in_person' ? 1 : 0);
+    
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const weekInteractions = interactions.filter(i => new Date(i.date) >= oneWeekAgo);
+    const uniquePeople = new Set(weekInteractions.map(i => i.friendId)).size;
+    
+    const completedChallenges = gamificationState.weeklyChallenges.filter(c => c.isCompleted).length;
+    
+    checkAndUpdateAchievements({
+      totalInteractions: interactions.length + 1,
+      callCount,
+      textCount,
+      inPersonCount,
+      uniquePeopleThisWeek: uniquePeople,
+      reconnections: 0,
+      currentStreak: streakData.currentStreak,
+      challengesCompleted: completedChallenges,
+    });
+    
+    const challenges = gamificationState.weeklyChallenges;
+    if (type === 'call') {
+      const callChallenge = challenges.find(c => c.type === 'calls' && !c.isCompleted);
+      if (callChallenge) {
+        updateChallengeProgress(callChallenge.id, callChallenge.progress + 1);
+      }
+    }
+    if (type === 'in_person') {
+      const meetChallenge = challenges.find(c => c.type === 'in_person' && !c.isCompleted);
+      if (meetChallenge) {
+        updateChallengeProgress(meetChallenge.id, meetChallenge.progress + 1);
+      }
+    }
+  }, [recordDailyActivity, addXP, checkAndUpdateAchievements, updateChallengeProgress, interactions, streakData, gamificationState]);
+
   const handleSwipeComplete = async (friend: Friend) => {
     await logInteraction(friend.id, 'text', 'Quick check-in');
+    await updateGamificationOnInteraction('text');
   };
 
-  const handleLogConnection = (friendId: string, type: string, note: string) => {
-    logInteraction(friendId, type as any, note);
+  const handleLogConnection = async (friendId: string, type: string, note: string) => {
+    await logInteraction(friendId, type as any, note);
+    await updateGamificationOnInteraction(type);
   };
 
   const completedToday = useMemo(() => {
@@ -544,8 +606,8 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
 
         <Animated.View entering={FadeIn.delay(200).duration(400)} style={{ paddingHorizontal: 16, marginBottom: 24 }}>
           <StreakCard 
-            currentStreak={stats.currentStreak} 
-            longestStreak={stats.longestStreak}
+            currentStreak={streakData.currentStreak} 
+            longestStreak={streakData.longestStreak}
             connectionsThisWeek={stats.connectionsThisWeek}
             onPress={onNavigateToProgress}
           />
@@ -876,9 +938,10 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
         visible={showShuffle}
         onClose={() => setShowShuffle(false)}
         friends={friends}
-        onMessage={(friend) => {
+        onMessage={async (friend) => {
           setShowShuffle(false);
-          logInteraction(friend.id, 'text');
+          await logInteraction(friend.id, 'text');
+          await updateGamificationOnInteraction('text');
         }}
       />
 
@@ -897,8 +960,9 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
             setSelectedFriend(null);
           }}
           friend={selectedFriend}
-          onLog={(type, tag, note) => {
-            logInteraction(selectedFriend.id, type, note || tag);
+          onLog={async (type, tag, note) => {
+            await logInteraction(selectedFriend.id, type, note || tag);
+            await updateGamificationOnInteraction(type);
             setShowQuickLog(false);
             setSelectedFriend(null);
           }}

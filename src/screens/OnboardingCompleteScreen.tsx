@@ -310,11 +310,11 @@ export const OnboardingCompleteScreen = () => {
               <TouchableOpacity
                 onPress={() => setSelectedPlan('yearly')}
                 style={{
-                  backgroundColor: selectedPlan === 'yearly' ? 'rgba(129, 178, 154, 0.2)' : 'rgba(255,255,255,0.1)',
+                  backgroundColor: selectedPlan === 'yearly' ? '#FFF' : 'rgba(255,255,255,0.1)',
                   borderRadius: 16,
                   padding: 16,
                   borderWidth: 2,
-                  borderColor: selectedPlan === 'yearly' ? '#81B29A' : 'transparent',
+                  borderColor: selectedPlan === 'yearly' ? '#FFF' : 'rgba(255,255,255,0.3)',
                   position: 'relative',
                   overflow: 'visible',
                 }}
@@ -323,7 +323,7 @@ export const OnboardingCompleteScreen = () => {
                   position: 'absolute',
                   top: -10,
                   right: 16,
-                  backgroundColor: '#81B29A',
+                  backgroundColor: '#E07A5F',
                   paddingHorizontal: 10,
                   paddingVertical: 4,
                   borderRadius: 8,
@@ -335,33 +335,33 @@ export const OnboardingCompleteScreen = () => {
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                   <View>
-                    <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 18, color: '#FFF' }}>Yearly</Text>
-                    <Text style={{ fontFamily: 'PlusJakartaSans_400Regular', fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>
+                    <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 18, color: selectedPlan === 'yearly' ? '#3D405B' : '#FFF' }}>Yearly</Text>
+                    <Text style={{ fontFamily: 'PlusJakartaSans_400Regular', fontSize: 13, color: selectedPlan === 'yearly' ? 'rgba(61, 64, 91, 0.6)' : 'rgba(255,255,255,0.6)', marginTop: 2 }}>
                       $2.49/month, billed annually
                     </Text>
                   </View>
-                  <Text style={{ fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 20, color: '#FFF' }}>$29.99</Text>
+                  <Text style={{ fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 20, color: selectedPlan === 'yearly' ? '#3D405B' : '#FFF' }}>$29.99</Text>
                 </View>
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={() => setSelectedPlan('monthly')}
                 style={{
-                  backgroundColor: selectedPlan === 'monthly' ? 'rgba(129, 178, 154, 0.2)' : 'rgba(255,255,255,0.1)',
+                  backgroundColor: selectedPlan === 'monthly' ? '#FFF' : 'rgba(255,255,255,0.1)',
                   borderRadius: 16,
                   padding: 16,
                   borderWidth: 2,
-                  borderColor: selectedPlan === 'monthly' ? '#81B29A' : 'transparent',
+                  borderColor: selectedPlan === 'monthly' ? '#FFF' : 'rgba(255,255,255,0.3)',
                 }}
               >
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                   <View>
-                    <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 18, color: '#FFF' }}>Monthly</Text>
-                    <Text style={{ fontFamily: 'PlusJakartaSans_400Regular', fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>
+                    <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 18, color: selectedPlan === 'monthly' ? '#3D405B' : '#FFF' }}>Monthly</Text>
+                    <Text style={{ fontFamily: 'PlusJakartaSans_400Regular', fontSize: 13, color: selectedPlan === 'monthly' ? 'rgba(61, 64, 91, 0.6)' : 'rgba(255,255,255,0.6)', marginTop: 2 }}>
                       Cancel anytime
                     </Text>
                   </View>
-                  <Text style={{ fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 20, color: '#FFF' }}>$3.99</Text>
+                  <Text style={{ fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 20, color: selectedPlan === 'monthly' ? '#3D405B' : '#FFF' }}>$3.99</Text>
                 </View>
               </TouchableOpacity>
             </Animated.View>
@@ -373,18 +373,18 @@ export const OnboardingCompleteScreen = () => {
                 style={{
                   width: "100%",
                   height: 56,
-                  backgroundColor: "#81B29A",
+                  backgroundColor: "#FFF",
                   borderRadius: 9999,
                   alignItems: "center",
                   justifyContent: "center",
-                  shadowColor: "#81B29A",
+                  shadowColor: "#000",
                   shadowOffset: { width: 0, height: 8 },
-                  shadowOpacity: 0.4,
+                  shadowOpacity: 0.15,
                   shadowRadius: 16,
                   elevation: 6,
                 }}
               >
-                <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 18, color: "#FFF" }}>
+                <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 18, color: "#3D405B" }}>
                   Start Free Trial
                 </Text>
               </TouchableOpacity>
