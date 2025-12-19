@@ -12,6 +12,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useApp } from '../context/AppContext';
 import { OrbitId, ORBITS } from '../types';
+import { SwipeableScreen } from '../components/SwipeableScreen';
 
 interface EditPersonScreenProps {
   friendId: string;
@@ -84,26 +85,27 @@ export const EditPersonScreen: React.FC<EditPersonScreenProps> = ({
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F4F1DE' }} edges={['top']}>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingHorizontal: 24,
-          paddingVertical: 12,
-          backgroundColor: 'rgba(244, 241, 222, 0.95)',
-          zIndex: 10,
-        }}
-      >
-        <TouchableOpacity onPress={onBack}>
-          <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 16, color: '#81B29A' }}>
-            Cancel
+    <SwipeableScreen onSwipeBack={onBack}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#F4F1DE' }} edges={['top']}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingHorizontal: 24,
+            paddingVertical: 12,
+            backgroundColor: 'rgba(244, 241, 222, 0.95)',
+            zIndex: 10,
+          }}
+        >
+          <TouchableOpacity onPress={onBack}>
+            <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 16, color: '#81B29A' }}>
+              Cancel
+            </Text>
+          </TouchableOpacity>
+          <Text style={{ fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 18, color: '#3D405B' }}>
+            Edit
           </Text>
-        </TouchableOpacity>
-        <Text style={{ fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 18, color: '#3D405B' }}>
-          Edit
-        </Text>
         <TouchableOpacity
           onPress={handleSave}
           disabled={!canSave}
@@ -301,7 +303,8 @@ export const EditPersonScreen: React.FC<EditPersonScreenProps> = ({
             </View>
           </TouchableOpacity>
         </Animated.View>
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+    </SwipeableScreen>
   );
 };

@@ -20,6 +20,7 @@ import { useApp } from '../context/AppContext';
 import { ORBITS, NOTE_TYPE_CONFIG, INTERACTION_ICONS } from '../types';
 import { LogConnectionModal } from '../components/LogConnectionModal';
 import { NewNoteModal } from '../components/NewNoteModal';
+import { SwipeableScreen } from '../components/SwipeableScreen';
 
 interface PersonProfileScreenProps {
   friendId: string;
@@ -125,19 +126,20 @@ export const PersonProfileScreen: React.FC<PersonProfileScreenProps> = ({
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F7F8F6' }} edges={['top']}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingVertical: 12 }}>
-        <TouchableOpacity
-          onPress={onBack}
-          style={{ padding: 8, marginLeft: -8, borderRadius: 20 }}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <MaterialCommunityIcons name="arrow-left" size={24} color="#3D405B" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => onEdit(friendId)}>
-          <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 16, color: '#E07A5F' }}>Edit</Text>
-        </TouchableOpacity>
-      </View>
+    <SwipeableScreen onSwipeBack={onBack}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#F7F8F6' }} edges={['top']}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingVertical: 12 }}>
+          <TouchableOpacity
+            onPress={onBack}
+            style={{ padding: 8, marginLeft: -8, borderRadius: 20 }}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#3D405B" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => onEdit(friendId)}>
+            <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 16, color: '#E07A5F' }}>Edit</Text>
+          </TouchableOpacity>
+        </View>
 
       <ScrollView
         style={{ flex: 1 }}
@@ -495,6 +497,7 @@ export const PersonProfileScreen: React.FC<PersonProfileScreenProps> = ({
         friendPhoto={friend.photo}
         friendInitials={friend.initials}
       />
-    </SafeAreaView>
+      </SafeAreaView>
+    </SwipeableScreen>
   );
 };

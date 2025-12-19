@@ -11,6 +11,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useApp } from '../context/AppContext';
 import { ORBITS } from '../types';
+import { SwipeableScreen } from '../components/SwipeableScreen';
 
 const { width } = Dimensions.get('window');
 
@@ -124,21 +125,22 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ onBack }) => {
   }, [friends, stats]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F7F8F6' }} edges={['top']}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingVertical: 12 }}>
-        <TouchableOpacity
-          onPress={onBack}
-          style={{ padding: 8, marginLeft: -8, borderRadius: 20 }}
-        >
-          <MaterialCommunityIcons name="arrow-left" size={24} color="#3D405B" />
-        </TouchableOpacity>
-        <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 18, color: '#3D405B' }}>
-          Social Stats
-        </Text>
-        <View style={{ width: 40 }} />
-      </View>
+    <SwipeableScreen onSwipeBack={onBack}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#F7F8F6' }} edges={['top']}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingVertical: 12 }}>
+          <TouchableOpacity
+            onPress={onBack}
+            style={{ padding: 8, marginLeft: -8, borderRadius: 20 }}
+          >
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#3D405B" />
+          </TouchableOpacity>
+          <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 18, color: '#3D405B' }}>
+            Social Stats
+          </Text>
+          <View style={{ width: 40 }} />
+        </View>
 
-      <ScrollView
+        <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
@@ -337,7 +339,8 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ onBack }) => {
             </Text>
           </View>
         </Animated.View>
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+    </SwipeableScreen>
   );
 };

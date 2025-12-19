@@ -10,7 +10,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useApp } from '../context/AppContext';
-import Svg, { Circle, G } from 'react-native-svg';
+import Svg, { Circle } from 'react-native-svg';
+import { SwipeableScreen } from '../components/SwipeableScreen';
 
 interface SocialPulseScreenProps {
   onBack: () => void;
@@ -183,34 +184,35 @@ export const SocialPulseScreen: React.FC<SocialPulseScreenProps> = ({ onBack }) 
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F4F1DE' }} edges={['top']}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingVertical: 12 }}>
-        <TouchableOpacity
-          onPress={onBack}
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 20,
-            backgroundColor: 'rgba(255,255,255,0.5)',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <MaterialCommunityIcons name="arrow-left" size={24} color="#3D405B" />
-        </TouchableOpacity>
-        <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 20, color: '#3D405B' }}>
-          Your Social Pulse
-        </Text>
-        <TouchableOpacity
-          onPress={handleShare}
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 20,
-            backgroundColor: 'rgba(255,255,255,0.5)',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
+    <SwipeableScreen onSwipeBack={onBack}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#F4F1DE' }} edges={['top']}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingVertical: 12 }}>
+          <TouchableOpacity
+            onPress={onBack}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: 'rgba(255,255,255,0.5)',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#3D405B" />
+          </TouchableOpacity>
+          <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 20, color: '#3D405B' }}>
+            Your Social Pulse
+          </Text>
+          <TouchableOpacity
+            onPress={handleShare}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: 'rgba(255,255,255,0.5)',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
         >
           <MaterialCommunityIcons name="export-variant" size={20} color="#3D405B" />
         </TouchableOpacity>
@@ -486,6 +488,7 @@ export const SocialPulseScreen: React.FC<SocialPulseScreenProps> = ({ onBack }) 
           </View>
         </Animated.View>
       </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </SwipeableScreen>
   );
 };

@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useApp } from '../context/AppContext';
+import { SwipeableScreen } from '../components/SwipeableScreen';
 
 interface EditProfileScreenProps {
   onBack: () => void;
@@ -47,17 +48,18 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ onBack, on
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F4F1DE' }} edges={['top']}>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingHorizontal: 24,
-          paddingVertical: 12,
-        }}
-      >
-        <TouchableOpacity onPress={onBack}>
+    <SwipeableScreen onSwipeBack={onBack}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#F4F1DE' }} edges={['top']}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingHorizontal: 24,
+            paddingVertical: 12,
+          }}
+        >
+          <TouchableOpacity onPress={onBack}>
           <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 16, color: '#81B29A' }}>
             Cancel
           </Text>
@@ -182,7 +184,8 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ onBack, on
             Member since {userProfile?.memberSince ? new Date(userProfile.memberSince).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'September 2024'}
           </Text>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+    </SwipeableScreen>
   );
 };

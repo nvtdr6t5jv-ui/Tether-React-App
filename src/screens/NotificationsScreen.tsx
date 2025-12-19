@@ -11,6 +11,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useApp } from '../context/AppContext';
 import { NotificationFrequency } from '../types';
+import { SwipeableScreen } from '../components/SwipeableScreen';
 
 interface NotificationsScreenProps {
   onBack: () => void;
@@ -41,25 +42,26 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F7F8F6' }} edges={['top']}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingVertical: 12 }}>
-        <TouchableOpacity
-          onPress={onBack}
-          style={{ padding: 8, marginLeft: -8, borderRadius: 20 }}
-        >
-          <MaterialCommunityIcons name="arrow-left" size={24} color="#3D405B" />
-        </TouchableOpacity>
-        <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 18, color: '#3D405B' }}>
-          Notifications
-        </Text>
-        <View style={{ width: 40 }} />
-      </View>
+    <SwipeableScreen onSwipeBack={onBack}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#F7F8F6' }} edges={['top']}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingVertical: 12 }}>
+          <TouchableOpacity
+            onPress={onBack}
+            style={{ padding: 8, marginLeft: -8, borderRadius: 20 }}
+          >
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#3D405B" />
+          </TouchableOpacity>
+          <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 18, color: '#3D405B' }}>
+            Notifications
+          </Text>
+          <View style={{ width: 40 }} />
+        </View>
 
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
-        showsVerticalScrollIndicator={false}
-      >
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+          showsVerticalScrollIndicator={false}
+        >
         <Animated.View
           entering={FadeInDown.duration(400)}
           style={{
@@ -209,7 +211,8 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
             )}
           </>
         )}
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+    </SwipeableScreen>
   );
 };

@@ -10,6 +10,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useApp } from '../context/AppContext';
 import { ThemeMode } from '../types';
+import { SwipeableScreen } from '../components/SwipeableScreen';
 
 interface AppearanceScreenProps {
   onBack: () => void;
@@ -29,25 +30,26 @@ export const AppearanceScreen: React.FC<AppearanceScreenProps> = ({ onBack }) =>
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F7F8F6' }} edges={['top']}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingVertical: 12 }}>
-        <TouchableOpacity
-          onPress={onBack}
-          style={{ padding: 8, marginLeft: -8, borderRadius: 20 }}
-        >
-          <MaterialCommunityIcons name="arrow-left" size={24} color="#3D405B" />
-        </TouchableOpacity>
-        <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 18, color: '#3D405B' }}>
-          Appearance
-        </Text>
-        <View style={{ width: 40 }} />
-      </View>
+    <SwipeableScreen onSwipeBack={onBack}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#F7F8F6' }} edges={['top']}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingVertical: 12 }}>
+          <TouchableOpacity
+            onPress={onBack}
+            style={{ padding: 8, marginLeft: -8, borderRadius: 20 }}
+          >
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#3D405B" />
+          </TouchableOpacity>
+          <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 18, color: '#3D405B' }}>
+            Appearance
+          </Text>
+          <View style={{ width: 40 }} />
+        </View>
 
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 20 }}
-        showsVerticalScrollIndicator={false}
-      >
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: 20 }}
+          showsVerticalScrollIndicator={false}
+        >
         <Animated.View entering={FadeInDown.duration(400)}>
           <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12, color: 'rgba(61, 64, 91, 0.5)', textTransform: 'uppercase', letterSpacing: 1, marginLeft: 8, marginBottom: 12 }}>
             Theme
@@ -136,7 +138,8 @@ export const AppearanceScreen: React.FC<AppearanceScreenProps> = ({ onBack }) =>
             </Text>
           </View>
         </Animated.View>
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+    </SwipeableScreen>
   );
 };
