@@ -17,10 +17,9 @@ import Animated, {
   withSpring,
   withSequence,
   Easing,
-  interpolate,
 } from "react-native-reanimated";
 import { useOnboarding } from "../context/OnboardingContext";
-import { getAvatarColor } from "../constants/mockData";
+import { useApp, TetheredFriend } from "../context/AppContext";
 import { RootStackParamList } from "../navigation/AppNavigator";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -158,15 +157,42 @@ const OrbitRing: React.FC<{ size: number; delay: number }> = ({ size, delay }) =
   );
 };
 
+const getNextNudgeDate = (orbitId: string): Date => {
+  const now = new Date();
+  switch (orbitId) {
+    case "inner":
+      return new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    case "close":
+      return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    case "catchup":
+      return new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+    default:
+      return new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+  }
+};
+
 export const OnboardingCompleteScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { selectedFriends, resetOnboarding } = useOnboarding();
+  const { selectedFriends, orbitAssignments, resetOnboarding } = useOnboarding();
+  const { completeOnboarding } = useApp();
 
   const handleEnterTether = () => {
+    const tetheredFriends: TetheredFriend[] = selectedFriends.map(friend => {
+      const orbitId = orbitAssignments[friend.id] || "close";
+      return {
+        ...friend,
+        orbitId,
+        lastContact: null,
+        nextNudge: getNextNudgeDate(orbitId),
+      };
+    });
+
+    completeOnboarding(tetheredFriends);
     resetOnboarding();
+    
     navigation.reset({
       index: 0,
-      routes: [{ name: "Onboarding" }],
+      routes: [{ name: "MainTabs" }],
     });
   };
 

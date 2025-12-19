@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Tether - People Directory</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#63cf17", 
+                        "tether-terracotta": "#E07A5F",
+                        "tether-sage": "#81B29A",
+                        "tether-cream": "#F4F1DE",
+                        "tether-charcoal": "#3D405B",
+                        "tether-muted": "#64748b",
+                        "tether-mustard": "#E9C46A","background-light": "#f7f8f6",
+                        "background-dark": "#182111",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "1rem", "lg": "1.5rem", "xl": "2rem", "2xl": "2.5rem", "full": "9999px" },
+                    boxShadow: {
+                        "soft": "0 10px 40px -10px rgba(0,0,0,0.08)",
+                        "inner-soft": "inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)",
+                        "floating": "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-tether-charcoal dark:text-gray-100 transition-colors duration-200">
+<div class="relative flex min-h-screen w-full flex-col max-w-md mx-auto overflow-x-hidden pb-28">
+<header class="flex flex-col gap-5 px-6 pt-12 pb-4">
+<div class="flex items-center justify-between">
+<h1 class="text-3xl font-extrabold tracking-tight text-tether-charcoal dark:text-white leading-tight">
+                    My Universe <span class="text-tether-sage text-2xl font-bold align-top">(42)</span>
+</h1>
+<button class="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined text-tether-charcoal dark:text-white">sort</span>
+</button>
+</div>
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-gray-400 group-focus-within:text-tether-terracotta transition-colors">search</span>
+</div>
+<input class="block w-full pl-11 pr-4 py-4 bg-white dark:bg-gray-800 border-none rounded-2xl text-tether-charcoal dark:text-white placeholder-gray-400 shadow-soft focus:ring-2 focus:ring-tether-terracotta/50 focus:bg-white transition-all text-base" placeholder="Search friends..." type="text"/>
+</div>
+<div class="flex gap-2.5 overflow-x-auto hide-scrollbar -mx-6 px-6 pt-1 pb-2">
+<button class="flex-shrink-0 bg-tether-terracotta/10 text-tether-terracotta border border-tether-terracotta/30 px-5 py-2.5 rounded-full text-sm font-bold shadow-sm transition-transform active:scale-95">
+                    Overdue (3)
+                </button>
+<button class="flex-shrink-0 bg-tether-charcoal text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-md transition-transform active:scale-95">
+                    All
+                </button>
+<button class="flex-shrink-0 bg-tether-cream dark:bg-gray-800 text-tether-charcoal dark:text-gray-200 px-5 py-2.5 rounded-full text-sm font-semibold shadow-sm border border-transparent hover:border-tether-terracotta/20 transition-all active:scale-95">
+                    Favorites
+                </button>
+<button class="flex-shrink-0 bg-tether-cream dark:bg-gray-800 text-tether-charcoal dark:text-gray-200 px-5 py-2.5 rounded-full text-sm font-semibold shadow-sm border border-transparent hover:border-tether-terracotta/20 transition-all active:scale-95">
+                    Friends
+                </button>
+<button class="flex-shrink-0 bg-tether-cream dark:bg-gray-800 text-tether-charcoal dark:text-gray-200 px-5 py-2.5 rounded-full text-sm font-semibold shadow-sm border border-transparent hover:border-tether-terracotta/20 transition-all active:scale-95">
+                    Acquaintances
+                </button>
+</div>
+</header>
+<main class="flex flex-col gap-3 px-4">
+<div class="group bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-soft flex items-center gap-4 transition-transform active:scale-[0.98]">
+<div class="relative w-14 h-14 shrink-0">
+<div class="w-full h-full rounded-full overflow-hidden border-2 border-tether-sage shadow-sm">
+<img alt="Portrait" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDzaRHCxs_mqzdq-UVC2P-ZU0DmTVegNIyizDvT84qbvGhBhuYzkn_7mpMvEr_FuP4uCqOTBZPPDtOMeQ-i9KUuNKR-Hytv5nYpQpX7RwmWZgB9day2N9gZrJYOOpLGZGtgDiJi7Byw1vJY3aPFWADXTJi2U3OF0P_5U1ARcdu2IKb4K1uZfJaZkIgNNMKY_osHJKcCTidgiUnaxAN2JzL3Bsgp-5bbs8fP92h4NyImj75krjOXnjmFWaFMlbjz7PsXZ8C-I1xaOgc"/>
+</div>
+</div>
+<div class="flex flex-col flex-grow min-w-0">
+<h3 class="text-base font-bold text-tether-charcoal dark:text-white leading-tight truncate">Sarah Jenkins</h3>
+<p class="text-xs font-semibold text-tether-terracotta uppercase tracking-wide truncate">Favorites</p>
+</div>
+<div class="flex flex-col items-end justify-center gap-1.5 min-w-[60px]">
+<div class="w-full h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+<div class="h-full bg-tether-sage w-[90%] rounded-full"></div>
+</div>
+<span class="text-[10px] font-bold text-tether-sage">2d ago</span>
+</div>
+<button class="p-1 -mr-2 text-gray-400 hover:text-tether-charcoal dark:hover:text-white transition-colors">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+<div class="group bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-soft flex items-center gap-4 transition-transform active:scale-[0.98]">
+<div class="relative w-14 h-14 shrink-0">
+<div class="w-full h-full rounded-full overflow-hidden border-2 border-white dark:border-gray-700 shadow-sm">
+<img alt="Portrait" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmVg7Z45GA1-TgPtJRSwpPFajOdBPJxRN2K4N65gjb8Uw11Qc-3y7Ax04lKw2w268yxJQaWEamDEhLZqzNmZckmiYfznMsZ5MbOIkM8pdZpmbAkxCfR9O5EKGxqYHAxtOmtv7iOU7_3zMuWhFfN2x9wGnwReqwQZM-lm41QIxcuJuI-xuGjSAO07qV9XQaTzZplHgEopMZt764b5dpbSFJi5UJ-EtfkFJH_3t3-d13-haaOwfg950ovVlatQlB5Z09TsTnwukwTX4"/>
+</div>
+</div>
+<div class="flex flex-col flex-grow min-w-0">
+<h3 class="text-base font-bold text-tether-charcoal dark:text-white leading-tight truncate">Alex Rivera</h3>
+<p class="text-xs font-semibold text-tether-terracotta uppercase tracking-wide truncate">Favorites</p>
+</div>
+<div class="flex flex-col items-end justify-center gap-1.5 min-w-[60px]">
+<div class="w-full h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+<div class="h-full bg-tether-sage w-[85%] rounded-full"></div>
+</div>
+<span class="text-[10px] font-medium text-tether-sage">3d ago</span>
+</div>
+<button class="p-1 -mr-2 text-gray-400 hover:text-tether-charcoal dark:hover:text-white transition-colors">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+<div class="group bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-soft flex items-center gap-4 transition-transform active:scale-[0.98]">
+<div class="relative w-14 h-14 shrink-0">
+<div class="w-full h-full rounded-full overflow-hidden border-2 border-tether-terracotta shadow-sm grayscale-[0.5]">
+<div class="w-full h-full bg-indigo-100 flex items-center justify-center text-indigo-400 font-bold text-lg">DK</div>
+</div>
+<div class="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 bg-tether-terracotta text-white rounded-full text-[10px] font-bold border border-white">!</div>
+</div>
+<div class="flex flex-col flex-grow min-w-0">
+<h3 class="text-base font-bold text-tether-charcoal dark:text-white leading-tight truncate">David Kim</h3>
+<p class="text-xs font-semibold text-tether-terracotta uppercase tracking-wide truncate">Favorites</p>
+</div>
+<div class="flex flex-col items-end justify-center gap-1.5 min-w-[60px]">
+<div class="w-full h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+<div class="h-full bg-tether-terracotta w-[15%] rounded-full"></div>
+</div>
+<span class="text-[10px] font-bold text-tether-terracotta">1mo ago</span>
+</div>
+<button class="p-1 -mr-2 text-gray-400 hover:text-tether-charcoal dark:hover:text-white transition-colors">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+<div class="group bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-soft flex items-center gap-4 transition-transform active:scale-[0.98]">
+<div class="relative w-14 h-14 shrink-0">
+<div class="w-full h-full rounded-full overflow-hidden border-2 border-white dark:border-gray-700 shadow-sm">
+<img alt="Portrait" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC6SY1B8a8XwY_E5ox-z4gHVLKChN-uDW6PgmlpQxMMMZjoiTbnQedvnbA8QMYrp3_3CP5kskuV4Xthp9NU-KNkHBzOgCul44i6E2w058fCOPlMsVDdEw_9cci6s_eXM04MucjLgErhQJ8oNZ7lleU5mP2LXb2FcUCYhxxchDZh_12qojwoSqwOSoy25lpfUWIZ0a9HgZGzztCJG6vjrmOrx8Y5SC5ScRFov-Ftk52pJWylnVLmLGRzly-Z4wmB0b9w4b_T_ljdiRc"/>
+</div>
+</div>
+<div class="flex flex-col flex-grow min-w-0">
+<h3 class="text-base font-bold text-tether-charcoal dark:text-white leading-tight truncate">Marcus Chen</h3>
+<p class="text-xs font-semibold text-tether-sage uppercase tracking-wide truncate">Friends</p>
+</div>
+<div class="flex flex-col items-end justify-center gap-1.5 min-w-[60px]">
+<div class="w-full h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+<div class="h-full bg-tether-mustard w-[60%] rounded-full"></div>
+</div>
+<span class="text-[10px] font-medium text-tether-mustard">2w ago</span>
+</div>
+<button class="p-1 -mr-2 text-gray-400 hover:text-tether-charcoal dark:hover:text-white transition-colors">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+<div class="group bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-soft flex items-center gap-4 border border-tether-terracotta/20 transition-transform active:scale-[0.98]">
+<div class="relative w-14 h-14 shrink-0">
+<div class="w-full h-full rounded-full overflow-hidden border-2 border-tether-terracotta shadow-sm opacity-90 grayscale-[0.3]">
+<img alt="Portrait" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDdVC6yZqo7cQtNDn5cZC7Y46CWVj04MgNZlf2_lo7Ssjm12lgMoeFrg5zoJNFCZPv4cAuqn5Y1LNlaswAWrie10d0IYYva7Rvgo_KL_4K3SzCgKtDTEL3SLIzjy9gpwnnHxgvB2dlOq_JsGnMZFkhSXm_F3fofzEY0GEOHcg2O_Moqwuhv5cL0B4hNfPZCxUBDMf18Ba1cXX9eerMR9dEXH_aTPt7FLm74oHxHhQsRzjGM9JyAO0V5OJJtP7e34NEva5DCXhtMl6E"/>
+</div>
+<div class="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 bg-tether-terracotta text-white rounded-full text-[10px] font-bold border border-white">!</div>
+</div>
+<div class="flex flex-col flex-grow min-w-0">
+<h3 class="text-base font-bold text-tether-charcoal dark:text-white leading-tight truncate">Jessica Alverez</h3>
+<p class="text-xs font-semibold text-tether-muted uppercase tracking-wide truncate">Acquaintances</p>
+</div>
+<div class="flex flex-col items-end justify-center gap-1.5 min-w-[60px]">
+<div class="w-full h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+<div class="h-full bg-tether-terracotta w-[25%] rounded-full"></div>
+</div>
+<span class="text-[10px] font-bold text-tether-terracotta">3mo ago</span>
+</div>
+<button class="p-1 -mr-2 text-gray-400 hover:text-tether-charcoal dark:hover:text-white transition-colors">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+</main>
+<button class="fixed bottom-24 right-5 w-16 h-16 bg-tether-terracotta text-white rounded-full shadow-floating flex items-center justify-center hover:scale-105 active:scale-95 transition-transform z-40 hover:bg-[#d06b50]">
+<span class="material-symbols-outlined text-4xl">add</span>
+</button>
+<div class="fixed bottom-0 left-0 right-0 max-w-md mx-auto h-20 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 flex items-center justify-around z-50 rounded-t-2xl shadow-[0_-5px_20px_-5px_rgba(0,0,0,0.05)] pb-3">
+<button class="flex flex-col items-center justify-center w-12 h-full text-tether-charcoal/40 dark:text-gray-500 hover:text-tether-charcoal dark:hover:text-gray-300 gap-1 transition-colors">
+<span class="material-symbols-outlined text-2xl">home</span>
+<span class="text-[10px] font-medium">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center w-12 h-full text-tether-sage gap-1">
+<span class="material-symbols-outlined filled text-2xl">groups</span>
+<span class="text-[10px] font-bold">People</span>
+</button>
+<button class="flex flex-col items-center justify-center w-12 h-full text-tether-charcoal/40 dark:text-gray-500 hover:text-tether-charcoal dark:hover:text-gray-300 gap-1 transition-colors">
+<span class="material-symbols-outlined text-2xl">waving_hand</span>
+<span class="text-[10px] font-medium">Actions</span>
+</button>
+<button class="flex flex-col items-center justify-center w-12 h-full text-tether-charcoal/40 dark:text-gray-500 hover:text-tether-charcoal dark:hover:text-gray-300 gap-1 transition-colors">
+<span class="material-symbols-outlined text-2xl">settings</span>
+<span class="text-[10px] font-medium">Settings</span>
+</button>
+</div>
+</div>
+</body></html>

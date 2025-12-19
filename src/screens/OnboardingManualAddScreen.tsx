@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { View, Text, TouchableOpacity, TextInput, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Animated, {
@@ -22,8 +22,15 @@ const INITIAL_SLOTS = 5;
 
 export const OnboardingManualAddScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { selectedFriends, addManualFriend, removeManualFriend } = useOnboarding();
+  const { setSelectedFriends } = useOnboarding();
   const [inputs, setInputs] = useState<string[]>(Array(INITIAL_SLOTS).fill(""));
+
+  useFocusEffect(
+    useCallback(() => {
+      setInputs(Array(INITIAL_SLOTS).fill(""));
+      setSelectedFriends([]);
+    }, [])
+  );
 
   const handleInputChange = (text: string, index: number) => {
     const newInputs = [...inputs];
@@ -31,30 +38,7 @@ export const OnboardingManualAddScreen = () => {
     setInputs(newInputs);
   };
 
-  const handleInputBlur = (index: number) => {
-    const name = inputs[index].trim();
-    if (name) {
-      const existingFriend = selectedFriends.find(f => f.name.toLowerCase() === name.toLowerCase());
-      if (!existingFriend) {
-        const newFriend: Friend = {
-          id: `manual-${Date.now()}-${index}`,
-          name,
-          photo: null,
-          initials: getInitials(name),
-        };
-        addManualFriend(newFriend);
-      }
-    }
-  };
-
   const handleRemove = (index: number) => {
-    const name = inputs[index].trim();
-    if (name) {
-      const friend = selectedFriends.find(f => f.name === name);
-      if (friend) {
-        removeManualFriend(friend.id);
-      }
-    }
     const newInputs = [...inputs];
     newInputs[index] = "";
     setInputs(newInputs);
@@ -65,20 +49,21 @@ export const OnboardingManualAddScreen = () => {
   };
 
   const handleNext = () => {
+    const friends: Friend[] = [];
     inputs.forEach((input, index) => {
       const name = input.trim();
-      if (name && !selectedFriends.find(f => f.name.toLowerCase() === name.toLowerCase())) {
-        const newFriend: Friend = {
+      if (name && !friends.find(f => f.name.toLowerCase() === name.toLowerCase())) {
+        friends.push({
           id: `manual-${Date.now()}-${index}`,
           name,
           photo: null,
           initials: getInitials(name),
-        };
-        addManualFriend(newFriend);
+        });
       }
     });
 
-    if (selectedFriends.length > 0 || inputs.some(i => i.trim())) {
+    if (friends.length > 0) {
+      setSelectedFriends(friends);
       navigation.navigate("OnboardingAssignOrbits");
     }
   };
@@ -179,7 +164,6 @@ export const OnboardingManualAddScreen = () => {
                   <TextInput
                     value={input}
                     onChangeText={(text) => handleInputChange(text, index)}
-                    onBlur={() => handleInputBlur(index)}
                     placeholder="Name (e.g., Mom)"
                     placeholderTextColor="rgba(61, 64, 91, 0.3)"
                     style={{

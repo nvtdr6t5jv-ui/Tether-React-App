@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Tether - Auth</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "primary": "#E07A5F", // Terracotta from user request overriding system default
+                "secondary": "#81B29A", // Sage Green
+                "background-light": "#F4F1DE", // Cream
+                "background-dark": "#2D303E", // Darker variant for dark mode
+                "text-main": "#3D405B", // Charcoal
+                "surface-light": "#FDFCF8", // Lighter cream for inputs
+              },
+              fontFamily: {
+                "display": ["Plus Jakarta Sans", "sans-serif"]
+              },
+              borderRadius: {"DEFAULT": "1rem", "lg": "1.5rem", "xl": "2rem", "2xl": "3rem", "full": "9999px"},
+              boxShadow: {
+                'soft': '0 4px 20px -2px rgba(61, 64, 91, 0.1)',
+                'inner-soft': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.05)',
+              }
+            },
+          },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display min-h-screen flex flex-col items-center justify-center p-6 text-text-main antialiased selection:bg-primary/30">
+<div class="w-full max-w-md mx-auto flex flex-col items-center h-full justify-between min-h-[800px] md:min-h-0 md:h-auto md:py-8">
+<!-- Header Section -->
+<header class="w-full flex flex-col items-center pt-8 pb-6">
+<h1 class="text-primary tracking-tight text-[40px] font-extrabold leading-tight text-center">Tether</h1>
+<h2 class="text-text-main/80 text-lg font-medium leading-relaxed tracking-wide text-center mt-2">Cultivate better connections.</h2>
+</header>
+<!-- Main Content Area -->
+<main class="w-full flex flex-col gap-6 flex-grow justify-center">
+<!-- Custom Tabs -->
+<div class="bg-secondary/10 p-1.5 rounded-full flex relative w-full mb-2">
+<button class="flex-1 py-3 px-6 rounded-full bg-primary text-background-light shadow-md transition-all duration-300 flex items-center justify-center font-bold text-sm tracking-wide z-10">
+                    Create Account
+                </button>
+<button class="flex-1 py-3 px-6 rounded-full text-secondary font-bold text-sm tracking-wide hover:bg-secondary/10 transition-all duration-300 flex items-center justify-center z-10">
+                    Log In
+                </button>
+</div>
+<!-- Form Fields -->
+<div class="space-y-4 w-full">
+<!-- Name Field -->
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-secondary">
+<span class="material-symbols-outlined text-[20px]">person</span>
+</div>
+<input class="form-input block w-full rounded-full border-0 bg-surface-light py-4 pl-12 pr-4 text-text-main shadow-sm ring-1 ring-inset ring-secondary/20 placeholder:text-text-main/40 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-base sm:leading-6 transition-all duration-200" placeholder="Full Name" type="text"/>
+</div>
+<!-- Email Field -->
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-secondary">
+<span class="material-symbols-outlined text-[20px]">mail</span>
+</div>
+<input class="form-input block w-full rounded-full border-0 bg-surface-light py-4 pl-12 pr-4 text-text-main shadow-sm ring-1 ring-inset ring-secondary/20 placeholder:text-text-main/40 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-base sm:leading-6 transition-all duration-200" placeholder="Email Address" type="email"/>
+</div>
+<!-- Password Field -->
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-secondary">
+<span class="material-symbols-outlined text-[20px]">lock</span>
+</div>
+<input class="form-input block w-full rounded-full border-0 bg-surface-light py-4 pl-12 pr-12 text-text-main shadow-sm ring-1 ring-inset ring-secondary/20 placeholder:text-text-main/40 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-base sm:leading-6 transition-all duration-200" placeholder="Password" type="password"/>
+<div class="absolute inset-y-0 right-0 pr-5 flex items-center cursor-pointer text-secondary hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</div>
+</div>
+</div>
+<!-- Primary Action -->
+<button class="w-full rounded-full bg-primary py-4 px-6 text-background-light font-bold text-lg shadow-soft hover:shadow-lg hover:bg-primary/90 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 mt-2">
+                Get Started
+            </button>
+<!-- Divider -->
+<div class="relative py-2">
+<div aria-hidden="true" class="absolute inset-0 flex items-center">
+<div class="w-full border-t border-text-main/10"></div>
+</div>
+<div class="relative flex justify-center">
+<span class="bg-background-light px-4 text-sm text-text-main/60 font-medium">Or continue with</span>
+</div>
+</div>
+<!-- Social Login -->
+<div class="grid grid-cols-2 gap-4">
+<button class="flex items-center justify-center gap-3 rounded-full bg-surface-light px-4 py-3.5 text-text-main shadow-sm ring-1 ring-inset ring-text-main/10 hover:bg-white hover:ring-text-main/20 transition-all duration-200 group">
+<span class="text-xl leading-none">
+<svg class="text-text-main" fill="currentColor" height="20" viewbox="0 0 24 24" width="20">
+<path d="M17.5 12.6c0-2.5 2-3.7 2.1-3.7-.1-.2-.6-2-2.3-2-1-.1-1.9.5-2.4.5-.5 0-1.5-.6-2.5-.5-1.3.1-2.5.8-3.1 2-.7 1.2-.2 3.6 1.1 5.3.6.9 1.4 1.9 2.4 1.9.9 0 1.3-.6 2.4-.6 1.1 0 1.4.6 2.4.6 1 .1 1.7-.9 2.3-1.8.7-1 1-2.1 1-2.1-.1 0-1.9-.7-1.9-2.7zM15 6.3c.5-.7.9-1.6.8-2.5-.8 0-1.8.5-2.4 1.2-.5.6-.9 1.5-.8 2.3.9.1 1.9-.4 2.4-1z"></path>
+</svg>
+</span>
+<span class="font-semibold text-sm">Apple</span>
+</button>
+<button class="flex items-center justify-center gap-3 rounded-full bg-surface-light px-4 py-3.5 text-text-main shadow-sm ring-1 ring-inset ring-text-main/10 hover:bg-white hover:ring-text-main/20 transition-all duration-200 group">
+<span class="text-xl leading-none flex items-center">
+<svg height="20" viewbox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg">
+<g transform="matrix(1, 0, 0, 1, 27.009001, -39.238998)">
+<path d="M -3.264 51.509 C -3.264 50.719 -3.334 49.969 -3.454 49.239 L -14.754 49.239 L -14.754 53.749 L -8.284 53.749 C -8.574 55.229 -9.424 56.479 -10.684 57.329 L -10.684 60.329 L -6.824 60.329 C -4.564 58.239 -3.264 55.159 -3.264 51.509 Z" fill="#4285F4"></path>
+<path d="M -14.754 63.239 C -11.514 63.239 -8.804 62.159 -6.824 60.329 L -10.684 57.329 C -11.764 58.049 -13.134 58.489 -14.754 58.489 C -17.884 58.489 -20.534 56.379 -21.484 53.529 L -25.464 53.529 L -25.464 56.619 C -23.494 60.539 -19.444 63.239 -14.754 63.239 Z" fill="#34A853"></path>
+<path d="M -21.484 53.529 C -21.734 52.809 -21.864 52.039 -21.864 51.239 C -21.864 50.439 -21.734 49.669 -21.484 48.949 L -21.484 45.859 L -25.464 45.859 C -26.284 47.479 -26.754 49.299 -26.754 51.239 C -26.754 53.179 -26.284 54.999 -25.464 56.619 L -21.484 53.529 Z" fill="#FBBC05"></path>
+<path d="M -14.754 43.989 C -12.984 43.989 -11.404 44.599 -10.154 45.789 L -6.734 42.369 C -8.804 40.429 -11.514 39.239 -14.754 39.239 C -19.444 39.239 -23.494 41.939 -25.464 45.859 L -21.484 48.949 C -20.534 46.099 -17.884 43.989 -14.754 43.989 Z" fill="#EA4335"></path>
+</g>
+</svg>
+</span>
+<span class="font-semibold text-sm">Google</span>
+</button>
+</div>
+</main>
+<!-- Footer -->
+<footer class="w-full text-center py-6 mt-4">
+<p class="text-xs text-text-main/50 font-medium">
+                By continuing, you agree to our 
+                <a class="text-primary hover:text-primary/80 hover:underline" href="#">Terms</a> &amp; 
+                <a class="text-primary hover:text-primary/80 hover:underline" href="#">Privacy Policy</a>.
+            </p>
+</footer>
+</div>
+</body></html>

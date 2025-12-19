@@ -8,6 +8,7 @@ import { OnboardingSelectFriendsScreen } from "../screens/OnboardingSelectFriend
 import { OnboardingManualAddScreen } from "../screens/OnboardingManualAddScreen";
 import { OnboardingAssignOrbitsScreen } from "../screens/OnboardingAssignOrbitsScreen";
 import { OnboardingCompleteScreen } from "../screens/OnboardingCompleteScreen";
+import { MainTabsScreen } from "../screens/MainTabsScreen";
 
 export type RootStackParamList = {
   Onboarding: undefined;
@@ -17,6 +18,7 @@ export type RootStackParamList = {
   OnboardingManualAdd: undefined;
   OnboardingAssignOrbits: undefined;
   OnboardingComplete: undefined;
+  MainTabs: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -72,6 +74,11 @@ export const AppNavigator = () => {
           name="OnboardingComplete" 
           component={OnboardingCompleteScreen}
           options={{ animation: "fade", animationDuration: 400 }}
+        />
+        <Stack.Screen 
+          name="MainTabs" 
+          component={MainTabsScreen}
+          options={{ animation: "fade", animationDuration: 400, gestureEnabled: false }}
         />
       </Stack.Navigator>
     </NavigationContainer>

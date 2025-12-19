@@ -9,6 +9,7 @@ import {
   PlusJakartaSans_500Medium,
   PlusJakartaSans_600SemiBold,
   PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
 } from "@expo-google-fonts/plus-jakarta-sans";
 import {
   Fraunces_400Regular,
@@ -16,6 +17,7 @@ import {
 } from "@expo-google-fonts/fraunces";
 import { AppNavigator } from "./src/navigation/AppNavigator";
 import { OnboardingProvider } from "./src/context/OnboardingContext";
+import { AppProvider } from "./src/context/AppContext";
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -23,6 +25,7 @@ export default function App() {
     PlusJakartaSans_500Medium,
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
     Fraunces_400Regular,
     Fraunces_600SemiBold,
   });
@@ -38,10 +41,12 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <OnboardingProvider>
-          <StatusBar style="dark" />
-          <AppNavigator />
-        </OnboardingProvider>
+        <AppProvider>
+          <OnboardingProvider>
+            <StatusBar style="dark" />
+            <AppNavigator />
+          </OnboardingProvider>
+        </AppProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

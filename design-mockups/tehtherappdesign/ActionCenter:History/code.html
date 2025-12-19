@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Tether - Action Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#81B29A", 
+                        "tether-terracotta": "#E07A5F",
+                        "tether-sage": "#81B29A",
+                        "tether-cream": "#F4F1DE",
+                        "tether-charcoal": "#3D405B",
+                        "background-light": "#f7f8f6",
+                        "background-dark": "#182111",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "1rem", "lg": "1.5rem", "xl": "2rem", "2xl": "2.5rem", "full": "9999px" },
+                    boxShadow: {
+                        "soft": "0 10px 40px -10px rgba(0,0,0,0.08)",
+                        "inner-soft": "inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)"
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-tether-cream/30 dark:bg-background-dark font-display text-tether-charcoal dark:text-gray-100 transition-colors duration-200">
+<div class="relative flex min-h-screen w-full flex-col max-w-md mx-auto overflow-x-hidden pb-32">
+<header class="flex flex-col gap-5 px-6 pt-12 pb-4">
+<h1 class="text-3xl font-extrabold tracking-tight text-tether-charcoal dark:text-white leading-tight">
+            Action Center
+        </h1>
+<div class="bg-gray-200/50 dark:bg-gray-800/50 p-1 rounded-2xl flex gap-1">
+<button class="flex-1 py-2.5 text-sm font-medium text-tether-charcoal/60 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-700/50 rounded-xl transition-all">
+                Nudges (5)
+            </button>
+<button class="flex-1 py-2.5 text-sm font-medium text-tether-charcoal/60 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-700/50 rounded-xl transition-all">
+                Drafts (2)
+            </button>
+<button class="flex-1 bg-tether-terracotta shadow-sm rounded-xl py-2.5 text-sm font-bold text-white transition-all">
+                History
+            </button>
+</div>
+</header>
+<div class="flex flex-col px-4 mt-2">
+<div class="mb-6">
+<div class="sticky top-0 bg-tether-cream/30 backdrop-blur-sm dark:bg-background-dark z-10 py-3 mb-1 pl-2">
+<h2 class="text-sm font-bold text-tether-charcoal/50 uppercase tracking-wider">October</h2>
+</div>
+<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-soft overflow-hidden">
+<div class="relative flex items-center p-4 border-b border-gray-100 dark:border-gray-700">
+<div class="w-12 shrink-0 flex flex-col items-center justify-center mr-2">
+<span class="text-2xl font-bold text-tether-charcoal dark:text-white">14</span>
+</div>
+<div class="flex flex-1 items-center gap-3 min-w-0">
+<div class="w-10 h-10 rounded-full bg-tether-sage/10 flex items-center justify-center text-tether-sage shrink-0">
+<span class="material-symbols-outlined text-xl">call</span>
+</div>
+<div class="flex flex-col min-w-0">
+<h3 class="text-base font-bold text-tether-charcoal dark:text-white leading-tight truncate">Call with Dad</h3>
+<p class="text-sm text-tether-charcoal/60 dark:text-gray-400 truncate">20 min • Talked about the car.</p>
+</div>
+</div>
+<div class="pl-2 shrink-0">
+<a class="text-xs font-bold text-tether-sage hover:text-tether-terracotta transition-colors" href="#">Edit</a>
+</div>
+</div>
+<div class="relative flex items-center p-4">
+<div class="w-12 shrink-0 flex flex-col items-center justify-center mr-2">
+<span class="text-2xl font-medium text-tether-charcoal/40 dark:text-gray-500">12</span>
+</div>
+<div class="flex flex-1 items-center gap-3 min-w-0">
+<div class="w-10 h-10 rounded-full bg-tether-sage/10 flex items-center justify-center text-tether-sage shrink-0">
+<span class="material-symbols-outlined text-xl">local_cafe</span>
+</div>
+<div class="flex flex-col min-w-0">
+<h3 class="text-base font-bold text-tether-charcoal dark:text-white leading-tight truncate">Coffee with Jen</h3>
+<p class="text-sm text-tether-charcoal/60 dark:text-gray-400 truncate">Met at The Roastery.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="mb-6">
+<div class="sticky top-0 bg-tether-cream/30 backdrop-blur-sm dark:bg-background-dark z-10 py-3 mb-1 pl-2">
+<h2 class="text-sm font-bold text-tether-charcoal/50 uppercase tracking-wider">September</h2>
+</div>
+<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-soft overflow-hidden">
+<div class="relative flex items-center p-4">
+<div class="w-12 shrink-0 flex flex-col items-center justify-center mr-2">
+<span class="text-2xl font-medium text-tether-charcoal/40 dark:text-gray-500">28</span>
+</div>
+<div class="flex flex-1 items-center gap-3 min-w-0">
+<div class="w-10 h-10 rounded-full bg-tether-sage/10 flex items-center justify-center text-tether-sage shrink-0">
+<span class="material-symbols-outlined text-xl">chat_bubble</span>
+</div>
+<div class="flex flex-col min-w-0">
+<h3 class="text-base font-bold text-tether-charcoal dark:text-white leading-tight truncate">Texted Sarah</h3>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="fixed bottom-0 left-0 right-0 max-w-md mx-auto h-20 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 flex items-center justify-around z-50 rounded-t-2xl shadow-[0_-5px_20px_-5px_rgba(0,0,0,0.05)] pb-3">
+<button class="flex flex-col items-center justify-center w-12 h-full text-tether-charcoal/40 dark:text-gray-500 hover:text-tether-charcoal dark:hover:text-gray-300 gap-1 transition-colors">
+<span class="material-symbols-outlined text-2xl">home</span>
+<span class="text-[10px] font-medium">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center w-12 h-full text-tether-charcoal/40 dark:text-gray-500 hover:text-tether-charcoal dark:hover:text-gray-300 gap-1 transition-colors">
+<span class="material-symbols-outlined text-2xl">groups</span>
+<span class="text-[10px] font-medium">People</span>
+</button>
+<button class="flex flex-col items-center justify-center w-12 h-full text-tether-sage gap-1">
+<span class="material-symbols-outlined filled text-2xl">waving_hand</span>
+<span class="text-[10px] font-bold">Actions</span>
+</button>
+<button class="flex flex-col items-center justify-center w-12 h-full text-tether-charcoal/40 dark:text-gray-500 hover:text-tether-charcoal dark:hover:text-gray-300 gap-1 transition-colors">
+<span class="material-symbols-outlined text-2xl">settings</span>
+<span class="text-[10px] font-medium">Settings</span>
+</button>
+</div>
+</div>
+
+</body></html>
