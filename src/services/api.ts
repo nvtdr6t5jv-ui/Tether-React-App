@@ -99,6 +99,22 @@ export const api = {
 
       return { totalXp: newXp, level: newLevel };
     },
+
+    async setTotalXP(totalXp: number): Promise<void> {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const newLevel = Math.floor(totalXp / 100) + 1;
+
+      await supabase
+        .from('profiles')
+        .update({
+          total_xp: totalXp,
+          level: newLevel,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id);
+    },
   },
 
   friends: {

@@ -274,7 +274,7 @@ interface HomeScreenProps {
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onNavigateToSocialPulse }) => {
   const { friends, logInteraction, interactions } = useApp();
-  const { recordDailyActivity, addXP, checkAndUpdateAchievements, updateChallengeProgress, state: gamificationState, streakData } = useGamification();
+  const { recordDailyActivity, checkAndUpdateAchievements, updateChallengeProgress, state: gamificationState, streakData } = useGamification();
   const [activeTab, setActiveTab] = useState<"overdue" | "drafts" | "events">("overdue");
   
   const [showShuffle, setShowShuffle] = useState(false);
@@ -303,18 +303,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onNavigateTo
   const updateGamificationOnInteraction = useCallback(async (type: string) => {
     await recordDailyActivity();
     
-    const xpMap: Record<string, number> = {
-      text: 5,
-      call: 15,
-      video_call: 20,
-      in_person: 30,
-      meetup: 30,
-      social_media: 3,
-      email: 5,
-      other: 5,
-    };
-    addXP(xpMap[type] || 5, type);
-    
+
     const callCount = interactions.filter(i => i.type === 'call').length + (type === 'call' ? 1 : 0);
     const textCount = interactions.filter(i => i.type === 'text').length + (type === 'text' ? 1 : 0);
     const inPersonCount = interactions.filter(i => i.type === 'in_person' || i.type === 'meetup').length + (type === 'in_person' || type === 'meetup' ? 1 : 0);
@@ -349,7 +338,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onNavigateTo
         updateChallengeProgress(meetChallenge.id, meetChallenge.progress + 1);
       }
     }
-  }, [recordDailyActivity, addXP, checkAndUpdateAchievements, updateChallengeProgress, interactions, streakData, gamificationState]);
+  }, [recordDailyActivity, checkAndUpdateAchievements, updateChallengeProgress, interactions, streakData, gamificationState]);
 
   const handleLogConnection = async (friendId: string, type: string, note: string) => {
     await logInteraction(friendId, type as any, note);

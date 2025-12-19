@@ -23,6 +23,23 @@ import { supabase } from '../services/supabase';
 const STORAGE_KEY = '@tether_gamification';
 const STREAK_KEY = '@tether_daily_streak';
 
+const calculateTotalXPFromState = (state: GamificationState): number => {
+  const achievementXP = state.achievements
+    .filter(a => a.unlockedAt)
+    .reduce((sum, a) => sum + a.xpReward + XP_PER_ACTION.achievement_unlock, 0);
+  
+  const challengeXP = state.weeklyChallenges
+    .filter(c => c.isCompleted)
+    .reduce((sum, c) => sum + c.xpReward + XP_PER_ACTION.challenge_complete, 0);
+  
+  const milestoneXP = state.relationshipMilestones
+    .reduce((sum, m) => sum + m.xpReward, 0);
+  
+  return achievementXP + challengeXP + milestoneXP;
+};
+
+
+
 interface StreakData {
   currentStreak: number;
   lastActiveDate: string | null;
@@ -173,10 +190,11 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         localState = {
           ...defaultState,
           ...parsed,
-          level: parsed.level || defaultLevel,
           achievements: parsed.achievements?.length > 0 ? parsed.achievements : initializeAchievements(),
           weeklyChallenges: parsed.weeklyChallenges?.length > 0 ? parsed.weeklyChallenges : initializeWeeklyChallenges(),
         };
+        const computedXP = calculateTotalXPFromState(localState);
+        localState.level = calculateLevel(computedXP);
       }
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -198,13 +216,13 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
             localState = { ...localState, achievements: updatedAchievements };
           }
 
+          const computedXP = calculateTotalXPFromState(localState);
+          localState = { ...localState, level: calculateLevel(computedXP) };
+          
           if (profile) {
             const cloudXP = profile.total_xp || 0;
-            const localXP = localState.level?.totalXP || 0;
-            const finalXP = Math.max(cloudXP, localXP);
-            localState = { ...localState, level: calculateLevel(finalXP) };
-            if (localXP > cloudXP) {
-              api.profiles.addXP(localXP - cloudXP).catch(() => {});
+            if (computedXP !== cloudXP) {
+              api.profiles.setTotalXP(computedXP).catch(() => {});
             }
           }
         } catch (cloudError) {
@@ -274,7 +292,17 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
   const saveState = async (newState: GamificationState) => {
     try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
+      const computedXP = calculateTotalXPFromState(newState);
+      const stateWithCorrectXP = {
+        ...newState,
+        level: calculateLevel(computedXP),
+      };
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(stateWithCorrectXP));
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        api.profiles.setTotalXP(computedXP).catch(() => {});
+      }
     } catch (error) {
       console.error('Failed to save gamification state:', error);
     }
@@ -398,8 +426,7 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     });
   }, []);
 
-  const completeChallenge = useCallback(async (challengeId: string) => {
-    let xpToSync = 0;
+  const completeChallenge = useCallback((challengeId: string) => {
     setState(prev => {
       const challenge = prev.weeklyChallenges.find(c => c.id === challengeId);
       if (!challenge || challenge.isCompleted) return prev;
@@ -408,29 +435,13 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         c.id === challengeId ? { ...c, isCompleted: true, progress: c.target } : c
       );
 
-      const newTotalXP = prev.level.totalXP + challenge.xpReward + XP_PER_ACTION.challenge_complete;
-      const newLevel = calculateLevel(newTotalXP);
-      xpToSync = challenge.xpReward + XP_PER_ACTION.challenge_complete;
-
       const newState = {
         ...prev,
         weeklyChallenges: newChallenges,
-        level: newLevel,
       };
       saveState(newState);
       return newState;
     });
-    
-    if (xpToSync > 0) {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          await api.profiles.addXP(xpToSync);
-        }
-      } catch (error) {
-        console.log('Could not sync challenge XP to cloud');
-      }
-    }
   }, []);
 
   const unlockAchievement = useCallback(async (achievementId: string) => {
@@ -442,13 +453,9 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         a.id === achievementId ? { ...a, unlockedAt: new Date(), progress: a.requirement } : a
       );
 
-      const newTotalXP = prev.level.totalXP + achievement.xpReward + XP_PER_ACTION.achievement_unlock;
-      const newLevel = calculateLevel(newTotalXP);
-
       const newState = {
         ...prev,
         achievements: newAchievements,
-        level: newLevel,
       };
       saveState(newState);
       return newState;
@@ -457,13 +464,7 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const achievement = state.achievements.find(a => a.id === achievementId);
-        if (achievement) {
-          await Promise.all([
-            api.achievements.unlock(achievementId),
-            api.profiles.addXP(achievement.xpReward + XP_PER_ACTION.achievement_unlock),
-          ]);
-        }
+        await api.achievements.unlock(achievementId);
       }
     } catch (error) {
       console.log('Could not sync achievement to cloud');
@@ -471,8 +472,7 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   }, []);
 
   const updateAchievementProgress = useCallback(async (achievementId: string, progress: number) => {
-    let shouldSyncToCloud = false;
-    let achievementToSync: Achievement | null = null;
+    let shouldSyncAchievement = false;
     
     setState(prev => {
       const achievement = prev.achievements.find(a => a.id === achievementId);
@@ -492,34 +492,26 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         return a;
       });
 
-      let newLevel = prev.level;
       if (shouldUnlock) {
-        const newTotalXP = prev.level.totalXP + achievement.xpReward + XP_PER_ACTION.achievement_unlock;
-        newLevel = calculateLevel(newTotalXP);
-        shouldSyncToCloud = true;
-        achievementToSync = achievement;
+        shouldSyncAchievement = true;
       }
 
       const newState = {
         ...prev,
         achievements: newAchievements,
-        level: newLevel,
       };
       saveState(newState);
       return newState;
     });
     
-    if (shouldSyncToCloud && achievementToSync) {
+    if (shouldSyncAchievement) {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          await Promise.all([
-            api.achievements.unlock(achievementId),
-            api.profiles.addXP(achievementToSync.xpReward + XP_PER_ACTION.achievement_unlock),
-          ]);
+          await api.achievements.unlock(achievementId);
         }
       } catch (error) {
-        console.log('Could not sync achievement progress to cloud');
+        console.log('Could not sync achievement to cloud');
       }
     }
   }, []);
@@ -570,7 +562,7 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   }, [updateAchievementProgress]);
 
   const addRelationshipMilestone = useCallback(
-    async (milestone: Omit<RelationshipMilestone, 'id' | 'achievedAt' | 'celebrated'>) => {
+    (milestone: Omit<RelationshipMilestone, 'id' | 'achievedAt' | 'celebrated'>) => {
       setState(prev => {
         const newMilestone: RelationshipMilestone = {
           ...milestone,
@@ -579,26 +571,13 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
           celebrated: false,
         };
 
-        const newTotalXP = prev.level.totalXP + milestone.xpReward;
-        const newLevel = calculateLevel(newTotalXP);
-
         const newState = {
           ...prev,
           relationshipMilestones: [...prev.relationshipMilestones, newMilestone],
-          level: newLevel,
         };
         saveState(newState);
         return newState;
       });
-      
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          await api.profiles.addXP(milestone.xpReward);
-        }
-      } catch (error) {
-        console.log('Could not sync milestone XP to cloud');
-      }
     },
     []
   );

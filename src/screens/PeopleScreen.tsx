@@ -290,13 +290,11 @@ export const PeopleScreen: React.FC<PeopleScreenProps> = ({
   onPremiumRequired,
 }) => {
   const { friends, getOverdueFriends, refreshData, isLoading, canAddMoreFriends, getRemainingFreeSlots, premiumStatus, logInteraction, deleteFriend, interactions } = useApp();
-  const { recordDailyActivity, addXP, checkAndUpdateAchievements, updateChallengeProgress, state: gamificationState, streakData } = useGamification();
+  const { recordDailyActivity, checkAndUpdateAchievements, updateChallengeProgress, state: gamificationState, streakData } = useGamification();
 
   const updateGamificationOnInteraction = useCallback(async (type: string) => {
     await recordDailyActivity();
-    const xpMap: Record<string, number> = { text: 5, call: 15, video_call: 20, in_person: 30, meetup: 30, other: 5 };
-    addXP(xpMap[type] || 5, type);
-    updateChallengeProgress(type === 'call' ? 'make_calls' : type === 'text' ? 'send_messages' : 'reach_out', 1);
+updateChallengeProgress(type === 'call' ? 'make_calls' : type === 'text' ? 'send_messages' : 'reach_out', 1);
     const callCount = interactions.filter(i => i.type === 'call').length + (type === 'call' ? 1 : 0);
     const textCount = interactions.filter(i => i.type === 'text').length + (type === 'text' ? 1 : 0);
     const inPersonCount = interactions.filter(i => i.type === 'in_person' || i.type === 'meetup').length + (type === 'in_person' || type === 'meetup' ? 1 : 0);
@@ -312,7 +310,7 @@ export const PeopleScreen: React.FC<PeopleScreenProps> = ({
       currentStreak: streakData.currentStreak,
       challengesCompleted: completedChallenges,
     });
-  }, [recordDailyActivity, addXP, checkAndUpdateAchievements, updateChallengeProgress, interactions, streakData, gamificationState]);
+  }, [recordDailyActivity, checkAndUpdateAchievements, updateChallengeProgress, interactions, streakData, gamificationState]);
 
   const handleAddConnection = () => {
     if (!canAddMoreFriends()) {
