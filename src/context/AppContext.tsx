@@ -489,12 +489,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (userId) {
         try {
           await api.interactions.create({
-            id: interaction.id,
-            user_id: userId,
-            friend_id: friendId,
-            type: type as any,
-            note: note || null,
-            date: now.toISOString(),
+            friendId: friendId,
+            type: type,
+            note: note || undefined,
+            date: now,
           });
           await api.friends.update(friendId, { last_contact: now.toISOString() });
         } catch (e) {
