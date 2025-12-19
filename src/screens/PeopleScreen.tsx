@@ -66,16 +66,17 @@ const FriendCard: React.FC<{
   const translateX = useSharedValue(0);
 
   const panGesture = Gesture.Pan()
+    .minDistance(15)
     .onUpdate((event) => {
       if (event.translationX > 0) {
         translateX.value = Math.min(event.translationX, 120);
       }
     })
     .onEnd((event) => {
-      if (event.translationX >= 80 && onSwipeText) {
+      if (event.translationX >= 90 && onSwipeText) {
         translateX.value = withSpring(0);
         runOnJS(onSwipeText)();
-      } else if (event.translationX >= 40 && event.translationX < 80 && onSwipeCall) {
+      } else if (event.translationX >= 50 && event.translationX < 90 && onSwipeCall) {
         translateX.value = withSpring(0);
         runOnJS(onSwipeCall)();
       } else {
@@ -87,15 +88,22 @@ const FriendCard: React.FC<{
     transform: [{ translateX: translateX.value }],
   }));
 
-  const callIndicatorStyle = useAnimatedStyle(() => ({
-    opacity: translateX.value >= 20 ? Math.min((translateX.value - 20) / 30, 1) : 0,
-    transform: [{ scale: translateX.value >= 20 ? Math.min((translateX.value - 20) / 30, 1) : 0 }],
-  }));
+  const callIndicatorStyle = useAnimatedStyle(() => {
+    const isTextZone = translateX.value >= 70;
+    const showCall = translateX.value >= 25 && !isTextZone;
+    return {
+      opacity: showCall ? 1 : 0,
+      transform: [{ scale: showCall ? 1 : 0.5 }],
+    };
+  });
 
-  const textIndicatorStyle = useAnimatedStyle(() => ({
-    opacity: translateX.value >= 60 ? Math.min((translateX.value - 60) / 40, 1) : 0,
-    transform: [{ scale: translateX.value >= 60 ? Math.min((translateX.value - 60) / 40, 1) : 0 }],
-  }));
+  const textIndicatorStyle = useAnimatedStyle(() => {
+    const isTextZone = translateX.value >= 70;
+    return {
+      opacity: isTextZone ? 1 : 0,
+      transform: [{ scale: isTextZone ? 1 : 0.5 }],
+    };
+  });
 
   const bgStyle = useAnimatedStyle(() => {
     const isTextZone = translateX.value >= 70;
