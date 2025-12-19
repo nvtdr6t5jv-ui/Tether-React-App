@@ -3,7 +3,7 @@ import { api, CloudFriendData, CloudInteractionData } from './api';
 import { storageService } from './StorageService';
 import { Friend as LocalFriend, Interaction as LocalInteraction, CalendarEvent as LocalCalendarEvent } from '../types';
 import { CalendarEvent as DbCalendarEvent } from './database.types';
-import { hashPhoneNumber } from '../utils/crypto';
+import { hashPhoneNumber, isValidUUID, generateUUID } from '../utils/crypto';
 
 const mapDbEventToLocal = (dbEvent: DbCalendarEvent): LocalCalendarEvent => ({
   id: dbEvent.id,
@@ -44,9 +44,18 @@ export const syncService = {
         storageService.getCalendarEvents(),
       ]);
 
+      const idMigrationMap = new Map<string, string>();
+      const updatedFriends: LocalFriend[] = [];
+
       for (const friend of localFriends) {
+        let cloudId = friend.id;
+        
+        if (!isValidUUID(friend.id)) {
+          cloudId = generateUUID();
+          idMigrationMap.set(friend.id, cloudId);
+        }
+        
         const phoneHash = await hashPhoneNumber(friend.phone);
-        const existing = await api.friends.getById(friend.id);
         
         const cloudData = {
           orbitId: friend.orbitId as any,
@@ -59,24 +68,52 @@ export const syncService = {
           phoneHash,
         };
 
-        if (existing) {
-          await api.friends.update(friend.id, cloudData);
-        } else {
-          await api.friends.create({
-            id: friend.id,
-            ...cloudData,
-          });
+        try {
+          const existing = await api.friends.getById(cloudId);
+          
+          if (existing) {
+            await api.friends.update(cloudId, cloudData);
+          } else {
+            await api.friends.create({
+              id: cloudId,
+              ...cloudData,
+            });
+          }
+          
+          updatedFriends.push({ ...friend, id: cloudId });
+        } catch (e) {
+          console.warn('Failed to sync friend to cloud:', e);
+          updatedFriends.push(friend);
         }
+      }
+
+      if (idMigrationMap.size > 0) {
+        await storageService.saveFriends(updatedFriends);
+        
+        const updatedInteractions = localInteractions.map(i => ({
+          ...i,
+          friendId: idMigrationMap.get(i.friendId) || i.friendId,
+        }));
+        await storageService.saveInteractions(updatedInteractions);
+        
+        const updatedEvents = localEvents.map(e => ({
+          ...e,
+          friendId: e.friendId ? (idMigrationMap.get(e.friendId) || e.friendId) : undefined,
+        }));
+        await storageService.saveCalendarEvents(updatedEvents);
       }
 
       for (const interaction of localInteractions) {
         const dateStr = getDateString(interaction.date);
-        if (!dateStr || !interaction.friendId) continue;
+        const friendId = idMigrationMap.get(interaction.friendId) || interaction.friendId;
+        if (!dateStr || !friendId || !isValidUUID(friendId)) continue;
+        
+        const interactionId = isValidUUID(interaction.id) ? interaction.id : generateUUID();
         
         await supabase.from('interactions').upsert({
-          id: interaction.id,
+          id: interactionId,
           user_id: user.id,
-          friend_id: interaction.friendId,
+          friend_id: friendId,
           type: interaction.type as any,
           date: dateStr,
         });
@@ -86,10 +123,13 @@ export const syncService = {
         const startDateStr = getDateString(event.date);
         if (!startDateStr) continue;
         
+        const eventId = isValidUUID(event.id) ? event.id : generateUUID();
+        const friendId = event.friendId ? (idMigrationMap.get(event.friendId) || event.friendId) : null;
+        
         await supabase.from('calendar_events').upsert({
-          id: event.id,
+          id: eventId,
           user_id: user.id,
-          friend_id: event.friendId || null,
+          friend_id: friendId && isValidUUID(friendId) ? friendId : null,
           title: event.title,
           start_date: startDateStr,
           end_date: getDateString(event.endDate),

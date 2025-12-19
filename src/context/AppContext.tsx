@@ -23,7 +23,7 @@ import { syncService } from '../services/sync';
 import { api } from '../services/api';
 import { supabase } from '../services/supabase';
 import { config } from '../config';
-import { hashPhoneNumber } from '../utils/crypto';
+import { hashPhoneNumber, isValidUUID } from '../utils/crypto';
 
 interface AppState {
   isLoading: boolean;
@@ -482,7 +482,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         } : f),
       }));
 
-      if (userId) {
+      if (userId && isValidUUID(friendId) && isValidUUID(interaction.id)) {
         try {
           await api.interactions.create({
             id: interaction.id,

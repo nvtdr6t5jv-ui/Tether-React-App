@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Crypto from 'expo-crypto';
 import {
   Friend,
   Note,
@@ -475,7 +476,7 @@ class StorageService {
   }
 
   generateId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return Crypto.randomUUID();
   }
 }
 
