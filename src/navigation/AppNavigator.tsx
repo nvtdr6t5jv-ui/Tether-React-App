@@ -3,6 +3,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator, NativeStackNavigationOptions } from "@react-navigation/native-stack";
 import { OnboardingScreen } from "../screens/OnboardingScreen";
 import { AuthScreen } from "../screens/AuthScreen";
+import { OnboardingValuePreviewScreen } from "../screens/OnboardingValuePreviewScreen";
 import { OnboardingSyncScreen } from "../screens/OnboardingSyncScreen";
 import { OnboardingSelectFriendsScreen } from "../screens/OnboardingSelectFriendsScreen";
 import { OnboardingManualAddScreen } from "../screens/OnboardingManualAddScreen";
@@ -13,6 +14,7 @@ import { MainTabsScreen } from "../screens/MainTabsScreen";
 export type RootStackParamList = {
   Onboarding: undefined;
   Auth: { mode: "login" | "signup" };
+  OnboardingValuePreview: undefined;
   OnboardingSync: undefined;
   OnboardingSelectFriends: undefined;
   OnboardingManualAdd: undefined;
@@ -49,6 +51,11 @@ export const AppNavigator = () => {
           name="Auth" 
           component={AuthScreen}
           options={{ animation: "fade_from_bottom" }}
+        />
+        <Stack.Screen 
+          name="OnboardingValuePreview" 
+          component={OnboardingValuePreviewScreen}
+          options={onboardingFlowOptions}
         />
         <Stack.Screen 
           name="OnboardingSync" 

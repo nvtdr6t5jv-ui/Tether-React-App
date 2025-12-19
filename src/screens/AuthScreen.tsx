@@ -29,7 +29,11 @@ export const AuthScreen = () => {
   const [password, setPassword] = useState("");
 
   const handleSubmit = () => {
-    navigation.navigate("OnboardingSync");
+    if (isLogin) {
+      navigation.navigate("MainTabs");
+    } else {
+      navigation.navigate("OnboardingValuePreview");
+    }
   };
 
   return (

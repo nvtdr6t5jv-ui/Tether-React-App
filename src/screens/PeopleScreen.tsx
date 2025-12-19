@@ -7,6 +7,8 @@ import {
   TextInput,
   Image,
   RefreshControl,
+  Alert,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -54,7 +56,8 @@ const FriendCard: React.FC<{
   onPress: () => void;
   isOverdue: boolean;
   onSwipeLog?: () => void;
-}> = ({ friend, index, onPress, isOverdue, onSwipeLog }) => {
+  onMenuPress?: () => void;
+}> = ({ friend, index, onPress, isOverdue, onSwipeLog, onMenuPress }) => {
   const timeInfo = getTimeSince(friend.lastContact);
   const orbit = ORBITS.find(o => o.id === friend.orbitId);
   const translateX = useSharedValue(0);
@@ -237,6 +240,7 @@ const FriendCard: React.FC<{
         </View>
 
         <TouchableOpacity
+          onPress={onMenuPress}
           style={{ padding: 4, marginLeft: -8, marginRight: -4 }}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
@@ -267,6 +271,34 @@ export const PeopleScreen: React.FC<PeopleScreenProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [refreshing, setRefreshing] = useState(false);
+  const [menuFriend, setMenuFriend] = useState<Friend | null>(null);
+
+  const handleMenuAction = (action: 'view' | 'log' | 'favorite' | 'delete') => {
+    if (!menuFriend) return;
+    switch (action) {
+      case 'view':
+        onNavigateToProfile(menuFriend.id);
+        break;
+      case 'log':
+        logInteraction(menuFriend.id, 'text', 'Quick check-in');
+        Alert.alert('Logged!', `Connection logged with ${menuFriend.name}`);
+        break;
+      case 'favorite':
+        Alert.alert('Coming Soon', 'Favorite toggle will be available soon');
+        break;
+      case 'delete':
+        Alert.alert(
+          'Remove Contact',
+          `Are you sure you want to remove ${menuFriend.name}?`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Remove', style: 'destructive', onPress: () => {} },
+          ]
+        );
+        break;
+    }
+    setMenuFriend(null);
+  };
 
   const overdueFriends = getOverdueFriends();
   const overdueIds = new Set(overdueFriends.map(f => f.id));
@@ -537,16 +569,28 @@ export const PeopleScreen: React.FC<PeopleScreenProps> = ({
             )}
           </Animated.View>
         ) : (
-          filteredFriends.map((friend, index) => (
-            <FriendCard
-              key={friend.id}
-              friend={friend}
-              index={index}
-              onPress={() => onNavigateToProfile(friend.id)}
-              isOverdue={overdueIds.has(friend.id)}
-              onSwipeLog={() => logInteraction(friend.id, 'text', 'Quick check-in')}
-            />
-          ))
+          <>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+              <MaterialCommunityIcons name="gesture-swipe-right" size={14} color="rgba(61, 64, 91, 0.4)" />
+              <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', fontSize: 11, color: 'rgba(61, 64, 91, 0.4)' }}>
+                Swipe right to quick log
+              </Text>
+            </View>
+            {filteredFriends.map((friend, index) => (
+              <FriendCard
+                key={friend.id}
+                friend={friend}
+                index={index}
+                onPress={() => onNavigateToProfile(friend.id)}
+                isOverdue={overdueIds.has(friend.id)}
+                onSwipeLog={() => {
+                  logInteraction(friend.id, 'text', 'Quick check-in');
+                  Alert.alert('Logged!', `Quick check-in with ${friend.name}`);
+                }}
+                onMenuPress={() => setMenuFriend(friend)}
+              />
+            ))}
+          </>
         )}
       </ScrollView>
 
@@ -571,6 +615,93 @@ export const PeopleScreen: React.FC<PeopleScreenProps> = ({
       >
         <MaterialCommunityIcons name={canAddMoreFriends() ? "plus" : "lock"} size={32} color="#FFF" />
       </TouchableOpacity>
+
+      <Modal
+        visible={!!menuFriend}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMenuFriend(null)}
+      >
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}
+          activeOpacity={1}
+          onPress={() => setMenuFriend(null)}
+        >
+          <View
+            style={{
+              backgroundColor: '#FFF',
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              paddingTop: 8,
+              paddingBottom: 40,
+            }}
+          >
+            <View style={{ width: 40, height: 4, backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
+            {menuFriend && (
+              <View style={{ paddingHorizontal: 20 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                  <View
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 24,
+                      backgroundColor: ORBITS.find(o => o.id === menuFriend.orbitId)?.color || '#81B29A',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 16, color: '#FFF' }}>
+                      {menuFriend.initials}
+                    </Text>
+                  </View>
+                  <View>
+                    <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 18, color: '#3D405B' }}>
+                      {menuFriend.name}
+                    </Text>
+                    <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', fontSize: 13, color: 'rgba(61, 64, 91, 0.6)' }}>
+                      {ORBITS.find(o => o.id === menuFriend.orbitId)?.name || 'Contact'}
+                    </Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  onPress={() => handleMenuAction('view')}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 16, paddingVertical: 14 }}
+                >
+                  <MaterialCommunityIcons name="account" size={24} color="#3D405B" />
+                  <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 16, color: '#3D405B' }}>View Profile</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => handleMenuAction('log')}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 16, paddingVertical: 14 }}
+                >
+                  <MaterialCommunityIcons name="check-circle-outline" size={24} color="#81B29A" />
+                  <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 16, color: '#3D405B' }}>Quick Log</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => handleMenuAction('favorite')}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 16, paddingVertical: 14 }}
+                >
+                  <MaterialCommunityIcons name={menuFriend.isFavorite ? "star" : "star-outline"} size={24} color="#F2CC8F" />
+                  <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 16, color: '#3D405B' }}>
+                    {menuFriend.isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => handleMenuAction('delete')}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 16, paddingVertical: 14 }}
+                >
+                  <MaterialCommunityIcons name="trash-can-outline" size={24} color="#E07A5F" />
+                  <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 16, color: '#E07A5F' }}>Remove Contact</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 };

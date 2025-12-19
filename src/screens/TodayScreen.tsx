@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { View, Text, TouchableOpacity, ScrollView, Image, Dimensions, Alert } from "react-native";
+import * as Clipboard from "expo-clipboard";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Animated, {
@@ -18,6 +19,7 @@ import Animated, {
   withSequence,
   Easing,
   runOnJS,
+  interpolate,
 } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useApp, Friend } from "../context/AppContext";
@@ -283,6 +285,15 @@ interface OrbitAvatarProps {
   onPress: () => void;
 }
 
+const getRandomOffset = (friendId: string): number => {
+  let hash = 0;
+  for (let i = 0; i < friendId.length; i++) {
+    hash = ((hash << 5) - hash) + friendId.charCodeAt(i);
+    hash = hash & hash;
+  }
+  return (Math.abs(hash) % 360) * (Math.PI / 180);
+};
+
 const OrbitAvatar: React.FC<OrbitAvatarProps> = ({ friend, index, total, orbitLevel, onPress }) => {
   const translateY = useSharedValue(0);
   const scale = useSharedValue(0);
@@ -304,7 +315,9 @@ const OrbitAvatar: React.FC<OrbitAvatarProps> = ({ friend, index, total, orbitLe
   }));
 
   const radius = ORBIT_SIZE * (0.18 + orbitLevel * 0.14);
-  const angleOffset = (index / Math.max(total, 1)) * 2 * Math.PI - Math.PI / 2;
+  const randomOffset = getRandomOffset(friend.id);
+  const baseAngle = (index / Math.max(total, 1)) * 2 * Math.PI;
+  const angleOffset = baseAngle + randomOffset - Math.PI / 2;
   const x = Math.cos(angleOffset) * radius;
   const y = Math.sin(angleOffset) * radius;
 
@@ -403,9 +416,41 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
       .slice(0, 5);
   }, [overdueFriends, interactions]);
 
-  const randomStarter = useMemo(() => {
-    return CONVERSATION_STARTERS[Math.floor(Math.random() * CONVERSATION_STARTERS.length)];
+  const [starterIndex, setStarterIndex] = useState(() => 
+    Math.floor(Math.random() * CONVERSATION_STARTERS.length)
+  );
+  const randomStarter = CONVERSATION_STARTERS[starterIndex];
+  const starterTranslateX = useSharedValue(0);
+
+  const getNextStarter = useCallback(() => {
+    setStarterIndex((prev) => (prev + 1) % CONVERSATION_STARTERS.length);
   }, []);
+
+  const copyStarterToClipboard = useCallback(async () => {
+    await Clipboard.setStringAsync(randomStarter.text);
+    Alert.alert("Copied!", "Conversation starter copied to clipboard");
+  }, [randomStarter.text]);
+
+  const starterPanGesture = useMemo(() => Gesture.Pan()
+    .onUpdate((event) => {
+      starterTranslateX.value = event.translationX;
+    })
+    .onEnd((event) => {
+      if (Math.abs(event.translationX) > 80) {
+        starterTranslateX.value = withTiming(event.translationX > 0 ? 300 : -300, { duration: 150 }, () => {
+          runOnJS(getNextStarter)();
+          starterTranslateX.value = event.translationX > 0 ? -300 : 300;
+          starterTranslateX.value = withSpring(0, { damping: 15 });
+        });
+      } else {
+        starterTranslateX.value = withSpring(0);
+      }
+    }), [getNextStarter]);
+
+  const starterAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: starterTranslateX.value }],
+    opacity: interpolate(Math.abs(starterTranslateX.value), [0, 150], [1, 0.3]),
+  }));
 
   const handleQuickLog = (friend: Friend) => {
     setSelectedFriend(friend);
@@ -688,29 +733,49 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
         )}
 
         <Animated.View entering={FadeInUp.delay(600).duration(500)} style={{ paddingHorizontal: 16, marginBottom: 24 }}>
-          <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 20, color: "#3D405B", marginBottom: 12, paddingHorizontal: 4 }}>
-            Conversation Starter
-          </Text>
-          <View
-            style={{
-              backgroundColor: "#F4F1DE",
-              padding: 20,
-              borderRadius: 20,
-              borderLeftWidth: 4,
-              borderLeftColor: "#81B29A",
-            }}
-          >
-            <Text style={{ fontFamily: "PlusJakartaSans_500Medium", fontSize: 16, color: "#3D405B", lineHeight: 24, fontStyle: "italic" }}>
-              "{randomStarter.text}"
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12, paddingHorizontal: 4 }}>
+            <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 20, color: "#3D405B" }}>
+              Conversation Starter
             </Text>
-            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 12, gap: 8 }}>
-              <View style={{ backgroundColor: "rgba(129, 178, 154, 0.2)", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 9999 }}>
-                <Text style={{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 11, color: "#81B29A", textTransform: "capitalize" }}>
-                  {randomStarter.category.replace('_', ' ')}
-                </Text>
-              </View>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <MaterialCommunityIcons name="gesture-swipe-horizontal" size={14} color="rgba(61, 64, 91, 0.4)" />
+              <Text style={{ fontFamily: "PlusJakartaSans_500Medium", fontSize: 11, color: "rgba(61, 64, 91, 0.4)" }}>
+                Swipe for new
+              </Text>
             </View>
           </View>
+          <GestureDetector gesture={starterPanGesture}>
+            <Animated.View style={starterAnimatedStyle}>
+              <TouchableOpacity
+                onPress={copyStarterToClipboard}
+                activeOpacity={0.9}
+                style={{
+                  backgroundColor: "#F4F1DE",
+                  padding: 20,
+                  borderRadius: 20,
+                  borderLeftWidth: 4,
+                  borderLeftColor: "#81B29A",
+                }}
+              >
+                <Text style={{ fontFamily: "PlusJakartaSans_500Medium", fontSize: 16, color: "#3D405B", lineHeight: 24, fontStyle: "italic" }}>
+                  "{randomStarter.text}"
+                </Text>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 12 }}>
+                  <View style={{ backgroundColor: "rgba(129, 178, 154, 0.2)", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 9999 }}>
+                    <Text style={{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 11, color: "#81B29A", textTransform: "capitalize" }}>
+                      {randomStarter.category.replace('_', ' ')}
+                    </Text>
+                  </View>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                    <MaterialCommunityIcons name="content-copy" size={14} color="rgba(61, 64, 91, 0.4)" />
+                    <Text style={{ fontFamily: "PlusJakartaSans_500Medium", fontSize: 11, color: "rgba(61, 64, 91, 0.4)" }}>
+                      Tap to copy
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            </Animated.View>
+          </GestureDetector>
         </Animated.View>
 
         <Animated.View entering={FadeInUp.delay(700).duration(500)} style={{ paddingHorizontal: 16 }}>

@@ -4,6 +4,7 @@ import Animated, {
   interpolate,
   useAnimatedStyle,
   SharedValue,
+  Extrapolation,
 } from "react-native-reanimated";
 import { TetherLogo } from "./TetherLogo";
 import { NudgeCard } from "./NudgeCard";
@@ -29,46 +30,78 @@ export const OnboardingSlide: React.FC<OnboardingSlideProps> = ({
   index,
   scrollX,
 }) => {
-  const animatedStyle = useAnimatedStyle(() => {
-    const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
-    const opacity = interpolate(scrollX.value, inputRange, [0.5, 1, 0.5]);
-    const scale = interpolate(scrollX.value, inputRange, [0.8, 1, 0.8]);
+  const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
+
+  const imageAnimatedStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(scrollX.value, inputRange, [0, 1, 0], Extrapolation.CLAMP);
+    const scale = interpolate(scrollX.value, inputRange, [0.7, 1, 0.7], Extrapolation.CLAMP);
+    const translateY = interpolate(scrollX.value, inputRange, [30, 0, 30], Extrapolation.CLAMP);
+    const rotate = interpolate(scrollX.value, inputRange, [-10, 0, 10], Extrapolation.CLAMP);
 
     return {
       opacity,
-      transform: [{ scale }],
+      transform: [
+        { scale },
+        { translateY },
+        { rotate: `${rotate}deg` },
+      ],
+    };
+  });
+
+  const titleAnimatedStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(scrollX.value, inputRange, [0, 1, 0], Extrapolation.CLAMP);
+    const translateX = interpolate(scrollX.value, inputRange, [-50, 0, 50], Extrapolation.CLAMP);
+    const translateY = interpolate(scrollX.value, inputRange, [20, 0, 20], Extrapolation.CLAMP);
+
+    return {
+      opacity,
+      transform: [{ translateX }, { translateY }],
+    };
+  });
+
+  const descriptionAnimatedStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(scrollX.value, inputRange, [0, 1, 0], Extrapolation.CLAMP);
+    const translateY = interpolate(scrollX.value, inputRange, [30, 0, 30], Extrapolation.CLAMP);
+
+    return {
+      opacity,
+      transform: [{ translateY }],
     };
   });
 
   const isNudgeSlide = slide.id === 4;
-  const imageSize = Math.min(width * 0.75, 280);
+  const imageSize = Math.min(width * 0.65, 240);
 
   return (
-    <View style={{ width, height: height - 180 }} className="items-center px-6 pt-12">
-      <View className="items-center w-full">
+    <View style={{ width, height: height - 180, alignItems: "center", paddingHorizontal: 24, paddingTop: 48 }}>
+      <View style={{ alignItems: "center", width: "100%" }}>
         <TetherLogo />
 
         <Animated.View
-          style={[animatedStyle, { width: imageSize, height: imageSize, marginTop: 24, marginBottom: 16 }]}
-          className="relative"
+          style={[imageAnimatedStyle, { width: imageSize, height: imageSize, marginTop: 32, marginBottom: 24 }]}
         >
           {isNudgeSlide ? (
             <NudgeCard />
           ) : (
-            <View className="w-full h-full items-center justify-center">
-              <View className="absolute inset-2 bg-white/40 rounded-3xl rotate-3" />
-              <View className="w-full h-full rounded-3xl overflow-hidden bg-surface-light items-center justify-center"
-                style={{
-                  shadowColor: "#3D405B",
-                  shadowOffset: { width: 0, height: 10 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 40,
-                  elevation: 5,
-                }}
-              >
-                <View className="w-40 h-40 rounded-full bg-secondary/20 items-center justify-center">
-                  <View className="w-28 h-28 rounded-full bg-primary/20 items-center justify-center">
-                    <View className="w-14 h-14 rounded-full bg-primary/30" />
+            <View style={{ width: "100%", height: "100%", alignItems: "center", justifyContent: "center" }}>
+              <View style={{ position: "absolute", left: 8, right: 8, top: 8, bottom: 8, backgroundColor: "rgba(255,255,255,0.4)", borderRadius: 24, transform: [{ rotate: "3deg" }] }} />
+              <View style={{
+                width: "100%",
+                height: "100%",
+                borderRadius: 24,
+                overflow: "hidden",
+                backgroundColor: "#FDFCF8",
+                alignItems: "center",
+                justifyContent: "center",
+                shadowColor: "#3D405B",
+                shadowOffset: { width: 0, height: 10 },
+                shadowOpacity: 0.1,
+                shadowRadius: 40,
+                elevation: 5,
+              }}>
+                <View style={{ width: 140, height: 140, borderRadius: 70, backgroundColor: "rgba(129, 178, 154, 0.2)", alignItems: "center", justifyContent: "center" }}>
+                  <View style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: "rgba(224, 122, 95, 0.2)", alignItems: "center", justifyContent: "center" }}>
+                    <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: "rgba(224, 122, 95, 0.3)" }} />
                   </View>
                 </View>
               </View>
@@ -77,18 +110,43 @@ export const OnboardingSlide: React.FC<OnboardingSlideProps> = ({
         </Animated.View>
       </View>
 
-      <View className="items-center w-full px-2">
-        <Text className="text-text-main font-serif-semibold text-[36px] leading-[44px] text-center tracking-tight">
+      <View style={{ alignItems: "center", width: "100%", paddingHorizontal: 8 }}>
+        <Animated.Text
+          style={[
+            titleAnimatedStyle,
+            {
+              fontFamily: "Fraunces_600SemiBold",
+              fontSize: 34,
+              lineHeight: 42,
+              color: "#3D405B",
+              textAlign: "center",
+              letterSpacing: -0.5,
+            }
+          ]}
+        >
           {slide.title}{"\n"}
-          <Text className="text-primary italic">{slide.titleHighlight}</Text>
+          <Text style={{ color: "#E07A5F", fontStyle: "italic" }}>{slide.titleHighlight}</Text>
           {slide.titleSuffix && (
-            <Text className="text-text-main"> {slide.titleSuffix}</Text>
+            <Text style={{ color: "#3D405B" }}> {slide.titleSuffix}</Text>
           )}
-        </Text>
+        </Animated.Text>
 
-        <Text className="text-text-main/80 font-display text-base leading-relaxed text-center mt-3 max-w-[280px]">
+        <Animated.Text
+          style={[
+            descriptionAnimatedStyle,
+            {
+              fontFamily: "PlusJakartaSans_400Regular",
+              fontSize: 16,
+              lineHeight: 24,
+              color: "rgba(61, 64, 91, 0.8)",
+              textAlign: "center",
+              marginTop: 16,
+              maxWidth: 280,
+            }
+          ]}
+        >
           {slide.description}
-        </Text>
+        </Animated.Text>
       </View>
     </View>
   );
