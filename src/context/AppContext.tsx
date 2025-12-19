@@ -777,7 +777,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           friend_id: event.friendId || null,
           title: event.title,
           description: event.description || null,
-          start_date: event.startDate.toISOString(),
+          start_date: new Date(event.date).toISOString(),
           end_date: event.endDate?.toISOString() || null,
           is_all_day: event.isAllDay || false,
           location: event.location || null,
@@ -801,7 +801,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           friend_id: updates.friendId || null,
           title: updates.title,
           description: updates.description || null,
-          start_date: updates.startDate?.toISOString(),
+          start_date: updates.date ? new Date(updates.date).toISOString() : undefined,
           end_date: updates.endDate?.toISOString() || null,
           is_all_day: updates.isAllDay,
           location: updates.location || null,
@@ -865,8 +865,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       : 0;
     
     const suggestions: string[] = [];
-    if (lastInteractionDays > expectedInterval) {
+    if (lastInteractionDays > expectedInterval && lastInteractionDays < 999) {
       suggestions.push(`It's been ${lastInteractionDays} days - time to reach out!`);
+    }
+    if (lastInteractionDays === 999) {
+      suggestions.push('You haven't connected yet - reach out to start building your relationship!');
     }
     if (trend === 'declining') {
       suggestions.push('Your connection frequency has decreased recently.');

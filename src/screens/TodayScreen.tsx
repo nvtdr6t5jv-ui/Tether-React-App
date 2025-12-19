@@ -427,12 +427,21 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
   }, []);
 
   const copyStarterToClipboard = useCallback(async () => {
+    if (isSwipingRef.current) return;
     await Clipboard.setStringAsync(randomStarter.text);
     Alert.alert("Copied!", "Conversation starter copied to clipboard");
   }, [randomStarter.text]);
 
+  const isSwipingRef = React.useRef(false);
+  
   const starterPanGesture = useMemo(() => Gesture.Pan()
+    .onStart(() => {
+      isSwipingRef.current = false;
+    })
     .onUpdate((event) => {
+      if (Math.abs(event.translationX) > 10) {
+        isSwipingRef.current = true;
+      }
       starterTranslateX.value = event.translationX;
     })
     .onEnd((event) => {
@@ -445,6 +454,7 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
       } else {
         starterTranslateX.value = withSpring(0);
       }
+      setTimeout(() => { isSwipingRef.current = false; }, 100);
     }), [getNextStarter]);
 
   const starterAnimatedStyle = useAnimatedStyle(() => ({

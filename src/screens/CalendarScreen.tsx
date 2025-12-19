@@ -28,6 +28,7 @@ import { useApp } from '../context/AppContext';
 import { CalendarEvent, ORBITS } from '../types';
 import { DrawerModal } from '../components/DrawerModal';
 import { useCalendarSync } from '../hooks/useCalendarSync';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -94,6 +95,17 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
       performAutoSync(addCalendarEvent, calendarEvents);
     }
   }, []);
+
+  React.useEffect(() => {
+    const checkFirstVisit = async () => {
+      const hasVisited = await AsyncStorage.getItem('@tether_calendar_visited');
+      if (!hasVisited) {
+        setShowFirstVisitModal(true);
+        await AsyncStorage.setItem('@tether_calendar_visited', 'true');
+      }
+    };
+    checkFirstVisit();
+  }, []);
   
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -101,6 +113,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
   const [showAddEvent, setShowAddEvent] = useState(false);
   const [showEventDetail, setShowEventDetail] = useState<CalendarEvent | null>(null);
   const [showSyncModal, setShowSyncModal] = useState(false);
+  const [showFirstVisitModal, setShowFirstVisitModal] = useState(false);
   
   const [newEventTitle, setNewEventTitle] = useState('');
   const [newEventType, setNewEventType] = useState<CalendarEvent['type']>('custom');
@@ -1049,6 +1062,63 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
             <View style={{ height: 24 }} />
           </View>
         </TouchableOpacity>
+      </Modal>
+
+      <Modal
+        visible={showFirstVisitModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowFirstVisitModal(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+          <View style={{ backgroundColor: '#FFF', borderRadius: 24, padding: 24, width: '100%', maxWidth: 340 }}>
+            <View style={{ alignItems: 'center', marginBottom: 20 }}>
+              <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(129, 178, 154, 0.15)', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                <MaterialCommunityIcons name="calendar-sync" size={32} color="#81B29A" />
+              </View>
+              <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 22, color: '#3D405B', textAlign: 'center', marginBottom: 8 }}>
+                Sync Your Calendar
+              </Text>
+              <Text style={{ fontFamily: 'PlusJakartaSans_400Regular', fontSize: 14, color: 'rgba(61, 64, 91, 0.7)', textAlign: 'center', lineHeight: 20 }}>
+                Import events from your device calendar and never miss important dates with friends.
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              onPress={async () => {
+                setShowFirstVisitModal(false);
+                const success = await enableAutoSync();
+                if (success) {
+                  await performAutoSync(addCalendarEvent, calendarEvents);
+                  Alert.alert('Calendar Synced', 'Your calendar events have been imported.');
+                }
+              }}
+              style={{
+                backgroundColor: '#81B29A',
+                padding: 16,
+                borderRadius: 12,
+                alignItems: 'center',
+                marginBottom: 12,
+              }}
+            >
+              <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 16, color: '#FFF' }}>
+                Sync Calendar
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setShowFirstVisitModal(false)}
+              style={{
+                padding: 12,
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 14, color: 'rgba(61, 64, 91, 0.5)' }}>
+                Maybe Later
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
     </SafeAreaView>
   );
