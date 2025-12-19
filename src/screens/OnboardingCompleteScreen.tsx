@@ -185,6 +185,8 @@ export const OnboardingCompleteScreen = () => {
         name: friend.name,
         initials: friend.initials,
         photo: friend.photo ?? undefined,
+        phone: friend.phone,
+        email: friend.email,
         orbitId: orbitId as 'inner' | 'close' | 'catchup',
         lastContact: null,
         nextNudge: getNextNudgeDate(orbitId),
