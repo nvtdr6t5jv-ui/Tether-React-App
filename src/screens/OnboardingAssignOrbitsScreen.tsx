@@ -19,7 +19,9 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { useOnboarding } from "../context/OnboardingContext";
-import { orbits, getAvatarColor } from "../constants/mockData";
+import { ORBITS } from "../types";
+
+const orbits = ORBITS.map(o => ({ id: o.id, label: o.label, frequency: o.frequency }));
 import { RootStackParamList } from "../navigation/AppNavigator";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;

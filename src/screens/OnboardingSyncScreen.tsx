@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, Switch } from "react-native";
+import { View, Text, TouchableOpacity, Switch, Alert, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import * as Contacts from "expo-contacts";
 import Animated, {
   FadeInDown,
   FadeInUp,
@@ -11,25 +12,106 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  withTiming,
-  interpolate,
-  Extrapolation,
 } from "react-native-reanimated";
-import { useOnboarding } from "../context/OnboardingContext";
+import { useOnboarding, OnboardingContact } from "../context/OnboardingContext";
 import { RootStackParamList } from "../navigation/AppNavigator";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
+const getInitials = (name: string): string => {
+  const parts = name.trim().split(" ");
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+};
+
 export const OnboardingSyncScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { setSyncMode } = useOnboarding();
+  const { setSyncMode, setDeviceContacts } = useOnboarding();
   const [syncEnabled, setSyncEnabled] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const cardScale = useSharedValue(1);
 
-  const handleContinue = () => {
+  const fetchContacts = async (): Promise<OnboardingContact[]> => {
+    const { data } = await Contacts.getContactsAsync({
+      fields: [
+        Contacts.Fields.Name,
+        Contacts.Fields.PhoneNumbers,
+        Contacts.Fields.Emails,
+        Contacts.Fields.Image,
+      ],
+      sort: Contacts.SortTypes.FirstName,
+    });
+
+    return data
+      .filter(contact => contact.name && contact.name.trim().length > 0)
+      .map(contact => ({
+        id: contact.id || `contact-${Date.now()}-${Math.random()}`,
+        name: contact.name || "Unknown",
+        initials: getInitials(contact.name || "UN"),
+        phone: contact.phoneNumbers?.[0]?.number,
+        email: contact.emails?.[0]?.email,
+        photo: contact.image?.uri || null,
+      }))
+      .slice(0, 100);
+  };
+
+  const handleContinue = async () => {
     if (syncEnabled) {
-      setSyncMode("contacts");
-      navigation.navigate("OnboardingSelectFriends");
+      setIsLoading(true);
+      try {
+        const { status } = await Contacts.requestPermissionsAsync();
+        
+        if (status === "granted") {
+          const contacts = await fetchContacts();
+          
+          if (contacts.length === 0) {
+            Alert.alert(
+              "No Contacts Found",
+              "We couldn't find any contacts on your device. Would you like to add friends manually?",
+              [
+                { text: "Add Manually", onPress: () => {
+                  setSyncMode("manual");
+                  navigation.navigate("OnboardingManualAdd");
+                }},
+                { text: "Cancel", style: "cancel" },
+              ]
+            );
+          } else {
+            setDeviceContacts(contacts);
+            setSyncMode("contacts");
+            navigation.navigate("OnboardingSelectFriends");
+          }
+        } else {
+          Alert.alert(
+            "Permission Required",
+            "Tether needs access to your contacts to help you find friends. You can also add friends manually.",
+            [
+              { text: "Add Manually", onPress: () => {
+                setSyncMode("manual");
+                navigation.navigate("OnboardingManualAdd");
+              }},
+              { text: "Try Again", onPress: handleContinue },
+            ]
+          );
+        }
+      } catch (error) {
+        console.error("Error fetching contacts:", error);
+        Alert.alert(
+          "Error",
+          "Something went wrong while accessing your contacts. Please try again or add friends manually.",
+          [
+            { text: "Add Manually", onPress: () => {
+              setSyncMode("manual");
+              navigation.navigate("OnboardingManualAdd");
+            }},
+            { text: "Try Again", onPress: handleContinue },
+          ]
+        );
+      } finally {
+        setIsLoading(false);
+      }
     } else {
       setSyncMode("manual");
       navigation.navigate("OnboardingManualAdd");
@@ -122,6 +204,7 @@ export const OnboardingSyncScreen = () => {
                 trackColor={{ false: "#E0E0E0", true: "#E07A5F" }}
                 thumbColor="#FFF"
                 ios_backgroundColor="#E0E0E0"
+                disabled={isLoading}
               />
             </Animated.View>
           </Animated.View>
@@ -133,10 +216,11 @@ export const OnboardingSyncScreen = () => {
             onPressIn={handlePressIn}
             onPressOut={handlePressOut}
             activeOpacity={0.9}
+            disabled={isLoading}
             style={{
               width: "100%",
               height: 56,
-              backgroundColor: "#E07A5F",
+              backgroundColor: isLoading ? "rgba(224, 122, 95, 0.6)" : "#E07A5F",
               borderRadius: 9999,
               flexDirection: "row",
               alignItems: "center",
@@ -149,10 +233,16 @@ export const OnboardingSyncScreen = () => {
               elevation: 6,
             }}
           >
-            <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 18, color: "#F4F1DE" }}>
-              Continue
-            </Text>
-            <MaterialCommunityIcons name="arrow-right" size={20} color="#F4F1DE" />
+            {isLoading ? (
+              <ActivityIndicator color="#F4F1DE" />
+            ) : (
+              <>
+                <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 18, color: "#F4F1DE" }}>
+                  Continue
+                </Text>
+                <MaterialCommunityIcons name="arrow-right" size={20} color="#F4F1DE" />
+              </>
+            )}
           </TouchableOpacity>
           <Animated.Text
             entering={FadeInUp.delay(900).duration(400)}

@@ -12,12 +12,31 @@ import Animated, {
   Layout,
   FadeIn,
 } from "react-native-reanimated";
-import { useOnboarding } from "../context/OnboardingContext";
-import { getInitials, getAvatarColor, Friend } from "../constants/mockData";
+import { useOnboarding, OnboardingContact } from "../context/OnboardingContext";
 import { RootStackParamList } from "../navigation/AppNavigator";
 import { FREE_CONTACT_LIMIT } from "../types";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+const getInitials = (name: string): string => {
+  const parts = name.trim().split(" ");
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+};
+
+const AVATAR_COLORS = [
+  "#E07A5F",
+  "#81B29A",
+  "#F2CC8F",
+  "#3D405B",
+  "#5E8C7C",
+];
+
+const getAvatarColor = (index: number): string => {
+  return AVATAR_COLORS[index % AVATAR_COLORS.length];
+};
 
 export const OnboardingManualAddScreen = () => {
   const navigation = useNavigation<NavigationProp>();
@@ -44,14 +63,13 @@ export const OnboardingManualAddScreen = () => {
   };
 
   const handleNext = () => {
-    const friends: Friend[] = [];
+    const friends: OnboardingContact[] = [];
     inputs.forEach((input, index) => {
       const name = input.trim();
       if (name && !friends.find(f => f.name.toLowerCase() === name.toLowerCase())) {
         friends.push({
           id: `manual-${Date.now()}-${index}`,
           name,
-          photo: null,
           initials: getInitials(name),
         });
       }

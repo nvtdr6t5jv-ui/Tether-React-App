@@ -8,24 +8,17 @@ import Animated, {
   FadeInDown,
   FadeInUp,
   SlideInRight,
-  ZoomIn,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
   Layout,
 } from "react-native-reanimated";
 import { useOnboarding } from "../context/OnboardingContext";
-import { mockContacts, getAvatarColor } from "../constants/mockData";
 import { RootStackParamList } from "../navigation/AppNavigator";
+import { FREE_CONTACT_LIMIT } from "../types";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
-
 export const OnboardingSelectFriendsScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { selectedFriends, toggleFriendSelection } = useOnboarding();
+  const { deviceContacts, selectedFriends, toggleFriendSelection } = useOnboarding();
 
   const handleNext = () => {
     if (selectedFriends.length > 0) {
@@ -34,6 +27,7 @@ export const OnboardingSelectFriendsScreen = () => {
   };
 
   const isSelected = (id: string) => selectedFriends.some(f => f.id === id);
+  const canSelectMore = selectedFriends.length < FREE_CONTACT_LIMIT;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F4F1DE" }} edges={["top", "bottom"]}>
@@ -62,7 +56,7 @@ export const OnboardingSelectFriendsScreen = () => {
               entering={FadeInDown.delay(400).duration(500)}
               style={{ fontFamily: "PlusJakartaSans_400Regular", fontSize: 16, color: "rgba(61, 64, 91, 0.8)", textAlign: "center", marginTop: 12, maxWidth: 280 }}
             >
-              Select the friends you want to keep in touch with. Ignore the rest.
+              Select 3-5 friends you want to keep in touch with. You can add more later.
             </Animated.Text>
           </Animated.View>
         </View>
@@ -72,17 +66,19 @@ export const OnboardingSelectFriendsScreen = () => {
           contentContainerStyle={{ paddingBottom: 16, gap: 12 }}
           showsVerticalScrollIndicator={false}
         >
-          {mockContacts.map((contact, index) => {
+          {deviceContacts.map((contact, index) => {
             const selected = isSelected(contact.id);
+            const disabled = !selected && !canSelectMore;
             return (
               <Animated.View
                 key={contact.id}
-                entering={SlideInRight.delay(300 + index * 80).duration(400).springify()}
+                entering={SlideInRight.delay(300 + index * 50).duration(400).springify()}
                 layout={Layout.springify()}
               >
                 <TouchableOpacity
                   onPress={() => toggleFriendSelection(contact)}
                   activeOpacity={0.7}
+                  disabled={disabled}
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
@@ -91,6 +87,7 @@ export const OnboardingSelectFriendsScreen = () => {
                     borderRadius: 24,
                     padding: 12,
                     paddingHorizontal: 16,
+                    opacity: disabled ? 0.5 : 1,
                     shadowColor: selected ? "#3D405B" : "transparent",
                     shadowOffset: { width: 0, height: 2 },
                     shadowOpacity: selected ? 0.05 : 0,
@@ -124,17 +121,27 @@ export const OnboardingSelectFriendsScreen = () => {
                         </Text>
                       </View>
                     )}
-                    <Text style={{
-                      fontFamily: "PlusJakartaSans_600SemiBold",
-                      fontSize: 18,
-                      color: selected ? "#3D405B" : "rgba(61, 64, 91, 0.7)",
-                    }}>
-                      {contact.name}
-                    </Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{
+                        fontFamily: "PlusJakartaSans_600SemiBold",
+                        fontSize: 18,
+                        color: selected ? "#3D405B" : "rgba(61, 64, 91, 0.7)",
+                      }}>
+                        {contact.name}
+                      </Text>
+                      {contact.phone && (
+                        <Text style={{
+                          fontFamily: "PlusJakartaSans_400Regular",
+                          fontSize: 12,
+                          color: "rgba(61, 64, 91, 0.5)",
+                          marginTop: 2,
+                        }}>
+                          {contact.phone}
+                        </Text>
+                      )}
+                    </View>
                   </View>
-                  <Animated.View
-                    layout={Layout.springify()}
-                  >
+                  <Animated.View layout={Layout.springify()}>
                     <MaterialCommunityIcons
                       name={selected ? "check-circle" : "checkbox-blank-circle-outline"}
                       size={28}
@@ -152,7 +159,7 @@ export const OnboardingSelectFriendsScreen = () => {
             layout={Layout.springify()}
             style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 14, color: "#3D405B", textAlign: "center", marginBottom: 16 }}
           >
-            {selectedFriends.length} Friends Selected
+            {selectedFriends.length} of {FREE_CONTACT_LIMIT} Friends Selected
           </Animated.Text>
           <TouchableOpacity
             onPress={handleNext}

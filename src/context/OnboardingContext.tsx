@@ -1,28 +1,38 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { Friend } from '../constants/mockData';
 import { FREE_CONTACT_LIMIT } from '../types';
+
+export interface OnboardingContact {
+  id: string;
+  name: string;
+  initials: string;
+  phone?: string;
+  email?: string;
+  photo?: string | null;
+}
 
 type SyncMode = 'contacts' | 'manual' | null;
 
 interface OnboardingState {
   syncMode: SyncMode;
-  selectedFriends: Friend[];
+  deviceContacts: OnboardingContact[];
+  selectedFriends: OnboardingContact[];
   currentFriendIndex: number;
   orbitAssignments: Record<string, string>;
 }
 
 interface OnboardingContextType extends OnboardingState {
   setSyncMode: (mode: SyncMode) => void;
-  setSelectedFriends: (friends: Friend[]) => void;
-  toggleFriendSelection: (friend: Friend) => void;
-  addManualFriend: (friend: Friend) => boolean;
+  setDeviceContacts: (contacts: OnboardingContact[]) => void;
+  setSelectedFriends: (friends: OnboardingContact[]) => void;
+  toggleFriendSelection: (friend: OnboardingContact) => void;
+  addManualFriend: (friend: OnboardingContact) => boolean;
   removeManualFriend: (id: string) => void;
   assignOrbit: (friendId: string, orbitId: string) => void;
   nextFriend: () => boolean;
   previousFriend: () => void;
   skipFriend: () => boolean;
   resetOnboarding: () => void;
-  currentFriend: Friend | null;
+  currentFriend: OnboardingContact | null;
   isLastFriend: boolean;
   canAddMore: boolean;
   remainingSlots: number;
@@ -30,6 +40,7 @@ interface OnboardingContextType extends OnboardingState {
 
 const initialState: OnboardingState = {
   syncMode: null,
+  deviceContacts: [],
   selectedFriends: [],
   currentFriendIndex: 0,
   orbitAssignments: {},
@@ -44,11 +55,15 @@ export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children
     setState(prev => ({ ...prev, syncMode: mode }));
   };
 
-  const setSelectedFriends = (friends: Friend[]) => {
+  const setDeviceContacts = (contacts: OnboardingContact[]) => {
+    setState(prev => ({ ...prev, deviceContacts: contacts }));
+  };
+
+  const setSelectedFriends = (friends: OnboardingContact[]) => {
     setState(prev => ({ ...prev, selectedFriends: friends }));
   };
 
-  const toggleFriendSelection = (friend: Friend) => {
+  const toggleFriendSelection = (friend: OnboardingContact) => {
     setState(prev => {
       const exists = prev.selectedFriends.find(f => f.id === friend.id);
       if (exists) {
@@ -67,7 +82,7 @@ export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children
     });
   };
 
-  const addManualFriend = (friend: Friend): boolean => {
+  const addManualFriend = (friend: OnboardingContact): boolean => {
     if (state.selectedFriends.length >= FREE_CONTACT_LIMIT) {
       return false;
     }
@@ -133,6 +148,7 @@ export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children
       value={{
         ...state,
         setSyncMode,
+        setDeviceContacts,
         setSelectedFriends,
         toggleFriendSelection,
         addManualFriend,
