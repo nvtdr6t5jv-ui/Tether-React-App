@@ -143,41 +143,6 @@ export const PersonProfileScreen: React.FC<PersonProfileScreenProps> = ({
     });
   }, [recordDailyActivity, addXP, checkAndUpdateAchievements, allInteractions, streakData, gamificationState]);
 
-  const updateGamificationOnInteraction = useCallback(async (type: string) => {
-    await recordDailyActivity();
-    
-    const xpMap: Record<string, number> = {
-      text: 5,
-      call: 15,
-      video_call: 20,
-      in_person: 30,
-      meetup: 30,
-      other: 5,
-    };
-    addXP(xpMap[type] || 5, type);
-    
-    const callCount = allInteractions.filter(i => i.type === 'call').length + (type === 'call' ? 1 : 0);
-    const textCount = allInteractions.filter(i => i.type === 'text').length + (type === 'text' ? 1 : 0);
-    const inPersonCount = allInteractions.filter(i => i.type === 'in_person' || i.type === 'meetup').length + (type === 'in_person' || type === 'meetup' ? 1 : 0);
-    
-    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const weekInteractions = allInteractions.filter(i => new Date(i.date) >= oneWeekAgo);
-    const uniquePeople = new Set(weekInteractions.map(i => i.friendId)).size;
-    
-    const completedChallenges = gamificationState.weeklyChallenges.filter(c => c.isCompleted).length;
-    
-    checkAndUpdateAchievements({
-      totalInteractions: allInteractions.length + 1,
-      callCount,
-      textCount,
-      inPersonCount,
-      uniquePeopleThisWeek: uniquePeople,
-      reconnections: 0,
-      currentStreak: streakData.currentStreak,
-      challengesCompleted: completedChallenges,
-    });
-  }, [recordDailyActivity, addXP, checkAndUpdateAchievements, allInteractions, streakData, gamificationState]);
-
   const handleCall = () => {
     if (!friend.phone) {
       Alert.alert('No phone number', 'Add a phone number to call this friend.');
