@@ -265,7 +265,7 @@ export const api = {
           friend_id: interaction.friendId,
           type: interaction.type,
           note: interaction.note,
-          date: (interaction.date || new Date()).toISOString(),
+          date: interaction.date ? (typeof interaction.date === 'string' ? interaction.date : interaction.date.toISOString()) : new Date().toISOString(),
         })
         .select()
         .single();

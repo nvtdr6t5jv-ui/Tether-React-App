@@ -306,7 +306,6 @@ export const PeopleScreen: React.FC<PeopleScreenProps> = ({
   const filters: { key: FilterType; label: string; count?: number }[] = [
     { key: 'overdue', label: 'Overdue', count: overdueFriends.length },
     { key: 'all', label: 'All' },
-    { key: 'favorites', label: 'Favorites' },
     { key: 'inner', label: 'Favorites' },
     { key: 'close', label: 'Friends' },
     { key: 'catchup', label: 'Acquaintances' },

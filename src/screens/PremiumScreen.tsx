@@ -267,49 +267,48 @@ export const PremiumScreen: React.FC<PremiumScreenProps> = ({ onClose, trigger =
                 ))}
               </View>
 
-              <Animated.View entering={FadeIn.delay(500).duration(400)} style={{ flexDirection: 'row', gap: 12, marginBottom: 20 }}>
-                <TouchableOpacity
-                  onPress={() => setSelectedPlan('yearly')}
-                  style={{
-                    flex: 1,
-                    backgroundColor: selectedPlan === 'yearly' ? '#FFF' : 'rgba(255,255,255,0.05)',
-                    borderRadius: 16,
-                    padding: 14,
-                    paddingTop: 20,
-                    borderWidth: selectedPlan === 'yearly' ? 0 : 1,
-                    borderColor: 'rgba(255,255,255,0.4)',
-                    position: 'relative',
-                    overflow: 'hidden',
-                  }}
-                  activeOpacity={0.8}
-                >
-                  {selectedPlan === 'yearly' && (
-                    <View
-                      style={{
-                        position: 'absolute',
-                        top: -8,
-                        right: 8,
-                        backgroundColor: '#E07A5F',
-                        paddingHorizontal: 10,
-                        paddingVertical: 5,
-                        borderRadius: 9999,
-                      }}
-                    >
-                      <Text style={{ fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 9, color: '#FFF' }}>
-                        SAVE 30%
-                      </Text>
-                    </View>
-                  )}
-                  <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 10, color: selectedPlan === 'yearly' ? 'rgba(61, 64, 91, 0.5)' : 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>
-                    Yearly
-                  </Text>
-                  <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 22, color: selectedPlan === 'yearly' ? '#3D405B' : '#FFF', marginBottom: 2 }}>
-                    $29.99
-                  </Text>
-                  <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 10, color: selectedPlan === 'yearly' ? 'rgba(61, 64, 91, 0.5)' : 'rgba(255,255,255,0.7)' }}>
-                    per year
-                  </Text>
-                </TouchableOpacity>
+              <Animated.View entering={FadeIn.delay(500).duration(400)} style={{ flexDirection: 'row', gap: 12, marginBottom: 20, marginTop: 12 }}>
+                <View style={{ flex: 1, position: 'relative' }}>
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: -10,
+                      right: 8,
+                      backgroundColor: '#E07A5F',
+                      paddingHorizontal: 10,
+                      paddingVertical: 4,
+                      borderRadius: 9999,
+                      zIndex: 1,
+                    }}
+                  >
+                    <Text style={{ fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 9, color: '#FFF' }}>
+                      SAVE 30%
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => setSelectedPlan('yearly')}
+                    style={{
+                      flex: 1,
+                      backgroundColor: selectedPlan === 'yearly' ? '#FFF' : 'rgba(255,255,255,0.05)',
+                      borderRadius: 16,
+                      padding: 14,
+                      paddingTop: 20,
+                      borderWidth: selectedPlan === 'yearly' ? 0 : 1,
+                      borderColor: 'rgba(255,255,255,0.4)',
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 10, color: selectedPlan === 'yearly' ? 'rgba(61, 64, 91, 0.5)' : 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>
+                      Yearly
+                    </Text>
+                    <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 22, color: selectedPlan === 'yearly' ? '#3D405B' : '#FFF', marginBottom: 2 }}>
+                      $29.99
+                    </Text>
+                    <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 10, color: selectedPlan === 'yearly' ? 'rgba(61, 64, 91, 0.5)' : 'rgba(255,255,255,0.7)' }}>
+                      per year
+                    </Text>
+                  </TouchableOpacity>
+                </View>
 
                 <TouchableOpacity
                   onPress={() => setSelectedPlan('monthly')}

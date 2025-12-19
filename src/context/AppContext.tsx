@@ -120,20 +120,35 @@ const calculateStreak = (interactions: Interaction[], orbitId: string): number =
   const orbit = ORBITS.find(o => o.id === orbitId);
   const intervalDays = orbit?.daysInterval || 14;
   
-  const sortedInteractions = [...interactions].sort((a, b) => 
-    new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
+  const uniqueDays = new Set<string>();
+  interactions.forEach(i => {
+    const date = new Date(i.date);
+    uniqueDays.add(`${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`);
+  });
   
-  let streak = 0;
-  let lastDate = new Date();
+  const sortedDays = Array.from(uniqueDays)
+    .map(d => {
+      const [y, m, day] = d.split('-').map(Number);
+      return new Date(y, m, day);
+    })
+    .sort((a, b) => b.getTime() - a.getTime());
   
-  for (const interaction of sortedInteractions) {
-    const interactionDate = new Date(interaction.date);
-    const daysDiff = Math.floor((lastDate.getTime() - interactionDate.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (daysDiff <= intervalDays * 1.5) {
+  if (sortedDays.length === 0) return 0;
+  
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const mostRecentDay = sortedDays[0];
+  const daysSinceLastContact = Math.floor((today.getTime() - mostRecentDay.getTime()) / (1000 * 60 * 60 * 24));
+  
+  if (daysSinceLastContact > intervalDays) {
+    return 0;
+  }
+  
+  let streak = 1;
+  for (let i = 1; i < sortedDays.length; i++) {
+    const daysDiff = Math.floor((sortedDays[i - 1].getTime() - sortedDays[i].getTime()) / (1000 * 60 * 60 * 24));
+    if (daysDiff <= intervalDays) {
       streak++;
-      lastDate = interactionDate;
     } else {
       break;
     }

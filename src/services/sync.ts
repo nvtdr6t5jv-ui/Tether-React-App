@@ -99,7 +99,7 @@ export const syncService = {
           friend_id: interaction.friendId,
           type: interaction.type as any,
           note: interaction.note || null,
-          date: interaction.date.toISOString(),
+          date: typeof interaction.date === 'string' ? interaction.date : interaction.date.toISOString(),
         });
       }
 
