@@ -17,6 +17,8 @@ import {
   getPlantStage,
   XP_PER_ACTION,
 } from '../types/gamification';
+import { api } from '../services/api';
+import { supabase } from '../services/supabase';
 
 const STORAGE_KEY = '@tether_gamification';
 const STREAK_KEY = '@tether_daily_streak';
@@ -165,16 +167,48 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   const loadState = async () => {
     try {
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
+      let localState = defaultState;
       if (stored) {
         const parsed = JSON.parse(stored);
-        setState({
+        localState = {
           ...defaultState,
           ...parsed,
           level: parsed.level || defaultLevel,
           achievements: parsed.achievements?.length > 0 ? parsed.achievements : initializeAchievements(),
           weeklyChallenges: parsed.weeklyChallenges?.length > 0 ? parsed.weeklyChallenges : initializeWeeklyChallenges(),
-        });
+        };
       }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        try {
+          const [cloudAchievements, profile] = await Promise.all([
+            api.achievements.getUnlocked(),
+            api.profiles.get(),
+          ]);
+
+          if (cloudAchievements && cloudAchievements.length > 0) {
+            const updatedAchievements = localState.achievements.map(a => {
+              const cloudA = cloudAchievements.find(ca => ca.achievement_id === a.id);
+              if (cloudA && !a.unlockedAt) {
+                return { ...a, unlockedAt: new Date(cloudA.unlocked_at), progress: a.requirement };
+              }
+              return a;
+            });
+            localState = { ...localState, achievements: updatedAchievements };
+          }
+
+          if (profile) {
+            const totalXP = profile.total_xp || 0;
+            localState = { ...localState, level: calculateLevel(totalXP) };
+          }
+        } catch (cloudError) {
+          console.log('Could not load from cloud, using local data');
+        }
+      }
+
+      setState(localState);
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(localState));
     } catch (error) {
       console.error('Failed to load gamification state:', error);
     }
@@ -183,35 +217,51 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   const loadStreakData = async () => {
     try {
       const stored = await AsyncStorage.getItem(STREAK_KEY);
+      let localStreak = defaultStreakData;
+      
       if (stored) {
         const parsed = JSON.parse(stored);
-        const lastActive = parsed.lastActiveDate;
-        
-        if (lastActive) {
-          const [lastYear, lastMonth, lastDay] = lastActive.split('-').map(Number);
-          const lastDate = new Date(lastYear, lastMonth - 1, lastDay);
-          lastDate.setHours(0, 0, 0, 0);
-          
-          const todayDate = new Date();
-          todayDate.setHours(0, 0, 0, 0);
-          
-          const diffDays = Math.floor((todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-          
-          if (diffDays > 1) {
-            const resetData = {
-              currentStreak: 0,
-              lastActiveDate: null,
-              longestStreak: parsed.longestStreak || 0,
+        localStreak = parsed;
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        try {
+          const profile = await api.profiles.get();
+          if (profile && (profile.streak_current > localStreak.currentStreak || profile.streak_longest > localStreak.longestStreak)) {
+            localStreak = {
+              currentStreak: Math.max(localStreak.currentStreak, profile.streak_current || 0),
+              lastActiveDate: localStreak.lastActiveDate,
+              longestStreak: Math.max(localStreak.longestStreak, profile.streak_longest || 0),
             };
-            setStreakData(resetData);
-            await AsyncStorage.setItem(STREAK_KEY, JSON.stringify(resetData));
-          } else {
-            setStreakData(parsed);
           }
-        } else {
-          setStreakData(parsed);
+        } catch (cloudError) {
+          console.log('Could not load streak from cloud');
         }
       }
+
+      const lastActive = localStreak.lastActiveDate;
+      if (lastActive) {
+        const [lastYear, lastMonth, lastDay] = lastActive.split('-').map(Number);
+        const lastDate = new Date(lastYear, lastMonth - 1, lastDay);
+        lastDate.setHours(0, 0, 0, 0);
+        
+        const todayDate = new Date();
+        todayDate.setHours(0, 0, 0, 0);
+        
+        const diffDays = Math.floor((todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (diffDays > 1) {
+          localStreak = {
+            currentStreak: 0,
+            lastActiveDate: null,
+            longestStreak: localStreak.longestStreak,
+          };
+        }
+      }
+
+      setStreakData(localStreak);
+      await AsyncStorage.setItem(STREAK_KEY, JSON.stringify(localStreak));
     } catch (error) {
       console.error('Failed to load streak data:', error);
     }
@@ -228,6 +278,15 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   const saveStreakData = async (data: StreakData) => {
     try {
       await AsyncStorage.setItem(STREAK_KEY, JSON.stringify(data));
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        try {
+          await api.profiles.updateStreak(data.currentStreak, data.longestStreak);
+        } catch (cloudError) {
+          console.log('Could not sync streak to cloud');
+        }
+      }
     } catch (error) {
       console.error('Failed to save streak data:', error);
     }
@@ -293,7 +352,7 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     return true;
   }, [streakData]);
 
-  const addXP = useCallback((amount: number, source: string) => {
+  const addXP = useCallback(async (amount: number, source: string) => {
     setState(prev => {
       const newTotalXP = prev.level.totalXP + amount;
       const newLevel = calculateLevel(newTotalXP);
@@ -304,6 +363,15 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
       saveState(newState);
       return newState;
     });
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await api.profiles.addXP(amount);
+      }
+    } catch (error) {
+      console.log('Could not sync XP to cloud');
+    }
   }, []);
 
   const updateChallengeProgress = useCallback((challengeId: string, progress: number) => {
@@ -347,7 +415,7 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     });
   }, []);
 
-  const unlockAchievement = useCallback((achievementId: string) => {
+  const unlockAchievement = useCallback(async (achievementId: string) => {
     setState(prev => {
       const achievement = prev.achievements.find(a => a.id === achievementId);
       if (!achievement || achievement.unlockedAt) return prev;
@@ -367,6 +435,15 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
       saveState(newState);
       return newState;
     });
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await api.achievements.unlock(achievementId);
+      }
+    } catch (error) {
+      console.log('Could not sync achievement to cloud');
+    }
   }, []);
 
   const updateAchievementProgress = useCallback((achievementId: string, progress: number) => {
