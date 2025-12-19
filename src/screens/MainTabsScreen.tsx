@@ -13,6 +13,7 @@ import { AppearanceScreen } from "./AppearanceScreen";
 import { AnalyticsScreen } from "./AnalyticsScreen";
 import { EditProfileScreen } from "./EditProfileScreen";
 import { SocialPulseScreen } from "./SocialPulseScreen";
+import { InsightsScreen } from "./InsightsScreen";
 import { PremiumScreen } from "./PremiumScreen";
 import { BottomTabBar } from "../components/BottomTabBar";
 import { SwipeableScreen } from "../components/SwipeableScreen";
@@ -160,9 +161,12 @@ export const MainTabsScreen = () => {
 
   const renderInsightsScreen = () => {
     return (
-      <SocialPulseScreen
-        onBack={() => setInsightsStack({ screen: "main" })}
+      <InsightsScreen
         onPremiumRequired={() => showPremiumModal('analytics')}
+        onNavigateToProfile={(friendId) => {
+          setActiveTab("people");
+          setPeopleStack({ screen: "profile", friendId });
+        }}
       />
     );
   };

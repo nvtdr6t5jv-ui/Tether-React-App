@@ -21,7 +21,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useApp, Friend } from "../context/AppContext";
-import { ORBITS, QUICK_TAGS, CONVERSATION_STARTERS, QuickTag } from "../types";
+import { ORBITS, QUICK_TAGS, CONVERSATION_STARTERS, QuickTag, Orbit } from "../types";
 import { ShuffleModal } from "../components/ShuffleModal";
 import { LogConnectionModal } from "../components/LogConnectionModal";
 import { DrawerModal } from "../components/DrawerModal";
@@ -265,6 +265,77 @@ const StreakCard: React.FC<StreakCardProps> = ({ currentStreak, longestStreak, c
   );
 };
 
+interface OrbitCardProps {
+  orbit: Orbit;
+  count: number;
+  overdueCount: number;
+  index: number;
+  onPress: () => void;
+}
+
+const OrbitCard: React.FC<OrbitCardProps> = ({ orbit, count, overdueCount, index, onPress }) => {
+  return (
+    <Animated.View entering={FadeInRight.delay(300 + index * 100).duration(400)}>
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.9}
+        style={{
+          backgroundColor: "#FFF",
+          borderRadius: 16,
+          padding: 16,
+          width: 140,
+          shadowColor: "#3D405B",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.06,
+          shadowRadius: 12,
+          elevation: 3,
+          borderLeftWidth: 4,
+          borderLeftColor: orbit.color,
+        }}
+      >
+        <View
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: `${orbit.color}15`,
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: 12,
+          }}
+        >
+          <MaterialCommunityIcons
+            name={orbit.id === 'inner' ? 'heart' : orbit.id === 'close' ? 'account-group' : 'account-multiple'}
+            size={20}
+            color={orbit.color}
+          />
+        </View>
+        <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 14, color: "#3D405B", marginBottom: 2 }}>
+          {orbit.name}
+        </Text>
+        <Text style={{ fontFamily: "PlusJakartaSans_500Medium", fontSize: 12, color: "rgba(61, 64, 91, 0.6)", marginBottom: 8 }}>
+          {count} {count === 1 ? 'person' : 'people'}
+        </Text>
+        {overdueCount > 0 ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#F59E0B" }} />
+            <Text style={{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 11, color: "#F59E0B" }}>
+              {overdueCount} overdue
+            </Text>
+          </View>
+        ) : (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#81B29A" }} />
+            <Text style={{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 11, color: "#81B29A" }}>
+              On track
+            </Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
+
 interface TodayScreenProps {
   onNavigate?: (screen: string) => void;
   onNavigateToSocialPulse?: () => void;
@@ -293,6 +364,18 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
   const stats = getSocialHealthStats();
   const overdueFriends = getOverdueFriends();
   const upcomingBirthdays = getUpcomingBirthdays();
+
+  const orbitStats = useMemo(() => {
+    return ORBITS.map(orbit => {
+      const orbitFriends = friends.filter(f => f.orbitId === orbit.id);
+      const overdueInOrbit = overdueFriends.filter(f => f.orbitId === orbit.id);
+      return {
+        orbit,
+        count: orbitFriends.length,
+        overdueCount: overdueInOrbit.length,
+      };
+    });
+  }, [friends, overdueFriends]);
 
   const todaysFocus = useMemo(() => {
     const today = new Date();
@@ -395,6 +478,35 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
             longestStreak={stats.longestStreak}
             connectionsThisWeek={stats.connectionsThisWeek}
           />
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(300).duration(500)} style={{ marginBottom: 24 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12, paddingHorizontal: 20 }}>
+            <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 20, color: "#3D405B" }}>
+              Your Orbits
+            </Text>
+            <TouchableOpacity onPress={() => onNavigate?.("people")}>
+              <Text style={{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 14, color: "#81B29A" }}>
+                View All
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false} 
+            contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
+          >
+            {orbitStats.map((item, index) => (
+              <OrbitCard
+                key={item.orbit.id}
+                orbit={item.orbit}
+                count={item.count}
+                overdueCount={item.overdueCount}
+                index={index}
+                onPress={() => onNavigate?.("people")}
+              />
+            ))}
+          </ScrollView>
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(400).duration(500)} style={{ paddingHorizontal: 16, marginBottom: 24 }}>
@@ -542,13 +654,13 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
               style={{
                 flex: 1,
                 backgroundColor: "#81B29A",
-                padding: 20,
+                padding: 16,
                 borderRadius: 16,
                 alignItems: "center",
               }}
             >
-              <MaterialCommunityIcons name="shuffle-variant" size={28} color="#FFF" />
-              <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 14, color: "#FFF", marginTop: 8 }}>
+              <MaterialCommunityIcons name="shuffle-variant" size={24} color="#FFF" />
+              <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 12, color: "#FFF", marginTop: 6 }}>
                 Shuffle
               </Text>
             </TouchableOpacity>
@@ -557,7 +669,7 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
               style={{
                 flex: 1,
                 backgroundColor: "#FFF",
-                padding: 20,
+                padding: 16,
                 borderRadius: 16,
                 alignItems: "center",
                 shadowColor: "#3D405B",
@@ -567,9 +679,29 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
                 elevation: 3,
               }}
             >
-              <MaterialCommunityIcons name="plus" size={28} color="#3D405B" />
-              <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 14, color: "#3D405B", marginTop: 8 }}>
+              <MaterialCommunityIcons name="plus" size={24} color="#3D405B" />
+              <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 12, color: "#3D405B", marginTop: 6 }}>
                 Log
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => onNavigate?.("calendar")}
+              style={{
+                flex: 1,
+                backgroundColor: "#FFF",
+                padding: 16,
+                borderRadius: 16,
+                alignItems: "center",
+                shadowColor: "#3D405B",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.06,
+                shadowRadius: 12,
+                elevation: 3,
+              }}
+            >
+              <MaterialCommunityIcons name="calendar" size={24} color="#3D405B" />
+              <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 12, color: "#3D405B", marginTop: 6 }}>
+                Events
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -577,7 +709,7 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
               style={{
                 flex: 1,
                 backgroundColor: "#FFF",
-                padding: 20,
+                padding: 16,
                 borderRadius: 16,
                 alignItems: "center",
                 shadowColor: "#3D405B",
@@ -587,8 +719,8 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
                 elevation: 3,
               }}
             >
-              <MaterialCommunityIcons name="chart-line" size={28} color="#6366F1" />
-              <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 14, color: "#3D405B", marginTop: 8 }}>
+              <MaterialCommunityIcons name="chart-line" size={24} color="#3D405B" />
+              <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 12, color: "#3D405B", marginTop: 6 }}>
                 Insights
               </Text>
             </TouchableOpacity>
