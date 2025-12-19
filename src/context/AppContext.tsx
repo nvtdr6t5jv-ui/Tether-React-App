@@ -473,9 +473,33 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         streak: newStreak,
       });
 
+      const calendarEventType = type === 'call' ? 'call' : type === 'meetup' ? 'meetup' : 'custom';
+      const calendarEventTitle = type === 'call' 
+        ? `Called ${friend.name}`
+        : type === 'text' 
+        ? `Texted ${friend.name}`
+        : type === 'meetup'
+        ? `Met up with ${friend.name}`
+        : `Connected with ${friend.name}`;
+      
+      const calendarEvent: CalendarEvent = {
+        id: `interaction-${interaction.id}`,
+        title: calendarEventTitle,
+        date: interactionDate,
+        friendId: friendId,
+        type: calendarEventType as CalendarEvent['type'],
+        isRecurring: false,
+        notes: note,
+        isCompleted: true,
+        createdAt: now,
+      };
+      
+      await storageService.addCalendarEvent(calendarEvent);
+      
       setState(prev => ({
         ...prev,
         interactions: [...prev.interactions, interaction],
+        calendarEvents: [...prev.calendarEvents, calendarEvent],
         friends: prev.friends.map(f => f.id === friendId ? {
           ...f,
           lastContact: interactionDate,
