@@ -7,11 +7,14 @@ import {
   TextInput,
   Image,
   Alert,
-  Platform,
+  Modal,
+  FlatList,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
+import * as Contacts from 'expo-contacts';
 import { useApp } from '../context/AppContext';
 import { OrbitId, ORBITS } from '../types';
 import { SwipeableScreen } from '../components/SwipeableScreen';
@@ -20,6 +23,14 @@ interface NewConnectionScreenProps {
   onBack: () => void;
   onSave: (friendId: string) => void;
   onPremiumRequired?: () => void;
+}
+
+interface DeviceContact {
+  id: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  photo?: string | null;
 }
 
 const getInitials = (name: string): string => {
@@ -45,10 +56,16 @@ export const NewConnectionScreen: React.FC<NewConnectionScreenProps> = ({
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [photo, setPhoto] = useState<string | undefined>();
   const [birthday, setBirthday] = useState('');
   const [notes, setNotes] = useState('');
   const [selectedOrbit, setSelectedOrbit] = useState<OrbitId>('close');
   const [lastSpoken, setLastSpoken] = useState<'today' | 'week' | 'month' | 'longer'>('today');
+  const [showContactPicker, setShowContactPicker] = useState(false);
+  const [deviceContacts, setDeviceContacts] = useState<DeviceContact[]>([]);
+  const [loadingContacts, setLoadingContacts] = useState(false);
+  const [contactSearch, setContactSearch] = useState('');
 
   const canSave = name.trim().length > 0;
 
@@ -82,6 +99,8 @@ export const NewConnectionScreen: React.FC<NewConnectionScreenProps> = ({
         name: name.trim(),
         initials: getInitials(name),
         phone: phone.trim() || undefined,
+        email: email.trim() || undefined,
+        photo: photo,
         birthday: birthday.trim() || undefined,
         orbitId: selectedOrbit,
         lastContact: getLastContactDate(),
@@ -96,9 +115,110 @@ export const NewConnectionScreen: React.FC<NewConnectionScreenProps> = ({
     }
   };
 
-  const handleImportContacts = () => {
-    Alert.alert('Coming Soon', 'Contact import will be available in a future update.');
+  const handleImportContacts = async () => {
+    setLoadingContacts(true);
+    try {
+      const { status } = await Contacts.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please allow access to contacts to import.');
+        setLoadingContacts(false);
+        return;
+      }
+
+      const { data } = await Contacts.getContactsAsync({
+        fields: [
+          Contacts.Fields.Name,
+          Contacts.Fields.PhoneNumbers,
+          Contacts.Fields.Emails,
+          Contacts.Fields.Image,
+        ],
+        sort: Contacts.SortTypes.FirstName,
+      });
+
+      const contacts: DeviceContact[] = data
+        .filter(c => c.name && c.name.trim().length > 0)
+        .map(c => {
+          let photoUri = c.image?.uri || null;
+          if (photoUri && !photoUri.startsWith('file://')) {
+            photoUri = `file://${photoUri}`;
+          }
+          return {
+            id: c.id || `${Date.now()}-${Math.random()}`,
+            name: c.name || '',
+            phone: c.phoneNumbers?.[0]?.number,
+            email: c.emails?.[0]?.email,
+            photo: photoUri,
+          };
+        });
+
+      setDeviceContacts(contacts);
+      setShowContactPicker(true);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to load contacts.');
+    } finally {
+      setLoadingContacts(false);
+    }
   };
+
+  const handleSelectContact = (contact: DeviceContact) => {
+    setName(contact.name);
+    setPhone(contact.phone || '');
+    setEmail(contact.email || '');
+    setPhoto(contact.photo || undefined);
+    setShowContactPicker(false);
+    setContactSearch('');
+  };
+
+  const filteredContacts = contactSearch.trim()
+    ? deviceContacts.filter(c => c.name.toLowerCase().includes(contactSearch.toLowerCase()))
+    : deviceContacts;
+
+  const renderContactItem = ({ item }: { item: DeviceContact }) => (
+    <TouchableOpacity
+      onPress={() => handleSelectContact(item)}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        gap: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(0,0,0,0.05)',
+      }}
+    >
+      {item.photo ? (
+        <Image
+          source={{ uri: item.photo }}
+          style={{ width: 48, height: 48, borderRadius: 24 }}
+        />
+      ) : (
+        <View
+          style={{
+            width: 48,
+            height: 48,
+            borderRadius: 24,
+            backgroundColor: 'rgba(129, 178, 154, 0.2)',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 16, color: '#81B29A' }}>
+            {getInitials(item.name)}
+          </Text>
+        </View>
+      )}
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 16, color: '#3D405B' }}>
+          {item.name}
+        </Text>
+        {item.phone && (
+          <Text style={{ fontFamily: 'PlusJakartaSans_400Regular', fontSize: 12, color: 'rgba(61, 64, 91, 0.5)' }}>
+            {item.phone}
+          </Text>
+        )}
+      </View>
+      <MaterialCommunityIcons name="chevron-right" size={24} color="rgba(61, 64, 91, 0.3)" />
+    </TouchableOpacity>
+  );
 
   return (
     <SwipeableScreen onSwipeBack={onBack}>
@@ -160,6 +280,7 @@ export const NewConnectionScreen: React.FC<NewConnectionScreenProps> = ({
         >
           <TouchableOpacity
             onPress={handleImportContacts}
+            disabled={loadingContacts}
             style={{
               position: 'absolute',
               top: 20,
@@ -169,10 +290,16 @@ export const NewConnectionScreen: React.FC<NewConnectionScreenProps> = ({
               gap: 6,
             }}
           >
-            <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 10, color: '#81B29A', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-              Import from Contacts
-            </Text>
-            <MaterialCommunityIcons name="import" size={16} color="#81B29A" />
+            {loadingContacts ? (
+              <ActivityIndicator size="small" color="#81B29A" />
+            ) : (
+              <>
+                <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 10, color: '#81B29A', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Import from Contacts
+                </Text>
+                <MaterialCommunityIcons name="import" size={16} color="#81B29A" />
+              </>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -181,15 +308,18 @@ export const NewConnectionScreen: React.FC<NewConnectionScreenProps> = ({
               height: 128,
               borderRadius: 64,
               backgroundColor: 'rgba(0,0,0,0.02)',
-              borderWidth: 2,
+              borderWidth: photo ? 0 : 2,
               borderStyle: 'dashed',
               borderColor: 'rgba(61, 64, 91, 0.15)',
               alignItems: 'center',
               justifyContent: 'center',
               marginTop: 16,
+              overflow: 'hidden',
             }}
           >
-            {name.trim() ? (
+            {photo ? (
+              <Image source={{ uri: photo }} style={{ width: 128, height: 128, borderRadius: 64 }} />
+            ) : name.trim() ? (
               <View
                 style={{
                   width: '100%',
@@ -422,6 +552,63 @@ export const NewConnectionScreen: React.FC<NewConnectionScreenProps> = ({
           </View>
         </Animated.View>
         </ScrollView>
+
+        <Modal
+          visible={showContactPicker}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setShowContactPicker(false)}
+        >
+          <SafeAreaView style={{ flex: 1, backgroundColor: '#F4F1DE' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16 }}>
+              <TouchableOpacity onPress={() => { setShowContactPicker(false); setContactSearch(''); }}>
+                <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 16, color: '#81B29A' }}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <Text style={{ fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 18, color: '#3D405B' }}>
+                Select Contact
+              </Text>
+              <View style={{ width: 60 }} />
+            </View>
+
+            <View style={{ paddingHorizontal: 20, paddingBottom: 12 }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: '#FFF',
+                  borderRadius: 12,
+                  paddingHorizontal: 16,
+                }}
+              >
+                <MaterialCommunityIcons name="magnify" size={20} color="rgba(61, 64, 91, 0.4)" />
+                <TextInput
+                  value={contactSearch}
+                  onChangeText={setContactSearch}
+                  placeholder="Search contacts..."
+                  placeholderTextColor="rgba(61, 64, 91, 0.4)"
+                  style={{
+                    flex: 1,
+                    paddingVertical: 14,
+                    paddingHorizontal: 12,
+                    fontFamily: 'PlusJakartaSans_500Medium',
+                    fontSize: 16,
+                    color: '#3D405B',
+                  }}
+                />
+              </View>
+            </View>
+
+            <FlatList
+              data={filteredContacts}
+              keyExtractor={item => item.id}
+              renderItem={renderContactItem}
+              contentContainerStyle={{ backgroundColor: '#FFF' }}
+              ItemSeparatorComponent={() => null}
+            />
+          </SafeAreaView>
+        </Modal>
       </SafeAreaView>
     </SwipeableScreen>
   );

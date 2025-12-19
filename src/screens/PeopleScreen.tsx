@@ -21,12 +21,14 @@ import Animated, {
   useSharedValue,
   withSpring,
   runOnJS,
+  interpolateColor,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useApp, Friend } from '../context/AppContext';
 import { ORBITS } from '../types';
 
 type FilterType = 'all' | 'overdue' | 'favorites' | 'inner' | 'close' | 'catchup';
+type SortType = 'name' | 'lastContact' | 'orbit' | 'recentlyAdded';
 
 interface PeopleScreenProps {
   onNavigateToProfile: (friendId: string) => void;
@@ -55,24 +57,27 @@ const FriendCard: React.FC<{
   index: number;
   onPress: () => void;
   isOverdue: boolean;
-  onSwipeLog?: () => void;
+  onSwipeCall?: () => void;
+  onSwipeText?: () => void;
   onMenuPress?: () => void;
-}> = ({ friend, index, onPress, isOverdue, onSwipeLog, onMenuPress }) => {
+}> = ({ friend, index, onPress, isOverdue, onSwipeCall, onSwipeText, onMenuPress }) => {
   const timeInfo = getTimeSince(friend.lastContact);
   const orbit = ORBITS.find(o => o.id === friend.orbitId);
   const translateX = useSharedValue(0);
-  const cardOpacity = useSharedValue(1);
 
   const panGesture = Gesture.Pan()
     .onUpdate((event) => {
       if (event.translationX > 0) {
-        translateX.value = Math.min(event.translationX, 100);
+        translateX.value = Math.min(event.translationX, 120);
       }
     })
     .onEnd((event) => {
-      if (event.translationX > 80 && onSwipeLog) {
+      if (event.translationX >= 80 && onSwipeText) {
         translateX.value = withSpring(0);
-        runOnJS(onSwipeLog)();
+        runOnJS(onSwipeText)();
+      } else if (event.translationX >= 40 && event.translationX < 80 && onSwipeCall) {
+        translateX.value = withSpring(0);
+        runOnJS(onSwipeCall)();
       } else {
         translateX.value = withSpring(0);
       }
@@ -82,34 +87,50 @@ const FriendCard: React.FC<{
     transform: [{ translateX: translateX.value }],
   }));
 
-  const swipeIndicatorStyle = useAnimatedStyle(() => ({
-    opacity: Math.min(translateX.value / 80, 1),
-    transform: [{ scale: Math.min(translateX.value / 80, 1) }],
+  const callIndicatorStyle = useAnimatedStyle(() => ({
+    opacity: translateX.value >= 20 ? Math.min((translateX.value - 20) / 30, 1) : 0,
+    transform: [{ scale: translateX.value >= 20 ? Math.min((translateX.value - 20) / 30, 1) : 0 }],
   }));
+
+  const textIndicatorStyle = useAnimatedStyle(() => ({
+    opacity: translateX.value >= 60 ? Math.min((translateX.value - 60) / 40, 1) : 0,
+    transform: [{ scale: translateX.value >= 60 ? Math.min((translateX.value - 60) / 40, 1) : 0 }],
+  }));
+
+  const bgStyle = useAnimatedStyle(() => {
+    const isTextZone = translateX.value >= 70;
+    return {
+      backgroundColor: isTextZone ? '#81B29A' : '#3D405B',
+    };
+  });
 
   return (
     <Animated.View
-      entering={FadeInRight.delay(index * 50).duration(300)}
+      entering={FadeInRight.delay(Math.min(index * 30, 300)).duration(300)}
       layout={Layout.springify()}
     >
       <View style={{ position: 'relative' }}>
-        <View
-          style={{
+        <Animated.View
+          style={[bgStyle, {
             position: 'absolute',
             left: 0,
             top: 0,
             bottom: 0,
-            width: 80,
-            backgroundColor: '#81B29A',
+            width: 120,
             borderRadius: 16,
+            flexDirection: 'row',
             alignItems: 'center',
-            justifyContent: 'center',
-          }}
+            paddingLeft: 16,
+            gap: 16,
+          }]}
         >
-          <Animated.View style={swipeIndicatorStyle}>
-            <MaterialCommunityIcons name="check" size={28} color="#FFF" />
+          <Animated.View style={callIndicatorStyle}>
+            <MaterialCommunityIcons name="phone" size={22} color="#FFF" />
           </Animated.View>
-        </View>
+          <Animated.View style={textIndicatorStyle}>
+            <MaterialCommunityIcons name="message-text" size={22} color="#FFF" />
+          </Animated.View>
+        </Animated.View>
         <GestureDetector gesture={panGesture}>
           <Animated.View style={animatedCardStyle}>
             <TouchableOpacity
@@ -168,9 +189,9 @@ const FriendCard: React.FC<{
                 position: 'absolute',
                 top: -4,
                 right: -4,
-                width: 20,
-                height: 20,
-                borderRadius: 10,
+                width: 18,
+                height: 18,
+                borderRadius: 9,
                 backgroundColor: '#E07A5F',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -178,25 +199,25 @@ const FriendCard: React.FC<{
                 borderColor: '#FFF',
               }}
             >
-              <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold' }}>!</Text>
+              <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 10, color: '#FFF' }}>
+                !
+              </Text>
             </View>
           )}
         </View>
 
-        <View style={{ flex: 1, minWidth: 0 }}>
+        <View style={{ flex: 1 }}>
           <Text
-            numberOfLines={1}
             style={{
               fontFamily: 'PlusJakartaSans_700Bold',
-              fontSize: 16,
+              fontSize: 17,
               color: '#3D405B',
-              marginBottom: 2,
             }}
+            numberOfLines={1}
           >
             {friend.name}
           </Text>
           <Text
-            numberOfLines={1}
             style={{
               fontFamily: 'PlusJakartaSans_600SemiBold',
               fontSize: 12,
@@ -270,8 +291,20 @@ export const PeopleScreen: React.FC<PeopleScreenProps> = ({
   };
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const [sortBy, setSortBy] = useState<SortType>('name');
+  const [showSortModal, setShowSortModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [menuFriend, setMenuFriend] = useState<Friend | null>(null);
+
+  const handleSwipeCall = (friend: Friend) => {
+    logInteraction(friend.id, 'call', 'Quick call');
+    Alert.alert('Call Logged!', `Call logged with ${friend.name}`);
+  };
+
+  const handleSwipeText = (friend: Friend) => {
+    logInteraction(friend.id, 'text', 'Quick text');
+    Alert.alert('Text Logged!', `Text logged with ${friend.name}`);
+  };
 
   const handleMenuAction = (action: 'view' | 'log' | 'favorite' | 'delete') => {
     if (!menuFriend) return;
@@ -311,6 +344,13 @@ export const PeopleScreen: React.FC<PeopleScreenProps> = ({
     { key: 'catchup', label: 'Acquaintances' },
   ];
 
+  const sortOptions: { key: SortType; label: string; icon: string }[] = [
+    { key: 'name', label: 'Name (A-Z)', icon: 'sort-alphabetical-ascending' },
+    { key: 'lastContact', label: 'Last Contact', icon: 'clock-outline' },
+    { key: 'orbit', label: 'Orbit', icon: 'orbit' },
+    { key: 'recentlyAdded', label: 'Recently Added', icon: 'account-plus' },
+  ];
+
   const filteredFriends = useMemo(() => {
     let result = [...friends];
 
@@ -340,16 +380,42 @@ export const PeopleScreen: React.FC<PeopleScreenProps> = ({
         break;
     }
 
-    result.sort((a, b) => {
-      const aOverdue = overdueIds.has(a.id);
-      const bOverdue = overdueIds.has(b.id);
-      if (aOverdue && !bOverdue) return -1;
-      if (!aOverdue && bOverdue) return 1;
-      return a.name.localeCompare(b.name);
-    });
+    switch (sortBy) {
+      case 'name':
+        result.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 'lastContact':
+        result.sort((a, b) => {
+          const aTime = a.lastContact ? new Date(a.lastContact).getTime() : 0;
+          const bTime = b.lastContact ? new Date(b.lastContact).getTime() : 0;
+          return bTime - aTime;
+        });
+        break;
+      case 'orbit':
+        const orbitOrder = { inner: 0, close: 1, catchup: 2 };
+        result.sort((a, b) => orbitOrder[a.orbitId] - orbitOrder[b.orbitId]);
+        break;
+      case 'recentlyAdded':
+        result.sort((a, b) => {
+          const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return bTime - aTime;
+        });
+        break;
+    }
+
+    if (activeFilter !== 'overdue' && sortBy === 'name') {
+      result.sort((a, b) => {
+        const aOverdue = overdueIds.has(a.id);
+        const bOverdue = overdueIds.has(b.id);
+        if (aOverdue && !bOverdue) return -1;
+        if (!aOverdue && bOverdue) return 1;
+        return a.name.localeCompare(b.name);
+      });
+    }
 
     return result;
-  }, [friends, searchQuery, activeFilter, overdueIds]);
+  }, [friends, searchQuery, activeFilter, sortBy, overdueIds]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -370,10 +436,11 @@ export const PeopleScreen: React.FC<PeopleScreenProps> = ({
             </Text>
           </View>
           <TouchableOpacity
-            style={{ padding: 8, borderRadius: 20 }}
+            onPress={() => setShowSortModal(true)}
+            style={{ padding: 8, borderRadius: 20, backgroundColor: sortBy !== 'name' ? 'rgba(129, 178, 154, 0.1)' : 'transparent' }}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <MaterialCommunityIcons name="sort" size={24} color="#3D405B" />
+            <MaterialCommunityIcons name="sort" size={24} color={sortBy !== 'name' ? '#81B29A' : '#3D405B'} />
           </TouchableOpacity>
         </View>
 
@@ -508,88 +575,50 @@ export const PeopleScreen: React.FC<PeopleScreenProps> = ({
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100, gap: 12 }}
-        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#81B29A" />
         }
+        showsVerticalScrollIndicator={false}
       >
         {filteredFriends.length === 0 ? (
-          <Animated.View
-            entering={FadeIn.delay(200).duration(400)}
-            style={{
-              backgroundColor: '#FFF',
-              padding: 32,
-              borderRadius: 20,
-              alignItems: 'center',
-              marginTop: 20,
-            }}
-          >
-            <MaterialCommunityIcons
-              name={searchQuery ? 'account-search' : 'account-group'}
-              size={48}
-              color="rgba(61, 64, 91, 0.3)"
-            />
-            <Text
-              style={{
-                fontFamily: 'PlusJakartaSans_600SemiBold',
-                fontSize: 16,
-                color: '#3D405B',
-                marginTop: 16,
-              }}
-            >
-              {searchQuery ? 'No friends found' : 'No friends yet'}
+          <Animated.View entering={FadeIn.duration(400)} style={{ paddingVertical: 60, alignItems: 'center' }}>
+            <MaterialCommunityIcons name="account-search" size={64} color="rgba(61, 64, 91, 0.2)" />
+            <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 18, color: '#3D405B', marginTop: 16 }}>
+              {searchQuery ? 'No matches found' : 'No connections yet'}
             </Text>
-            <Text
-              style={{
-                fontFamily: 'PlusJakartaSans_400Regular',
-                fontSize: 14,
-                color: 'rgba(61, 64, 91, 0.6)',
-                marginTop: 4,
-                textAlign: 'center',
-              }}
-            >
+            <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', fontSize: 14, color: 'rgba(61, 64, 91, 0.6)', marginTop: 8, textAlign: 'center' }}>
               {searchQuery ? 'Try a different search term' : 'Add your first connection to get started'}
             </Text>
             {!searchQuery && (
               <TouchableOpacity
                 onPress={handleAddConnection}
                 style={{
-                  marginTop: 20,
-                  paddingHorizontal: 24,
-                  paddingVertical: 12,
+                  marginTop: 24,
                   backgroundColor: '#E07A5F',
+                  paddingHorizontal: 32,
+                  paddingVertical: 14,
                   borderRadius: 9999,
                 }}
               >
-                <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 14, color: '#FFF' }}>
+                <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 16, color: '#FFF' }}>
                   Add Connection
                 </Text>
               </TouchableOpacity>
             )}
           </Animated.View>
         ) : (
-          <>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-              <MaterialCommunityIcons name="gesture-swipe-right" size={14} color="rgba(61, 64, 91, 0.4)" />
-              <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', fontSize: 11, color: 'rgba(61, 64, 91, 0.4)' }}>
-                Swipe right to quick log
-              </Text>
-            </View>
-            {filteredFriends.map((friend, index) => (
-              <FriendCard
-                key={friend.id}
-                friend={friend}
-                index={index}
-                onPress={() => onNavigateToProfile(friend.id)}
-                isOverdue={overdueIds.has(friend.id)}
-                onSwipeLog={() => {
-                  logInteraction(friend.id, 'text', 'Quick check-in');
-                  Alert.alert('Logged!', `Quick check-in with ${friend.name}`);
-                }}
-                onMenuPress={() => setMenuFriend(friend)}
-              />
-            ))}
-          </>
+          filteredFriends.map((friend, index) => (
+            <FriendCard
+              key={friend.id}
+              friend={friend}
+              index={index}
+              onPress={() => onNavigateToProfile(friend.id)}
+              isOverdue={overdueIds.has(friend.id)}
+              onSwipeCall={() => handleSwipeCall(friend)}
+              onSwipeText={() => handleSwipeText(friend)}
+              onMenuPress={() => setMenuFriend(friend)}
+            />
+          ))
         )}
       </ScrollView>
 
@@ -598,22 +627,73 @@ export const PeopleScreen: React.FC<PeopleScreenProps> = ({
         style={{
           position: 'absolute',
           bottom: 100,
-          right: 20,
-          width: 64,
-          height: 64,
-          borderRadius: 32,
-          backgroundColor: canAddMoreFriends() ? '#E07A5F' : '#81B29A',
+          right: 24,
+          width: 60,
+          height: 60,
+          borderRadius: 30,
+          backgroundColor: '#E07A5F',
           alignItems: 'center',
           justifyContent: 'center',
-          shadowColor: canAddMoreFriends() ? '#E07A5F' : '#81B29A',
+          shadowColor: '#E07A5F',
           shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.4,
+          shadowOpacity: 0.35,
           shadowRadius: 16,
           elevation: 8,
         }}
       >
-        <MaterialCommunityIcons name={canAddMoreFriends() ? "plus" : "lock"} size={32} color="#FFF" />
+        <MaterialCommunityIcons name="plus" size={28} color="#FFF" />
       </TouchableOpacity>
+
+      <Modal
+        visible={showSortModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowSortModal(false)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setShowSortModal(false)}
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}
+        >
+          <View style={{ backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
+            <Text style={{ fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 20, color: '#3D405B', marginBottom: 20 }}>
+              Sort By
+            </Text>
+            {sortOptions.map((option) => (
+              <TouchableOpacity
+                key={option.key}
+                onPress={() => { setSortBy(option.key); setShowSortModal(false); }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: 16,
+                  borderBottomWidth: 1,
+                  borderBottomColor: 'rgba(0,0,0,0.05)',
+                }}
+              >
+                <MaterialCommunityIcons
+                  name={option.icon as any}
+                  size={24}
+                  color={sortBy === option.key ? '#81B29A' : 'rgba(61, 64, 91, 0.4)'}
+                />
+                <Text style={{
+                  flex: 1,
+                  fontFamily: sortBy === option.key ? 'PlusJakartaSans_700Bold' : 'PlusJakartaSans_500Medium',
+                  fontSize: 16,
+                  color: sortBy === option.key ? '#3D405B' : 'rgba(61, 64, 91, 0.7)',
+                  marginLeft: 16,
+                }}>
+                  {option.label}
+                </Text>
+                {sortBy === option.key && (
+                  <MaterialCommunityIcons name="check" size={24} color="#81B29A" />
+                )}
+              </TouchableOpacity>
+            ))}
+            <View style={{ height: 40 }} />
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       <Modal
         visible={!!menuFriend}
@@ -622,82 +702,43 @@ export const PeopleScreen: React.FC<PeopleScreenProps> = ({
         onRequestClose={() => setMenuFriend(null)}
       >
         <TouchableOpacity
-          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}
           activeOpacity={1}
           onPress={() => setMenuFriend(null)}
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}
         >
-          <View
-            style={{
-              backgroundColor: '#FFF',
-              borderTopLeftRadius: 24,
-              borderTopRightRadius: 24,
-              paddingTop: 8,
-              paddingBottom: 40,
-            }}
-          >
-            <View style={{ width: 40, height: 4, backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
+          <View style={{ backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
             {menuFriend && (
-              <View style={{ paddingHorizontal: 20 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-                  <View
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 24,
-                      backgroundColor: ORBITS.find(o => o.id === menuFriend.orbitId)?.color || '#81B29A',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 16, color: '#FFF' }}>
+              <>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
+                  <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#81B29A', alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 18, color: '#FFF' }}>
                       {menuFriend.initials}
                     </Text>
                   </View>
-                  <View>
-                    <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 18, color: '#3D405B' }}>
-                      {menuFriend.name}
-                    </Text>
-                    <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', fontSize: 13, color: 'rgba(61, 64, 91, 0.6)' }}>
-                      {ORBITS.find(o => o.id === menuFriend.orbitId)?.name || 'Contact'}
-                    </Text>
-                  </View>
-                </View>
-
-                <TouchableOpacity
-                  onPress={() => handleMenuAction('view')}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 16, paddingVertical: 14 }}
-                >
-                  <MaterialCommunityIcons name="account" size={24} color="#3D405B" />
-                  <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 16, color: '#3D405B' }}>View Profile</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => handleMenuAction('log')}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 16, paddingVertical: 14 }}
-                >
-                  <MaterialCommunityIcons name="check-circle-outline" size={24} color="#81B29A" />
-                  <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 16, color: '#3D405B' }}>Quick Log</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => handleMenuAction('favorite')}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 16, paddingVertical: 14 }}
-                >
-                  <MaterialCommunityIcons name={menuFriend.isFavorite ? "star" : "star-outline"} size={24} color="#F2CC8F" />
-                  <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 16, color: '#3D405B' }}>
-                    {menuFriend.isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
+                  <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 18, color: '#3D405B', marginLeft: 16 }}>
+                    {menuFriend.name}
                   </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => handleMenuAction('delete')}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 16, paddingVertical: 14 }}
-                >
-                  <MaterialCommunityIcons name="trash-can-outline" size={24} color="#E07A5F" />
-                  <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 16, color: '#E07A5F' }}>Remove Contact</Text>
-                </TouchableOpacity>
-              </View>
+                </View>
+                {[
+                  { action: 'view' as const, icon: 'account', label: 'View Profile' },
+                  { action: 'log' as const, icon: 'check-circle', label: 'Log Connection' },
+                  { action: 'favorite' as const, icon: 'star', label: 'Toggle Favorite' },
+                  { action: 'delete' as const, icon: 'trash-can', label: 'Remove', color: '#E07A5F' },
+                ].map((item) => (
+                  <TouchableOpacity
+                    key={item.action}
+                    onPress={() => handleMenuAction(item.action)}
+                    style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16 }}
+                  >
+                    <MaterialCommunityIcons name={item.icon as any} size={24} color={item.color || '#3D405B'} />
+                    <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 16, color: item.color || '#3D405B', marginLeft: 16 }}>
+                      {item.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </>
             )}
+            <View style={{ height: 40 }} />
           </View>
         </TouchableOpacity>
       </Modal>

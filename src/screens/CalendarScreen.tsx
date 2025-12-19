@@ -7,6 +7,8 @@ import {
   Dimensions,
   Modal,
   TextInput,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -25,6 +27,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useApp } from '../context/AppContext';
 import { CalendarEvent, ORBITS } from '../types';
 import { DrawerModal } from '../components/DrawerModal';
+import { useCalendarSync } from '../hooks/useCalendarSync';
 
 const { width } = Dimensions.get('window');
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -74,17 +77,81 @@ const getEventIcon = (type: CalendarEvent['type']) => {
 
 export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProfile }) => {
   const { friends, calendarEvents, addCalendarEvent, updateCalendarEvent, deleteCalendarEvent, getUpcomingBirthdays } = useApp();
+  const { isSyncing, importEventsFromDevice, exportEventToDevice, syncBirthdaysToDevice } = useCalendarSync();
   
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showAddEvent, setShowAddEvent] = useState(false);
   const [showEventDetail, setShowEventDetail] = useState<CalendarEvent | null>(null);
+  const [showSyncModal, setShowSyncModal] = useState(false);
   
   const [newEventTitle, setNewEventTitle] = useState('');
   const [newEventType, setNewEventType] = useState<CalendarEvent['type']>('custom');
   const [newEventFriendId, setNewEventFriendId] = useState<string | null>(null);
   const [newEventNotes, setNewEventNotes] = useState('');
+
+  const handleImportFromDevice = async () => {
+    const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 3, 0);
+    
+    const events = await importEventsFromDevice(startDate, endDate);
+    
+    if (events.length === 0) {
+      Alert.alert('No Events', 'No events found in your device calendar for this period.');
+      return;
+    }
+
+    let imported = 0;
+    for (const event of events) {
+      const exists = calendarEvents.some(e => e.title === event.title && 
+        new Date(e.date).toDateString() === event.startDate.toDateString());
+      
+      if (!exists) {
+        await addCalendarEvent({
+          id: `imported-${event.id}`,
+          title: event.title,
+          date: event.startDate,
+          type: 'custom',
+          notes: event.notes,
+          isRecurring: false,
+          isCompleted: false,
+          createdAt: new Date(),
+        });
+        imported++;
+      }
+    }
+
+    setShowSyncModal(false);
+    Alert.alert('Import Complete', `Imported ${imported} new events from your calendar.`);
+  };
+
+  const handleExportBirthdays = async () => {
+    const friendsWithBirthdays = friends.filter(f => f.birthday);
+    
+    if (friendsWithBirthdays.length === 0) {
+      Alert.alert('No Birthdays', 'None of your contacts have birthdays set.');
+      return;
+    }
+
+    const synced = await syncBirthdaysToDevice(friendsWithBirthdays);
+    setShowSyncModal(false);
+    Alert.alert('Export Complete', `Added ${synced} birthday${synced !== 1 ? 's' : ''} to your device calendar.`);
+  };
+
+  const handleExportSelectedEvent = async (event: CalendarEvent) => {
+    const result = await exportEventToDevice({
+      title: event.title,
+      startDate: new Date(event.date),
+      notes: event.notes,
+    });
+
+    if (result) {
+      Alert.alert('Exported', 'Event added to your device calendar.');
+    } else {
+      Alert.alert('Failed', 'Could not export event to calendar.');
+    }
+  };
 
   const upcomingBirthdays = getUpcomingBirthdays();
 
@@ -262,22 +329,41 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
           <Text style={{ fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 28, color: '#3D405B' }}>
             Calendar
           </Text>
-          <TouchableOpacity
-            onPress={() => {
-              setSelectedDate(new Date());
-              setShowAddEvent(true);
-            }}
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: '#81B29A',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <MaterialCommunityIcons name="plus" size={24} color="#FFF" />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TouchableOpacity
+              onPress={() => setShowSyncModal(true)}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: '#F4F1DE',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {isSyncing ? (
+                <ActivityIndicator size="small" color="#81B29A" />
+              ) : (
+                <MaterialCommunityIcons name="sync" size={22} color="#3D405B" />
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                setSelectedDate(new Date());
+                setShowAddEvent(true);
+              }}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: '#81B29A',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <MaterialCommunityIcons name="plus" size={24} color="#FFF" />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -791,9 +877,103 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
                 </TouchableOpacity>
               </View>
             )}
+
+            <TouchableOpacity
+              onPress={() => handleExportSelectedEvent(showEventDetail)}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                padding: 12,
+                marginTop: 8,
+              }}
+            >
+              <MaterialCommunityIcons name="export" size={18} color="#81B29A" />
+              <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 14, color: '#81B29A' }}>
+                Export to Device Calendar
+              </Text>
+            </TouchableOpacity>
           </View>
         )}
       </DrawerModal>
+
+      <Modal
+        visible={showSyncModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowSyncModal(false)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setShowSyncModal(false)}
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}
+        >
+          <View style={{ backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
+            <Text style={{ fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 20, color: '#3D405B', marginBottom: 8 }}>
+              Calendar Sync
+            </Text>
+            <Text style={{ fontFamily: 'PlusJakartaSans_400Regular', fontSize: 14, color: 'rgba(61, 64, 91, 0.6)', marginBottom: 20 }}>
+              Sync events between Tether and your device calendar.
+            </Text>
+
+            <TouchableOpacity
+              onPress={handleImportFromDevice}
+              disabled={isSyncing}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                padding: 16,
+                backgroundColor: '#F4F1DE',
+                borderRadius: 12,
+                marginBottom: 12,
+                gap: 12,
+                opacity: isSyncing ? 0.6 : 1,
+              }}
+            >
+              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#81B29A', alignItems: 'center', justifyContent: 'center' }}>
+                <MaterialCommunityIcons name="download" size={22} color="#FFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 16, color: '#3D405B' }}>
+                  Import from Calendar
+                </Text>
+                <Text style={{ fontFamily: 'PlusJakartaSans_400Regular', fontSize: 12, color: 'rgba(61, 64, 91, 0.6)' }}>
+                  Import events from your device calendar
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={handleExportBirthdays}
+              disabled={isSyncing}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                padding: 16,
+                backgroundColor: '#F4F1DE',
+                borderRadius: 12,
+                gap: 12,
+                opacity: isSyncing ? 0.6 : 1,
+              }}
+            >
+              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#EC4899', alignItems: 'center', justifyContent: 'center' }}>
+                <MaterialCommunityIcons name="cake-variant" size={22} color="#FFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 16, color: '#3D405B' }}>
+                  Export Birthdays
+                </Text>
+                <Text style={{ fontFamily: 'PlusJakartaSans_400Regular', fontSize: 12, color: 'rgba(61, 64, 91, 0.6)' }}>
+                  Add friends' birthdays to your calendar
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            <View style={{ height: 40 }} />
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 };
