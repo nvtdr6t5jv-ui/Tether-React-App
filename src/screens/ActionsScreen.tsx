@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import Animated, {
   Layout,
 } from 'react-native-reanimated';
 import { useApp } from '../context/AppContext';
+import { useGamification } from '../context/GamificationContext';
 import { ORBITS, InteractionType } from '../types';
 
 type TabType = 'nudges' | 'drafts' | 'history';
@@ -84,7 +85,31 @@ export const ActionsScreen: React.FC<ActionsScreenProps> = ({
     getFriendById,
   } = useApp();
 
+  const { recordDailyActivity, addXP, checkAndUpdateAchievements, updateChallengeProgress, state: gamificationState, streakData } = useGamification();
+
   const [activeTab, setActiveTab] = useState<TabType>('nudges');
+
+  const updateGamificationOnInteraction = useCallback(async (type: string) => {
+    await recordDailyActivity();
+    const xpMap: Record<string, number> = { text: 5, call: 15, video_call: 20, in_person: 30, meetup: 30, other: 5 };
+    addXP(xpMap[type] || 5, type);
+    updateChallengeProgress(type === 'call' ? 'make_calls' : type === 'text' ? 'send_messages' : 'reach_out', 1);
+    const callCount = interactions.filter(i => i.type === 'call').length + (type === 'call' ? 1 : 0);
+    const textCount = interactions.filter(i => i.type === 'text').length + (type === 'text' ? 1 : 0);
+    const inPersonCount = interactions.filter(i => i.type === 'in_person' || i.type === 'meetup').length + (type === 'in_person' || type === 'meetup' ? 1 : 0);
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const weekInteractions = interactions.filter(i => new Date(i.date) >= oneWeekAgo);
+    const uniquePeople = new Set(weekInteractions.map(i => i.friendId)).size;
+    const completedChallenges = gamificationState.weeklyChallenges.filter(c => c.isCompleted).length;
+    checkAndUpdateAchievements({
+      totalInteractions: interactions.length + 1,
+      callCount, textCount, inPersonCount,
+      uniquePeopleThisWeek: uniquePeople,
+      reconnections: 0,
+      currentStreak: streakData.currentStreak,
+      challengesCompleted: completedChallenges,
+    });
+  }, [recordDailyActivity, addXP, checkAndUpdateAchievements, updateChallengeProgress, interactions, streakData, gamificationState]);
 
   const overdueFriends = useMemo(() => getOverdueFriends(), [getOverdueFriends, friends]);
   
@@ -117,19 +142,21 @@ export const ActionsScreen: React.FC<ActionsScreenProps> = ({
     ? Math.min((completedMissions / Math.max(totalMissions, 5)) * 100, 100) 
     : 0;
 
-  const handleCall = (friendId: string, phone?: string) => {
+  const handleCall = async (friendId: string, phone?: string) => {
     if (phone) {
       Linking.openURL(`tel:${phone}`);
-      logInteraction(friendId, 'call');
+      await logInteraction(friendId, 'call');
+      await updateGamificationOnInteraction('call');
     } else {
       Alert.alert('No phone number', 'Add a phone number to call this friend.');
     }
   };
 
-  const handleText = (friendId: string, phone?: string) => {
+  const handleText = async (friendId: string, phone?: string) => {
     if (phone) {
       Linking.openURL(`sms:${phone}`);
-      logInteraction(friendId, 'text');
+      await logInteraction(friendId, 'text');
+      await updateGamificationOnInteraction('text');
     } else {
       Alert.alert('No phone number', 'Add a phone number to text this friend.');
     }

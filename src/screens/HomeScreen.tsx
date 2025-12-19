@@ -635,9 +635,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onNavigateTo
         visible={showShuffle}
         onClose={() => setShowShuffle(false)}
         friends={friends}
-        onMessage={(friend) => {
+        onMessage={async (friend) => {
           setShowShuffle(false);
-          logInteraction(friend.id, 'text');
+          await logInteraction(friend.id, 'text');
+          await updateGamificationOnInteraction('text');
         }}
       />
 

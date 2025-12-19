@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -25,6 +25,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useApp, Friend } from '../context/AppContext';
+import { useGamification } from '../context/GamificationContext';
 import { ORBITS } from '../types';
 
 type FilterType = 'all' | 'overdue' | 'favorites' | 'inner' | 'close' | 'catchup';
@@ -288,7 +289,30 @@ export const PeopleScreen: React.FC<PeopleScreenProps> = ({
   onNavigateToNewConnection,
   onPremiumRequired,
 }) => {
-  const { friends, getOverdueFriends, refreshData, isLoading, canAddMoreFriends, getRemainingFreeSlots, premiumStatus, logInteraction, deleteFriend } = useApp();
+  const { friends, getOverdueFriends, refreshData, isLoading, canAddMoreFriends, getRemainingFreeSlots, premiumStatus, logInteraction, deleteFriend, interactions } = useApp();
+  const { recordDailyActivity, addXP, checkAndUpdateAchievements, updateChallengeProgress, state: gamificationState, streakData } = useGamification();
+
+  const updateGamificationOnInteraction = useCallback(async (type: string) => {
+    await recordDailyActivity();
+    const xpMap: Record<string, number> = { text: 5, call: 15, video_call: 20, in_person: 30, meetup: 30, other: 5 };
+    addXP(xpMap[type] || 5, type);
+    updateChallengeProgress(type === 'call' ? 'make_calls' : type === 'text' ? 'send_messages' : 'reach_out', 1);
+    const callCount = interactions.filter(i => i.type === 'call').length + (type === 'call' ? 1 : 0);
+    const textCount = interactions.filter(i => i.type === 'text').length + (type === 'text' ? 1 : 0);
+    const inPersonCount = interactions.filter(i => i.type === 'in_person' || i.type === 'meetup').length + (type === 'in_person' || type === 'meetup' ? 1 : 0);
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const weekInteractions = interactions.filter(i => new Date(i.date) >= oneWeekAgo);
+    const uniquePeople = new Set(weekInteractions.map(i => i.friendId)).size;
+    const completedChallenges = gamificationState.weeklyChallenges.filter(c => c.isCompleted).length;
+    checkAndUpdateAchievements({
+      totalInteractions: interactions.length + 1,
+      callCount, textCount, inPersonCount,
+      uniquePeopleThisWeek: uniquePeople,
+      reconnections: 0,
+      currentStreak: streakData.currentStreak,
+      challengesCompleted: completedChallenges,
+    });
+  }, [recordDailyActivity, addXP, checkAndUpdateAchievements, updateChallengeProgress, interactions, streakData, gamificationState]);
 
   const handleAddConnection = () => {
     if (!canAddMoreFriends()) {
@@ -304,24 +328,27 @@ export const PeopleScreen: React.FC<PeopleScreenProps> = ({
   const [refreshing, setRefreshing] = useState(false);
   const [menuFriend, setMenuFriend] = useState<Friend | null>(null);
 
-  const handleSwipeCall = (friend: Friend) => {
-    logInteraction(friend.id, 'call', 'Quick call');
+  const handleSwipeCall = async (friend: Friend) => {
+    await logInteraction(friend.id, 'call', 'Quick call');
+    await updateGamificationOnInteraction('call');
     Alert.alert('Call Logged!', `Call logged with ${friend.name}`);
   };
 
-  const handleSwipeText = (friend: Friend) => {
-    logInteraction(friend.id, 'text', 'Quick text');
+  const handleSwipeText = async (friend: Friend) => {
+    await logInteraction(friend.id, 'text', 'Quick text');
+    await updateGamificationOnInteraction('text');
     Alert.alert('Text Logged!', `Text logged with ${friend.name}`);
   };
 
-  const handleMenuAction = (action: 'view' | 'log' | 'favorite' | 'delete') => {
+  const handleMenuAction = async (action: 'view' | 'log' | 'favorite' | 'delete') => {
     if (!menuFriend) return;
     switch (action) {
       case 'view':
         onNavigateToProfile(menuFriend.id);
         break;
       case 'log':
-        logInteraction(menuFriend.id, 'text', 'Quick check-in');
+        await logInteraction(menuFriend.id, 'text', 'Quick check-in');
+        await updateGamificationOnInteraction('text');
         Alert.alert('Logged!', `Connection logged with ${menuFriend.name}`);
         break;
       case 'favorite':

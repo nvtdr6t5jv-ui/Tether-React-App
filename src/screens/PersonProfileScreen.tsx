@@ -143,7 +143,7 @@ export const PersonProfileScreen: React.FC<PersonProfileScreenProps> = ({
     });
   }, [recordDailyActivity, addXP, checkAndUpdateAchievements, allInteractions, streakData, gamificationState]);
 
-  const handleCall = () => {
+  const handleCall = async () => {
     if (!friend.phone) {
       Alert.alert('No phone number', 'Add a phone number to call this friend.');
       return;
@@ -153,10 +153,11 @@ export const PersonProfileScreen: React.FC<PersonProfileScreenProps> = ({
       return;
     }
     Linking.openURL(`tel:${friend.phone}`);
-    logInteraction(friendId, 'call');
+    await logInteraction(friendId, 'call');
+    await updateGamificationOnInteraction('call');
   };
 
-  const handleText = () => {
+  const handleText = async () => {
     if (!friend.phone) {
       Alert.alert('No phone number', 'Add a phone number to text this friend.');
       return;
@@ -166,7 +167,8 @@ export const PersonProfileScreen: React.FC<PersonProfileScreenProps> = ({
       return;
     }
     Linking.openURL(`sms:${friend.phone}`);
-    logInteraction(friendId, 'text');
+    await logInteraction(friendId, 'text');
+    await updateGamificationOnInteraction('text');
   };
 
   const smartSuggestion = getSmartSuggestion(friendId);
