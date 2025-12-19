@@ -10,20 +10,27 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, { FadeInDown, FadeInUp, Layout } from "react-native-reanimated";
-import { useRoute, RouteProp } from "@react-navigation/native";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { RootStackParamList } from "../navigation/AppNavigator";
 import { AppleLogo, GoogleLogo } from "../components/SocialIcons";
 
 type AuthScreenRouteProp = RouteProp<RootStackParamList, "Auth">;
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export const AuthScreen = () => {
+  const navigation = useNavigation<NavigationProp>();
   const route = useRoute<AuthScreenRouteProp>();
   const [isLogin, setIsLogin] = useState(route.params?.mode === "login");
   const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  const handleSubmit = () => {
+    navigation.navigate("OnboardingSync");
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F4F1DE" }} edges={["top", "bottom"]}>
@@ -187,6 +194,7 @@ export const AuthScreen = () => {
 
             <View style={{ marginTop: 24, gap: 16 }}>
               <TouchableOpacity
+                onPress={handleSubmit}
                 activeOpacity={0.9}
                 style={{
                   width: "100%",
@@ -227,35 +235,41 @@ export const AuthScreen = () => {
             </View>
 
             <View style={{ flexDirection: "row", gap: 16 }}>
-              <TouchableOpacity style={{
-                flex: 1,
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 12,
-                backgroundColor: "#FDFCF8",
-                borderRadius: 9999,
-                paddingVertical: 14,
-                borderWidth: 1,
-                borderColor: "rgba(61, 64, 91, 0.1)",
-              }}>
+              <TouchableOpacity
+                onPress={handleSubmit}
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 12,
+                  backgroundColor: "#FDFCF8",
+                  borderRadius: 9999,
+                  paddingVertical: 14,
+                  borderWidth: 1,
+                  borderColor: "rgba(61, 64, 91, 0.1)",
+                }}
+              >
                 <AppleLogo size={20} color="#3D405B" />
                 <Text style={{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 14, color: "#3D405B" }}>
                   Apple
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity style={{
-                flex: 1,
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 12,
-                backgroundColor: "#FDFCF8",
-                borderRadius: 9999,
-                paddingVertical: 14,
-                borderWidth: 1,
-                borderColor: "rgba(61, 64, 91, 0.1)",
-              }}>
+              <TouchableOpacity
+                onPress={handleSubmit}
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 12,
+                  backgroundColor: "#FDFCF8",
+                  borderRadius: 9999,
+                  paddingVertical: 14,
+                  borderWidth: 1,
+                  borderColor: "rgba(61, 64, 91, 0.1)",
+                }}
+              >
                 <GoogleLogo size={20} />
                 <Text style={{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 14, color: "#3D405B" }}>
                   Google

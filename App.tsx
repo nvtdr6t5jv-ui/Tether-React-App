@@ -15,6 +15,7 @@ import {
   Fraunces_600SemiBold,
 } from "@expo-google-fonts/fraunces";
 import { AppNavigator } from "./src/navigation/AppNavigator";
+import { OnboardingProvider } from "./src/context/OnboardingContext";
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -28,7 +29,7 @@ export default function App() {
 
   if (!fontsLoaded) {
     return (
-      <View className="flex-1 items-center justify-center bg-background-light">
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F4F1DE" }}>
         <ActivityIndicator size="large" color="#E07A5F" />
       </View>
     );
@@ -37,8 +38,10 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <StatusBar style="dark" />
-        <AppNavigator />
+        <OnboardingProvider>
+          <StatusBar style="dark" />
+          <AppNavigator />
+        </OnboardingProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
