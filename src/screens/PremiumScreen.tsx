@@ -4,6 +4,7 @@ import {
   Text,
   TouchableOpacity,
   Dimensions,
+  ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -18,11 +19,13 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { useApp } from '../context/AppContext';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface PremiumScreenProps {
   onClose: () => void;
+  trigger?: 'contact_limit' | 'deep_link' | 'templates' | 'analytics' | 'history' | 'bulk_actions' | 'general';
 }
 
 const PremiumFeature: React.FC<{
@@ -30,17 +33,26 @@ const PremiumFeature: React.FC<{
   title: string;
   description: string;
   delay: number;
-}> = ({ icon, title, description, delay }) => (
+  highlighted?: boolean;
+}> = ({ icon, title, description, delay, highlighted }) => (
   <Animated.View 
     entering={FadeInUp.delay(delay).duration(400)}
-    style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 16 }}
+    style={{ 
+      flexDirection: 'row', 
+      alignItems: 'flex-start', 
+      gap: 12,
+      backgroundColor: highlighted ? 'rgba(255,255,255,0.15)' : 'transparent',
+      padding: highlighted ? 12 : 0,
+      borderRadius: 12,
+      marginHorizontal: highlighted ? -12 : 0,
+    }}
   >
     <View
       style={{
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        backgroundColor: 'rgba(255,255,255,0.2)',
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: highlighted ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.2)',
         alignItems: 'center',
         justifyContent: 'center',
         marginTop: 2,
@@ -49,20 +61,58 @@ const PremiumFeature: React.FC<{
       <MaterialCommunityIcons name={icon as any} size={14} color="#FFF" />
     </View>
     <View style={{ flex: 1 }}>
-      <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 15, color: '#FFF', marginBottom: 2 }}>
+      <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 14, color: '#FFF', marginBottom: 2 }}>
         {title}
       </Text>
-      <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', fontSize: 12, color: 'rgba(255,255,255,0.8)', lineHeight: 18 }}>
+      <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', fontSize: 12, color: 'rgba(255,255,255,0.8)', lineHeight: 16 }}>
         {description}
       </Text>
     </View>
   </Animated.View>
 );
 
-export const PremiumScreen: React.FC<PremiumScreenProps> = ({ onClose }) => {
+const FEATURES = [
+  { id: 'contacts', icon: 'account-group', title: 'Unlimited Contacts', description: 'Track more than 5 people in your orbit.' },
+  { id: 'deep_link', icon: 'link-variant', title: 'Quick Actions', description: 'Tap to message or call directly from the app.' },
+  { id: 'templates', icon: 'text-box-multiple', title: 'Message Templates', description: 'Suggested conversation starters for any occasion.' },
+  { id: 'analytics', icon: 'chart-line', title: 'Full Analytics', description: 'Unlock the complete Social Pulse dashboard.' },
+  { id: 'history', icon: 'history', title: 'Unlimited History', description: 'See all your interactions, not just 30 days.' },
+  { id: 'suggestions', icon: 'lightbulb', title: 'Smart Suggestions', description: 'AI-powered insights on when to reach out.' },
+  { id: 'bulk_actions', icon: 'checkbox-multiple-marked', title: 'Bulk Actions', description: 'Mark multiple friends as contacted at once.' },
+  { id: 'frequencies', icon: 'clock-edit', title: 'Custom Frequencies', description: 'Set personalized nudge schedules per friend.' },
+];
+
+const TRIGGER_HEADLINES: Record<string, { title: string; subtitle: string }> = {
+  contact_limit: { title: "You've Hit Your Limit", subtitle: 'Upgrade to add unlimited friends to your orbit.' },
+  deep_link: { title: 'One-Tap Messaging', subtitle: 'Upgrade to message or call directly from Tether.' },
+  templates: { title: 'Never Run Out of Words', subtitle: 'Unlock message templates for every occasion.' },
+  analytics: { title: 'See the Full Picture', subtitle: 'Unlock complete Social Pulse analytics.' },
+  history: { title: 'Your Full History Awaits', subtitle: 'See all your interactions, not just 30 days.' },
+  bulk_actions: { title: 'Save Time', subtitle: 'Mark multiple friends as contacted at once.' },
+  general: { title: 'Unlock Your Full Potential', subtitle: 'Become a master of your social orbit.' },
+};
+
+export const PremiumScreen: React.FC<PremiumScreenProps> = ({ onClose, trigger = 'general' }) => {
+  const { upgradeToPremium } = useApp();
   const [selectedPlan, setSelectedPlan] = React.useState<'yearly' | 'monthly'>('yearly');
   const translateY = useSharedValue(SCREEN_HEIGHT);
   const backdropOpacity = useSharedValue(0);
+
+  const headline = TRIGGER_HEADLINES[trigger] || TRIGGER_HEADLINES.general;
+
+  const getHighlightedFeature = () => {
+    switch (trigger) {
+      case 'contact_limit': return 'contacts';
+      case 'deep_link': return 'deep_link';
+      case 'templates': return 'templates';
+      case 'analytics': return 'analytics';
+      case 'history': return 'history';
+      case 'bulk_actions': return 'bulk_actions';
+      default: return null;
+    }
+  };
+
+  const highlightedFeature = getHighlightedFeature();
 
   useEffect(() => {
     translateY.value = withTiming(0, { duration: 300 });
@@ -81,6 +131,11 @@ export const PremiumScreen: React.FC<PremiumScreenProps> = ({ onClose }) => {
       }
     });
   }, [handleCloseComplete]);
+
+  const handleUpgrade = async () => {
+    await upgradeToPremium(selectedPlan);
+    closeDrawer();
+  };
 
   const panGesture = Gesture.Pan()
     .onUpdate((event) => {
@@ -115,6 +170,12 @@ export const PremiumScreen: React.FC<PremiumScreenProps> = ({ onClose }) => {
     opacity: backdropOpacity.value,
   }));
 
+  const sortedFeatures = [...FEATURES].sort((a, b) => {
+    if (a.id === highlightedFeature) return -1;
+    if (b.id === highlightedFeature) return 1;
+    return 0;
+  });
+
   return (
     <View style={{ flex: 1, justifyContent: 'flex-end' }}>
       <Animated.View
@@ -138,7 +199,7 @@ export const PremiumScreen: React.FC<PremiumScreenProps> = ({ onClose }) => {
       </Animated.View>
       
       <GestureDetector gesture={panGesture}>
-        <Animated.View style={animatedSheetStyle}>
+        <Animated.View style={[animatedSheetStyle, { maxHeight: SCREEN_HEIGHT * 0.9 }]}>
           <LinearGradient
             colors={['#81B29A', '#457262']}
             start={{ x: 0, y: 0 }}
@@ -146,9 +207,7 @@ export const PremiumScreen: React.FC<PremiumScreenProps> = ({ onClose }) => {
             style={{
               borderTopLeftRadius: 40,
               borderTopRightRadius: 40,
-              paddingHorizontal: 24,
               paddingTop: 16,
-              paddingBottom: 40,
               overflow: 'hidden',
             }}
           >
@@ -166,158 +225,153 @@ export const PremiumScreen: React.FC<PremiumScreenProps> = ({ onClose }) => {
               }}
             />
 
-            <View style={{ width: 40, height: 4, backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: 2, alignSelf: 'center', marginBottom: 24 }} />
+            <View style={{ width: 40, height: 4, backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: 2, alignSelf: 'center', marginBottom: 20 }} />
 
-            <Animated.View entering={FadeInDown.delay(200).duration(400)} style={{ alignItems: 'center', marginBottom: 32 }}>
-              <View
-                style={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: 32,
-                  backgroundColor: 'rgba(255,255,255,0.2)',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: 20,
-                  shadowColor: '#FFF',
-                  shadowOffset: { width: 0, height: 0 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 25,
-                }}
-              >
-                <MaterialCommunityIcons name="diamond-stone" size={32} color="#FFF" />
+            <ScrollView 
+              style={{ maxHeight: SCREEN_HEIGHT * 0.7 }}
+              contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}
+              showsVerticalScrollIndicator={false}
+            >
+              <Animated.View entering={FadeInDown.delay(200).duration(400)} style={{ alignItems: 'center', marginBottom: 24 }}>
+                <View
+                  style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 28,
+                    backgroundColor: 'rgba(255,255,255,0.2)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: 16,
+                  }}
+                >
+                  <MaterialCommunityIcons name="diamond-stone" size={28} color="#FFF" />
+                </View>
+                <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 24, color: '#FFF', textAlign: 'center', marginBottom: 6 }}>
+                  {headline.title}
+                </Text>
+                <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', fontSize: 14, color: 'rgba(255,255,255,0.9)', textAlign: 'center' }}>
+                  {headline.subtitle}
+                </Text>
+              </Animated.View>
+
+              <View style={{ gap: 12, marginBottom: 24 }}>
+                {sortedFeatures.slice(0, 4).map((feature, index) => (
+                  <PremiumFeature
+                    key={feature.id}
+                    icon={feature.icon}
+                    title={feature.title}
+                    description={feature.description}
+                    delay={300 + index * 50}
+                    highlighted={feature.id === highlightedFeature}
+                  />
+                ))}
               </View>
-              <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 28, color: '#FFF', textAlign: 'center', marginBottom: 8 }}>
-                Unlock Your Full History
-              </Text>
-              <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', fontSize: 15, color: 'rgba(255,255,255,0.9)', textAlign: 'center' }}>
-                Become a master of your social orbit.
-              </Text>
-            </Animated.View>
 
-            <View style={{ gap: 20, marginBottom: 36, paddingHorizontal: 12 }}>
-              <PremiumFeature
-                icon="history"
-                title="Unlimited History"
-                description="See every conversation from years ago."
-                delay={300}
-              />
-              <PremiumFeature
-                icon="chart-line"
-                title="Advanced Insights"
-                description="Full access to the Social Health stats page."
-                delay={400}
-              />
-              <PremiumFeature
-                icon="account-group"
-                title="Unlimited Contacts"
-                description="Add more than 50 people to your universe."
-                delay={500}
-              />
-            </View>
+              <Animated.View entering={FadeIn.delay(500).duration(400)} style={{ flexDirection: 'row', gap: 12, marginBottom: 20 }}>
+                <TouchableOpacity
+                  onPress={() => setSelectedPlan('yearly')}
+                  style={{
+                    flex: 1,
+                    backgroundColor: selectedPlan === 'yearly' ? '#FFF' : 'rgba(255,255,255,0.05)',
+                    borderRadius: 16,
+                    padding: 14,
+                    paddingTop: 20,
+                    borderWidth: selectedPlan === 'yearly' ? 0 : 1,
+                    borderColor: 'rgba(255,255,255,0.4)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}
+                  activeOpacity={0.8}
+                >
+                  {selectedPlan === 'yearly' && (
+                    <View
+                      style={{
+                        position: 'absolute',
+                        top: -8,
+                        right: 8,
+                        backgroundColor: '#E07A5F',
+                        paddingHorizontal: 10,
+                        paddingVertical: 5,
+                        borderRadius: 9999,
+                      }}
+                    >
+                      <Text style={{ fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 9, color: '#FFF' }}>
+                        SAVE 30%
+                      </Text>
+                    </View>
+                  )}
+                  <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 10, color: selectedPlan === 'yearly' ? 'rgba(61, 64, 91, 0.5)' : 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>
+                    Yearly
+                  </Text>
+                  <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 22, color: selectedPlan === 'yearly' ? '#3D405B' : '#FFF', marginBottom: 2 }}>
+                    $29.99
+                  </Text>
+                  <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 10, color: selectedPlan === 'yearly' ? 'rgba(61, 64, 91, 0.5)' : 'rgba(255,255,255,0.7)' }}>
+                    per year
+                  </Text>
+                </TouchableOpacity>
 
-            <Animated.View entering={FadeIn.delay(600).duration(400)} style={{ flexDirection: 'row', gap: 12, marginBottom: 24 }}>
-              <TouchableOpacity
-                onPress={() => setSelectedPlan('yearly')}
-                style={{
-                  flex: 1,
-                  backgroundColor: selectedPlan === 'yearly' ? '#FFF' : 'rgba(255,255,255,0.05)',
-                  borderRadius: 16,
-                  padding: 16,
-                  paddingTop: 24,
-                  borderWidth: selectedPlan === 'yearly' ? 0 : 1,
-                  borderColor: 'rgba(255,255,255,0.4)',
-                  position: 'relative',
-                  overflow: 'hidden',
-                }}
-                activeOpacity={0.8}
-              >
-                {selectedPlan === 'yearly' && (
-                  <View
-                    style={{
-                      position: 'absolute',
-                      top: -8,
-                      right: 12,
-                      backgroundColor: '#E07A5F',
-                      paddingHorizontal: 12,
-                      paddingVertical: 6,
-                      borderRadius: 9999,
-                    }}
-                  >
-                    <Text style={{ fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 10, color: '#FFF' }}>
-                      SAVE 30%
+                <TouchableOpacity
+                  onPress={() => setSelectedPlan('monthly')}
+                  style={{
+                    flex: 1,
+                    backgroundColor: selectedPlan === 'monthly' ? '#FFF' : 'rgba(255,255,255,0.05)',
+                    borderRadius: 16,
+                    padding: 14,
+                    paddingTop: 20,
+                    borderWidth: selectedPlan === 'monthly' ? 0 : 1,
+                    borderColor: 'rgba(255,255,255,0.4)',
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 10, color: selectedPlan === 'monthly' ? 'rgba(61, 64, 91, 0.5)' : 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>
+                    Monthly
+                  </Text>
+                  <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 22, color: selectedPlan === 'monthly' ? '#3D405B' : '#FFF', marginBottom: 2 }}>
+                    $3.99
+                  </Text>
+                  <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 10, color: selectedPlan === 'monthly' ? 'rgba(61, 64, 91, 0.5)' : 'rgba(255,255,255,0.7)' }}>
+                    per month
+                  </Text>
+                </TouchableOpacity>
+              </Animated.View>
+
+              <Animated.View entering={FadeInUp.delay(600).duration(400)}>
+                <TouchableOpacity
+                  onPress={handleUpgrade}
+                  style={{
+                    backgroundColor: '#E07A5F',
+                    paddingVertical: 16,
+                    borderRadius: 16,
+                    alignItems: 'center',
+                    shadowColor: '#E07A5F',
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 16,
+                    marginBottom: 16,
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 17, color: '#FFF' }}>
+                    Start 7-Day Free Trial
+                  </Text>
+                </TouchableOpacity>
+
+                <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16 }}>
+                  <TouchableOpacity>
+                    <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 10, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1 }}>
+                      Restore Purchases
                     </Text>
-                  </View>
-                )}
-                <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 10, color: selectedPlan === 'yearly' ? 'rgba(61, 64, 91, 0.5)' : 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>
-                  Yearly
-                </Text>
-                <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 24, color: selectedPlan === 'yearly' ? '#3D405B' : '#FFF', marginBottom: 2 }}>
-                  $29.99
-                </Text>
-                <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 10, color: selectedPlan === 'yearly' ? 'rgba(61, 64, 91, 0.5)' : 'rgba(255,255,255,0.7)' }}>
-                  per year
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => setSelectedPlan('monthly')}
-                style={{
-                  flex: 1,
-                  backgroundColor: selectedPlan === 'monthly' ? '#FFF' : 'rgba(255,255,255,0.05)',
-                  borderRadius: 16,
-                  padding: 16,
-                  paddingTop: 24,
-                  borderWidth: selectedPlan === 'monthly' ? 0 : 1,
-                  borderColor: 'rgba(255,255,255,0.4)',
-                }}
-                activeOpacity={0.8}
-              >
-                <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 10, color: selectedPlan === 'monthly' ? 'rgba(61, 64, 91, 0.5)' : 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>
-                  Monthly
-                </Text>
-                <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 24, color: selectedPlan === 'monthly' ? '#3D405B' : '#FFF', marginBottom: 2 }}>
-                  $3.99
-                </Text>
-                <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 10, color: selectedPlan === 'monthly' ? 'rgba(61, 64, 91, 0.5)' : 'rgba(255,255,255,0.7)' }}>
-                  per month
-                </Text>
-              </TouchableOpacity>
-            </Animated.View>
-
-            <Animated.View entering={FadeInUp.delay(700).duration(400)}>
-              <TouchableOpacity
-                style={{
-                  backgroundColor: '#E07A5F',
-                  paddingVertical: 18,
-                  borderRadius: 16,
-                  alignItems: 'center',
-                  shadowColor: '#E07A5F',
-                  shadowOffset: { width: 0, height: 8 },
-                  shadowOpacity: 0.25,
-                  shadowRadius: 16,
-                  marginBottom: 20,
-                }}
-                activeOpacity={0.8}
-              >
-                <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 18, color: '#FFF' }}>
-                  Start 7-Day Free Trial
-                </Text>
-              </TouchableOpacity>
-
-              <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16 }}>
-                <TouchableOpacity>
-                  <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 10, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1 }}>
-                    Restore Purchases
-                  </Text>
-                </TouchableOpacity>
-                <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>-</Text>
-                <TouchableOpacity>
-                  <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 10, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1 }}>
-                    Terms of Service
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </Animated.View>
+                  </TouchableOpacity>
+                  <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>-</Text>
+                  <TouchableOpacity>
+                    <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 10, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1 }}>
+                      Terms of Service
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </Animated.View>
+            </ScrollView>
           </LinearGradient>
         </Animated.View>
       </GestureDetector>

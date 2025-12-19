@@ -7,6 +7,7 @@ import {
   Draft,
   UserProfile,
   UserSettings,
+  PremiumStatus,
 } from '../types';
 
 const STORAGE_KEYS = {
@@ -17,6 +18,7 @@ const STORAGE_KEYS = {
   DRAFTS: '@tether/drafts',
   USER_PROFILE: '@tether/user_profile',
   USER_SETTINGS: '@tether/user_settings',
+  PREMIUM_STATUS: '@tether/premium_status',
   IS_ONBOARDED: '@tether/is_onboarded',
   MANUAL_CONTACTS_ADDED: '@tether/manual_contacts_added',
 };
@@ -332,6 +334,29 @@ class StorageService {
       await AsyncStorage.removeItem(STORAGE_KEYS.MANUAL_CONTACTS_ADDED);
     } catch (error) {
       console.error('Error clearing manual contacts flag:', error);
+    }
+  }
+
+  async getPremiumStatus(): Promise<PremiumStatus | null> {
+    try {
+      const data = await AsyncStorage.getItem(STORAGE_KEYS.PREMIUM_STATUS);
+      if (!data) return null;
+      const parsed = JSON.parse(data);
+      return {
+        ...parsed,
+        expiresAt: parsed.expiresAt ? new Date(parsed.expiresAt) : undefined,
+      };
+    } catch (error) {
+      console.error('Error getting premium status:', error);
+      return null;
+    }
+  }
+
+  async savePremiumStatus(status: PremiumStatus): Promise<void> {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.PREMIUM_STATUS, JSON.stringify(status));
+    } catch (error) {
+      console.error('Error saving premium status:', error);
     }
   }
 

@@ -42,6 +42,8 @@ type ActionsStack =
   | { screen: "main" }
   | { screen: "newNote" };
 
+type PremiumTrigger = 'contact_limit' | 'deep_link' | 'templates' | 'analytics' | 'history' | 'bulk_actions' | 'general';
+
 export const MainTabsScreen = () => {
   const { resetApp } = useApp();
   const [activeTab, setActiveTab] = useState<TabType>("home");
@@ -51,6 +53,12 @@ export const MainTabsScreen = () => {
   const [actionsStack, setActionsStack] = useState<ActionsStack>({ screen: "main" });
   const [homeStack, setHomeStack] = useState<HomeStack>({ screen: "main" });
   const [showPremium, setShowPremium] = useState(false);
+  const [premiumTrigger, setPremiumTrigger] = useState<PremiumTrigger>('general');
+
+  const showPremiumModal = (trigger: PremiumTrigger = 'general') => {
+    setPremiumTrigger(trigger);
+    setShowPremium(true);
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -109,6 +117,7 @@ export const MainTabsScreen = () => {
           <SwipeableScreen onSwipeBack={() => setHomeStack({ screen: "main" })}>
             <SocialPulseScreen
               onBack={() => setHomeStack({ screen: "main" })}
+              onPremiumRequired={() => showPremiumModal('analytics')}
             />
           </SwipeableScreen>
         );
@@ -145,6 +154,7 @@ export const MainTabsScreen = () => {
               friendId={peopleStack.friendId}
               onBack={() => setPeopleStack({ screen: "list" })}
               onEdit={(friendId) => setPeopleStack({ screen: "editPerson", friendId })}
+              onPremiumRequired={(trigger) => showPremiumModal(trigger as PremiumTrigger)}
             />
           </SwipeableScreen>
         );
@@ -154,6 +164,7 @@ export const MainTabsScreen = () => {
             <NewConnectionScreen
               onBack={() => setPeopleStack({ screen: "list" })}
               onSave={(friendId) => setPeopleStack({ screen: "profile", friendId })}
+              onPremiumRequired={() => showPremiumModal('contact_limit')}
             />
           </SwipeableScreen>
         );
@@ -306,7 +317,7 @@ export const MainTabsScreen = () => {
         statusBarTranslucent
         onRequestClose={() => setShowPremium(false)}
       >
-        <PremiumScreen onClose={() => setShowPremium(false)} />
+        <PremiumScreen onClose={() => setShowPremium(false)} trigger={premiumTrigger} />
       </Modal>
     </View>
   );

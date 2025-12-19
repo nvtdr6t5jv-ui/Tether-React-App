@@ -15,6 +15,7 @@ import { SwipeableScreen } from '../components/SwipeableScreen';
 
 interface SocialPulseScreenProps {
   onBack: () => void;
+  onPremiumRequired?: () => void;
 }
 
 const ProgressRing: React.FC<{
@@ -150,8 +151,8 @@ const OrbitBar: React.FC<{
   </View>
 );
 
-export const SocialPulseScreen: React.FC<SocialPulseScreenProps> = ({ onBack }) => {
-  const { getSocialHealthStats, friends, interactions } = useApp();
+export const SocialPulseScreen: React.FC<SocialPulseScreenProps> = ({ onBack, onPremiumRequired }) => {
+  const { getSocialHealthStats, friends, interactions, premiumStatus } = useApp();
 
   const stats = useMemo(() => getSocialHealthStats(), [getSocialHealthStats, friends, interactions]);
 
@@ -307,8 +308,40 @@ export const SocialPulseScreen: React.FC<SocialPulseScreenProps> = ({ onBack }) 
               shadowOpacity: 0.08,
               shadowRadius: 40,
               elevation: 4,
+              position: 'relative',
+              overflow: 'hidden',
             }}
           >
+            {!premiumStatus.isPremium && (
+              <TouchableOpacity
+                onPress={onPremiumRequired}
+                activeOpacity={0.95}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: 'rgba(255,255,255,0.9)',
+                  zIndex: 10,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 16,
+                }}
+              >
+                <View style={{ alignItems: 'center', gap: 12 }}>
+                  <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(129, 178, 154, 0.1)', alignItems: 'center', justifyContent: 'center' }}>
+                    <MaterialCommunityIcons name="lock" size={24} color="#81B29A" />
+                  </View>
+                  <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 16, color: '#3D405B' }}>
+                    Unlock Detailed Analytics
+                  </Text>
+                  <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', fontSize: 13, color: 'rgba(61, 64, 91, 0.6)', textAlign: 'center' }}>
+                    See your orbit breakdown with Premium
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            )}
             <OrbitBar
               name="Favorites"
               actual={stats.innerCircleHealth}
@@ -350,8 +383,40 @@ export const SocialPulseScreen: React.FC<SocialPulseScreenProps> = ({ onBack }) 
               shadowOpacity: 0.08,
               shadowRadius: 40,
               elevation: 4,
+              position: 'relative',
+              overflow: 'hidden',
             }}
           >
+            {!premiumStatus.isPremium && (
+              <TouchableOpacity
+                onPress={onPremiumRequired}
+                activeOpacity={0.95}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: 'rgba(255,255,255,0.9)',
+                  zIndex: 10,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 16,
+                }}
+              >
+                <View style={{ alignItems: 'center', gap: 12 }}>
+                  <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(224, 122, 95, 0.1)', alignItems: 'center', justifyContent: 'center' }}>
+                    <MaterialCommunityIcons name="chart-donut" size={24} color="#E07A5F" />
+                  </View>
+                  <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 16, color: '#3D405B' }}>
+                    Connection Breakdown
+                  </Text>
+                  <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', fontSize: 13, color: 'rgba(61, 64, 91, 0.6)', textAlign: 'center' }}>
+                    Upgrade to see how you connect
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            )}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 24, marginBottom: 24 }}>
               <View
                 style={{

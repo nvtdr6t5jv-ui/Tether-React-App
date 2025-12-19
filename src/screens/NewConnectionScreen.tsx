@@ -19,6 +19,7 @@ import { SwipeableScreen } from '../components/SwipeableScreen';
 interface NewConnectionScreenProps {
   onBack: () => void;
   onSave: (friendId: string) => void;
+  onPremiumRequired?: () => void;
 }
 
 const getInitials = (name: string): string => {
@@ -31,9 +32,17 @@ const getInitials = (name: string): string => {
 export const NewConnectionScreen: React.FC<NewConnectionScreenProps> = ({
   onBack,
   onSave,
+  onPremiumRequired,
 }) => {
-  const { addFriend } = useApp();
+  const { addFriend, canAddMoreFriends, getRemainingFreeSlots, premiumStatus } = useApp();
   
+  React.useEffect(() => {
+    if (!canAddMoreFriends() && onPremiumRequired) {
+      onBack();
+      setTimeout(() => onPremiumRequired(), 100);
+    }
+  }, []);
+
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [birthday, setBirthday] = useState('');

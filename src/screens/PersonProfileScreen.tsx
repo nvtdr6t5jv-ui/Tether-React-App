@@ -26,6 +26,7 @@ interface PersonProfileScreenProps {
   friendId: string;
   onBack: () => void;
   onEdit: (friendId: string) => void;
+  onPremiumRequired?: (trigger: string) => void;
 }
 
 const getTimeSince = (date: Date | null): string => {
@@ -57,15 +58,19 @@ export const PersonProfileScreen: React.FC<PersonProfileScreenProps> = ({
   friendId,
   onBack,
   onEdit,
+  onPremiumRequired,
 }) => {
   const {
     getFriendById,
     getNotesByFriend,
     getInteractionsByFriend,
+    getInteractionsByFriendLimited,
     logInteraction,
     deleteNote,
     deleteFriend,
     friends,
+    premiumStatus,
+    getSmartSuggestion,
   } = useApp();
 
   const [showLogModal, setShowLogModal] = useState(false);
@@ -90,22 +95,33 @@ export const PersonProfileScreen: React.FC<PersonProfileScreenProps> = ({
   }
 
   const handleCall = () => {
-    if (friend.phone) {
-      Linking.openURL(`tel:${friend.phone}`);
-      logInteraction(friendId, 'call');
-    } else {
+    if (!friend.phone) {
       Alert.alert('No phone number', 'Add a phone number to call this friend.');
+      return;
     }
+    if (!premiumStatus.isPremium) {
+      onPremiumRequired?.('deep_link');
+      return;
+    }
+    Linking.openURL(`tel:${friend.phone}`);
+    logInteraction(friendId, 'call');
   };
 
   const handleText = () => {
-    if (friend.phone) {
-      Linking.openURL(`sms:${friend.phone}`);
-      logInteraction(friendId, 'text');
-    } else {
+    if (!friend.phone) {
       Alert.alert('No phone number', 'Add a phone number to text this friend.');
+      return;
     }
+    if (!premiumStatus.isPremium) {
+      onPremiumRequired?.('deep_link');
+      return;
+    }
+    Linking.openURL(`sms:${friend.phone}`);
+    logInteraction(friendId, 'text');
   };
+
+  const smartSuggestion = getSmartSuggestion(friendId);
+  const displayedInteractions = getInteractionsByFriendLimited(friendId);
 
   const handleDelete = () => {
     Alert.alert(
@@ -208,43 +224,68 @@ export const PersonProfileScreen: React.FC<PersonProfileScreenProps> = ({
           </Text>
         </Animated.View>
 
-        <Animated.View entering={FadeInUp.delay(200).duration(500)} style={{ flexDirection: 'row', justifyContent: 'center', gap: 32, marginTop: 40, paddingHorizontal: 24 }}>
+        {smartSuggestion && premiumStatus.isPremium && (
+          <Animated.View entering={FadeIn.delay(150).duration(400)} style={{ marginTop: 24, paddingHorizontal: 24 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: 'rgba(129, 178, 154, 0.1)', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 9999 }}>
+              <MaterialCommunityIcons name="lightbulb" size={16} color="#81B29A" />
+              <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12, color: '#81B29A' }}>
+                {smartSuggestion}
+              </Text>
+            </View>
+          </Animated.View>
+        )}
+
+        <Animated.View entering={FadeInUp.delay(200).duration(500)} style={{ flexDirection: 'row', justifyContent: 'center', gap: 32, marginTop: smartSuggestion && premiumStatus.isPremium ? 24 : 40, paddingHorizontal: 24 }}>
           <TouchableOpacity onPress={handleCall} style={{ alignItems: 'center', gap: 12 }}>
-            <View
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: 32,
-                backgroundColor: '#81B29A',
-                alignItems: 'center',
-                justifyContent: 'center',
-                shadowColor: '#81B29A',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
-                shadowRadius: 8,
-              }}
-            >
-              <MaterialCommunityIcons name="phone" size={28} color="#FFF" />
+            <View style={{ position: 'relative' }}>
+              <View
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: 32,
+                  backgroundColor: '#81B29A',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  shadowColor: '#81B29A',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 8,
+                }}
+              >
+                <MaterialCommunityIcons name="phone" size={28} color="#FFF" />
+              </View>
+              {!premiumStatus.isPremium && (
+                <View style={{ position: 'absolute', top: -4, right: -4, width: 20, height: 20, borderRadius: 10, backgroundColor: '#E07A5F', alignItems: 'center', justifyContent: 'center' }}>
+                  <MaterialCommunityIcons name="lock" size={10} color="#FFF" />
+                </View>
+              )}
             </View>
             <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12, color: '#3D405B' }}>Call</Text>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={handleText} style={{ alignItems: 'center', gap: 12 }}>
-            <View
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: 32,
-                backgroundColor: '#E07A5F',
-                alignItems: 'center',
-                justifyContent: 'center',
-                shadowColor: '#E07A5F',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
-                shadowRadius: 8,
-              }}
-            >
-              <MaterialCommunityIcons name="chat" size={28} color="#FFF" />
+            <View style={{ position: 'relative' }}>
+              <View
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: 32,
+                  backgroundColor: '#E07A5F',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  shadowColor: '#E07A5F',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 8,
+                }}
+              >
+                <MaterialCommunityIcons name="chat" size={28} color="#FFF" />
+              </View>
+              {!premiumStatus.isPremium && (
+                <View style={{ position: 'absolute', top: -4, right: -4, width: 20, height: 20, borderRadius: 10, backgroundColor: '#3D405B', alignItems: 'center', justifyContent: 'center' }}>
+                  <MaterialCommunityIcons name="lock" size={10} color="#FFF" />
+                </View>
+              )}
             </View>
             <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12, color: '#3D405B' }}>Text</Text>
           </TouchableOpacity>
@@ -400,7 +441,7 @@ export const PersonProfileScreen: React.FC<PersonProfileScreenProps> = ({
             Recent History
           </Text>
 
-          {interactions.length === 0 ? (
+          {displayedInteractions.length === 0 ? (
             <View
               style={{
                 backgroundColor: '#FFF',
@@ -416,7 +457,7 @@ export const PersonProfileScreen: React.FC<PersonProfileScreenProps> = ({
             </View>
           ) : (
             <View style={{ gap: 12 }}>
-              {interactions.slice(0, 5).map((interaction, index) => (
+              {displayedInteractions.slice(0, 5).map((interaction, index) => (
                 <Animated.View
                   key={interaction.id}
                   entering={SlideInRight.delay(index * 50).duration(300)}
@@ -465,6 +506,25 @@ export const PersonProfileScreen: React.FC<PersonProfileScreenProps> = ({
                   </View>
                 </Animated.View>
               ))}
+              {!premiumStatus.isPremium && interactions.length > displayedInteractions.length && (
+                <TouchableOpacity 
+                  onPress={() => onPremiumRequired?.('history')}
+                  style={{
+                    backgroundColor: 'rgba(129, 178, 154, 0.1)',
+                    padding: 16,
+                    borderRadius: 16,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                  }}
+                >
+                  <MaterialCommunityIcons name="lock" size={16} color="#81B29A" />
+                  <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 14, color: '#81B29A' }}>
+                    Unlock full history
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
         </Animated.View>

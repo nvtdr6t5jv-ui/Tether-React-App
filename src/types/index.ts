@@ -93,6 +93,29 @@ export interface UserSettings {
   hapticFeedback: boolean;
 }
 
+export interface PremiumStatus {
+  isPremium: boolean;
+  plan?: 'monthly' | 'yearly';
+  expiresAt?: Date;
+  trialUsed: boolean;
+}
+
+export const FREE_CONTACT_LIMIT = 5;
+export const FREE_HISTORY_DAYS = 30;
+
+export const MESSAGE_TEMPLATES = [
+  { id: '1', category: 'catch-up', text: "Hey! Been thinking about you. How have you been?" },
+  { id: '2', category: 'catch-up', text: "It's been a while! Would love to catch up soon." },
+  { id: '3', category: 'catch-up', text: "Miss our chats! Free for a call this week?" },
+  { id: '4', category: 'birthday', text: "Happy birthday! Hope you have an amazing day!" },
+  { id: '5', category: 'birthday', text: "Wishing you the happiest of birthdays! Let's celebrate soon." },
+  { id: '6', category: 'congrats', text: "Congratulations! So happy for you!" },
+  { id: '7', category: 'congrats', text: "Just heard the news - that's amazing! Well deserved." },
+  { id: '8', category: 'thinking', text: "Saw something that reminded me of you today!" },
+  { id: '9', category: 'thinking', text: "Random thought - remember when we...? Good times!" },
+  { id: '10', category: 'support', text: "Hey, just checking in. How are you holding up?" },
+];
+
 export interface SocialHealthStats {
   overallScore: number;
   innerCircleHealth: number;

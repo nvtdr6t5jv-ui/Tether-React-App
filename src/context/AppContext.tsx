@@ -8,9 +8,12 @@ import {
   UserProfile,
   UserSettings,
   SocialHealthStats,
+  PremiumStatus,
   ORBITS,
   InteractionType,
   NoteType,
+  FREE_CONTACT_LIMIT,
+  FREE_HISTORY_DAYS,
 } from '../types';
 import { storageService } from '../services/StorageService';
 
@@ -24,6 +27,7 @@ interface AppState {
   drafts: Draft[];
   userProfile: UserProfile | null;
   userSettings: UserSettings;
+  premiumStatus: PremiumStatus;
 }
 
 interface AppContextType extends AppState {
@@ -50,8 +54,13 @@ interface AppContextType extends AppState {
   getFriendById: (id: string) => Friend | undefined;
   getNotesByFriend: (friendId: string) => Note[];
   getInteractionsByFriend: (friendId: string) => Interaction[];
+  getInteractionsByFriendLimited: (friendId: string) => Interaction[];
   refreshData: () => Promise<void>;
   resetApp: () => Promise<void>;
+  canAddMoreFriends: () => boolean;
+  getRemainingFreeSlots: () => number;
+  upgradeToPremium: (plan: 'monthly' | 'yearly') => Promise<void>;
+  getSmartSuggestion: (friendId: string) => string | null;
 }
 
 const getDefaultSettings = (): UserSettings => ({
@@ -64,6 +73,11 @@ const getDefaultSettings = (): UserSettings => ({
   hapticFeedback: true,
 });
 
+const getDefaultPremiumStatus = (): PremiumStatus => ({
+  isPremium: false,
+  trialUsed: false,
+});
+
 const initialState: AppState = {
   isLoading: true,
   isOnboarded: false,
@@ -74,6 +88,7 @@ const initialState: AppState = {
   drafts: [],
   userProfile: null,
   userSettings: getDefaultSettings(),
+  premiumStatus: getDefaultPremiumStatus(),
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -126,6 +141,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         drafts,
         userProfile,
         userSettings,
+        premiumStatus,
       ] = await Promise.all([
         storageService.getIsOnboarded(),
         storageService.getFriends(),
@@ -135,6 +151,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         storageService.getDrafts(),
         storageService.getUserProfile(),
         storageService.getUserSettings(),
+        storageService.getPremiumStatus(),
       ]);
 
       setState({
@@ -147,6 +164,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         drafts,
         userProfile,
         userSettings,
+        premiumStatus: premiumStatus || getDefaultPremiumStatus(),
       });
     } catch (error) {
       console.error('Error loading data:', error);
@@ -469,6 +487,63 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   };
 
+  const getInteractionsByFriendLimited = (friendId: string): Interaction[] => {
+    const allInteractions = getInteractionsByFriend(friendId);
+    if (state.premiumStatus.isPremium) {
+      return allInteractions;
+    }
+    const cutoffDate = new Date(Date.now() - FREE_HISTORY_DAYS * 24 * 60 * 60 * 1000);
+    return allInteractions.filter(i => new Date(i.date) >= cutoffDate);
+  };
+
+  const canAddMoreFriends = (): boolean => {
+    if (state.premiumStatus.isPremium) return true;
+    return state.friends.length < FREE_CONTACT_LIMIT;
+  };
+
+  const getRemainingFreeSlots = (): number => {
+    if (state.premiumStatus.isPremium) return Infinity;
+    return Math.max(0, FREE_CONTACT_LIMIT - state.friends.length);
+  };
+
+  const upgradeToPremium = async (plan: 'monthly' | 'yearly') => {
+    const newStatus: PremiumStatus = {
+      isPremium: true,
+      plan,
+      expiresAt: new Date(Date.now() + (plan === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000),
+      trialUsed: true,
+    };
+    await storageService.savePremiumStatus(newStatus);
+    setState(prev => ({ ...prev, premiumStatus: newStatus }));
+  };
+
+  const getSmartSuggestion = (friendId: string): string | null => {
+    if (!state.premiumStatus.isPremium) return null;
+    
+    const interactions = getInteractionsByFriend(friendId);
+    if (interactions.length < 3) return null;
+    
+    const dayOfWeekCounts: Record<number, number> = {};
+    const hourCounts: Record<number, number> = {};
+    
+    interactions.slice(0, 10).forEach(i => {
+      const date = new Date(i.date);
+      const day = date.getDay();
+      const hour = date.getHours();
+      dayOfWeekCounts[day] = (dayOfWeekCounts[day] || 0) + 1;
+      hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+    });
+    
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const mostCommonDay = Object.entries(dayOfWeekCounts).sort((a, b) => b[1] - a[1])[0];
+    
+    if (mostCommonDay && mostCommonDay[1] >= 2) {
+      return `You usually connect on ${days[parseInt(mostCommonDay[0])]}s`;
+    }
+    
+    return null;
+  };
+
   const refreshData = async () => {
     setState(prev => ({ ...prev, isLoading: true }));
     await loadData();
@@ -509,8 +584,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         getFriendById,
         getNotesByFriend,
         getInteractionsByFriend,
+        getInteractionsByFriendLimited,
         refreshData,
         resetApp,
+        canAddMoreFriends,
+        getRemainingFreeSlots,
+        upgradeToPremium,
+        getSmartSuggestion,
       }}
     >
       {children}
