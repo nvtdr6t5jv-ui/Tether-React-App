@@ -446,6 +446,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const logInteraction = async (friendId: string, type: InteractionType, note?: string, duration?: number) => {
+    if (!friendId) {
+      console.error('logInteraction called without a valid friendId');
+      return;
+    }
+    
     const now = new Date();
     const interaction: Interaction = {
       id: storageService.generateId(),

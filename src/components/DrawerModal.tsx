@@ -82,7 +82,7 @@ export const DrawerModal: React.FC<DrawerModalProps> = ({
   if (!visible) return null;
 
   return (
-    <View style={StyleSheet.absoluteFill}>
+    <View style={[StyleSheet.absoluteFill, { zIndex: 9999, elevation: 9999 }]}>
       <Animated.View style={[styles.backdrop, animatedBackdropStyle]}>
         <TouchableOpacity
           style={{ flex: 1 }}

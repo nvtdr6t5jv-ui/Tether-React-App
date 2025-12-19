@@ -167,14 +167,21 @@ export const syncService = {
 
       const mergedFriends = [...localFriends];
       for (const cloudFriend of cloudFriends) {
-        const existingIndex = mergedFriends.findIndex(f => f.id === cloudFriend.id);
-        if (existingIndex >= 0) {
-          const local = mergedFriends[existingIndex];
+        const existingByIdIndex = mergedFriends.findIndex(f => f.id === cloudFriend.id);
+        if (existingByIdIndex >= 0) {
+          const local = mergedFriends[existingByIdIndex];
           if (cloudFriend.updatedAt > local.updatedAt) {
-            mergedFriends[existingIndex] = cloudFriend;
+            mergedFriends[existingByIdIndex] = cloudFriend;
           }
         } else {
-          mergedFriends.push(cloudFriend);
+          const existingByPhoneOrEmail = mergedFriends.findIndex(f => 
+            (f.phone && cloudFriend.phone && f.phone === cloudFriend.phone) ||
+            (f.email && cloudFriend.email && f.email === cloudFriend.email) ||
+            (f.name === cloudFriend.name && f.orbitId === cloudFriend.orbitId)
+          );
+          if (existingByPhoneOrEmail < 0) {
+            mergedFriends.push(cloudFriend);
+          }
         }
       }
 

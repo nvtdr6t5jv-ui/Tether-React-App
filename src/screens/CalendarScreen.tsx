@@ -134,6 +134,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
   const [newEventType, setNewEventType] = useState<CalendarEvent['type']>('custom');
   const [newEventFriendId, setNewEventFriendId] = useState<string | null>(null);
   const [newEventNotes, setNewEventNotes] = useState('');
+  const [friendSearchQuery, setFriendSearchQuery] = useState('');
 
   const handleImportFromDevice = async () => {
     const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -148,8 +149,12 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
 
     let imported = 0;
     for (const event of events) {
-      const exists = calendarEvents.some(e => e.title === event.title && 
-        new Date(e.date).toDateString() === event.startDate.toDateString());
+      const eventDateStr = event.startDate.toDateString();
+      const exists = calendarEvents.some(e => {
+        const existingDateStr = new Date(e.date).toDateString();
+        return (e.title === event.title && existingDateStr === eventDateStr) ||
+               (e.id === `imported-${event.id}`);
+      });
       
       if (!exists) {
         await addCalendarEvent({
@@ -731,14 +736,33 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
             <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 14, color: '#3D405B', marginBottom: 8 }}>
               Link to Friend (Optional)
             </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+            <TextInput
+              value={friendSearchQuery}
+              onChangeText={setFriendSearchQuery}
+              placeholder="Search friends..."
+              placeholderTextColor="rgba(61, 64, 91, 0.4)"
+              style={{
+                backgroundColor: '#F4F1DE',
+                padding: 12,
+                borderRadius: 12,
+                fontFamily: 'PlusJakartaSans_500Medium',
+                fontSize: 14,
+                color: '#3D405B',
+                marginBottom: 8,
+              }}
+            />
+            <ScrollView style={{ maxHeight: 150 }} showsVerticalScrollIndicator={false}>
               <TouchableOpacity
-                onPress={() => setNewEventFriendId(null)}
+                onPress={() => {
+                  setNewEventFriendId(null);
+                  setFriendSearchQuery('');
+                }}
                 style={{
                   paddingHorizontal: 16,
                   paddingVertical: 10,
-                  borderRadius: 9999,
-                  backgroundColor: !newEventFriendId ? '#3D405B' : '#F4F1DE',
+                  borderRadius: 12,
+                  backgroundColor: !newEventFriendId ? '#3D405B' : 'transparent',
+                  marginBottom: 4,
                 }}
               >
                 <Text
@@ -751,15 +775,21 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
                   None
                 </Text>
               </TouchableOpacity>
-              {friends.slice(0, 5).map(friend => (
+              {friends
+                .filter(f => friendSearchQuery === '' || f.name.toLowerCase().includes(friendSearchQuery.toLowerCase()))
+                .map(friend => (
                 <TouchableOpacity
                   key={friend.id}
-                  onPress={() => setNewEventFriendId(friend.id)}
+                  onPress={() => {
+                    setNewEventFriendId(friend.id);
+                    setFriendSearchQuery(friend.name);
+                  }}
                   style={{
                     paddingHorizontal: 16,
                     paddingVertical: 10,
-                    borderRadius: 9999,
-                    backgroundColor: newEventFriendId === friend.id ? '#81B29A' : '#F4F1DE',
+                    borderRadius: 12,
+                    backgroundColor: newEventFriendId === friend.id ? '#81B29A' : 'transparent',
+                    marginBottom: 4,
                   }}
                 >
                   <Text
@@ -769,7 +799,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
                       color: newEventFriendId === friend.id ? '#FFF' : '#3D405B',
                     }}
                   >
-                    {friend.name.split(' ')[0]}
+                    {friend.name}
                   </Text>
                 </TouchableOpacity>
               ))}
