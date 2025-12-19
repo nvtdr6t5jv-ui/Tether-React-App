@@ -187,11 +187,48 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
       let localState = defaultState;
       if (stored) {
         const parsed = JSON.parse(stored);
+        
+        let challenges = initializeWeeklyChallenges();
+        if (parsed.weeklyChallenges?.length > 0) {
+          challenges = challenges.map(freshChallenge => {
+            const savedChallenge = parsed.weeklyChallenges.find((c: any) => c.id === freshChallenge.id);
+            if (savedChallenge) {
+              return {
+                ...freshChallenge,
+                progress: savedChallenge.progress || 0,
+                isCompleted: savedChallenge.isCompleted || false,
+              };
+            }
+            return freshChallenge;
+          });
+        }
+        
+        let achievements = initializeAchievements();
+        if (parsed.achievements?.length > 0) {
+          achievements = achievements.map(freshAchievement => {
+            const savedAchievement = parsed.achievements.find((a: any) => a.id === freshAchievement.id);
+            if (savedAchievement) {
+              return {
+                ...freshAchievement,
+                progress: savedAchievement.progress || 0,
+                unlockedAt: savedAchievement.unlockedAt ? new Date(savedAchievement.unlockedAt) : undefined,
+              };
+            }
+            return freshAchievement;
+          });
+        }
+        
+        const milestones = (parsed.relationshipMilestones || []).map((m: any) => ({
+          ...m,
+          achievedAt: m.achievedAt ? new Date(m.achievedAt) : new Date(),
+        }));
+        
         localState = {
           ...defaultState,
           ...parsed,
-          achievements: parsed.achievements?.length > 0 ? parsed.achievements : initializeAchievements(),
-          weeklyChallenges: parsed.weeklyChallenges?.length > 0 ? parsed.weeklyChallenges : initializeWeeklyChallenges(),
+          achievements,
+          weeklyChallenges: challenges,
+          relationshipMilestones: milestones,
         };
         const computedXP = calculateTotalXPFromState(localState);
         localState.level = calculateLevel(computedXP);
@@ -407,11 +444,17 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     }
   }, []);
 
-  const updateChallengeProgress = useCallback((challengeId: string, progress: number) => {
+  const updateChallengeProgress = useCallback((challengeIdOrType: string, progressIncrement: number) => {
     setState(prev => {
       const newChallenges = prev.weeklyChallenges.map(c => {
-        if (c.id === challengeId) {
-          const newProgress = Math.min(progress, c.target);
+        const matchById = c.id === challengeIdOrType;
+        const matchByType = c.type === challengeIdOrType || 
+          (challengeIdOrType === 'make_calls' && c.type === 'calls') ||
+          (challengeIdOrType === 'send_messages' && c.type === 'messages') ||
+          (challengeIdOrType === 'reach_out' && c.type === 'reconnect');
+        
+        if ((matchById || matchByType) && !c.isCompleted) {
+          const newProgress = Math.min(c.progress + progressIncrement, c.target);
           return {
             ...c,
             progress: newProgress,
