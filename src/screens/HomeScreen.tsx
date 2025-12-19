@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, TouchableOpacity, ScrollView, Image, Dimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -17,6 +17,7 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import { useApp, Friend } from "../context/AppContext";
+import { useGamification } from "../context/GamificationContext";
 import { orbits, getAvatarColor } from "../constants/mockData";
 import { ShuffleModal } from "../components/ShuffleModal";
 import { LogConnectionModal } from "../components/LogConnectionModal";
@@ -272,7 +273,8 @@ interface HomeScreenProps {
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onNavigateToSocialPulse }) => {
-  const { friends, logInteraction } = useApp();
+  const { friends, logInteraction, interactions } = useApp();
+  const { recordDailyActivity, addXP, checkAndUpdateAchievements, updateChallengeProgress, state: gamificationState, streakData } = useGamification();
   const [activeTab, setActiveTab] = useState<"overdue" | "drafts" | "events">("overdue");
   
   const [showShuffle, setShowShuffle] = useState(false);
@@ -291,14 +293,67 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onNavigateTo
     catchup: friends.filter(f => f.orbitId === "catchup"),
   };
 
-  const handleNudgeAction = (friendId: string) => {
+  const handleNudgeAction = async (friendId: string) => {
     const friend = friends.find(f => f.id === friendId);
     const type = friend?.orbitId === 'inner' ? 'call' : 'text';
-    logInteraction(friendId, type as any);
+    await logInteraction(friendId, type as any);
+    await updateGamificationOnInteraction(type);
   };
 
-  const handleLogConnection = (friendId: string, type: string, note: string) => {
-    logInteraction(friendId, type as any, note);
+  const updateGamificationOnInteraction = useCallback(async (type: string) => {
+    await recordDailyActivity();
+    
+    const xpMap: Record<string, number> = {
+      text: 5,
+      call: 15,
+      video_call: 20,
+      in_person: 30,
+      meetup: 30,
+      social_media: 3,
+      email: 5,
+      other: 5,
+    };
+    addXP(xpMap[type] || 5, type);
+    
+    const callCount = interactions.filter(i => i.type === 'call').length + (type === 'call' ? 1 : 0);
+    const textCount = interactions.filter(i => i.type === 'text').length + (type === 'text' ? 1 : 0);
+    const inPersonCount = interactions.filter(i => i.type === 'in_person' || i.type === 'meetup').length + (type === 'in_person' || type === 'meetup' ? 1 : 0);
+    
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const weekInteractions = interactions.filter(i => new Date(i.date) >= oneWeekAgo);
+    const uniquePeople = new Set(weekInteractions.map(i => i.friendId)).size;
+    
+    const completedChallenges = gamificationState.weeklyChallenges.filter(c => c.isCompleted).length;
+    
+    checkAndUpdateAchievements({
+      totalInteractions: interactions.length + 1,
+      callCount,
+      textCount,
+      inPersonCount,
+      uniquePeopleThisWeek: uniquePeople,
+      reconnections: 0,
+      currentStreak: streakData.currentStreak,
+      challengesCompleted: completedChallenges,
+    });
+    
+    const challenges = gamificationState.weeklyChallenges;
+    if (type === 'call') {
+      const callChallenge = challenges.find(c => c.type === 'calls' && !c.isCompleted);
+      if (callChallenge) {
+        updateChallengeProgress(callChallenge.id, callChallenge.progress + 1);
+      }
+    }
+    if (type === 'in_person' || type === 'meetup') {
+      const meetChallenge = challenges.find(c => c.type === 'in_person' && !c.isCompleted);
+      if (meetChallenge) {
+        updateChallengeProgress(meetChallenge.id, meetChallenge.progress + 1);
+      }
+    }
+  }, [recordDailyActivity, addXP, checkAndUpdateAchievements, updateChallengeProgress, interactions, streakData, gamificationState]);
+
+  const handleLogConnection = async (friendId: string, type: string, note: string) => {
+    await logInteraction(friendId, type as any, note);
+    await updateGamificationOnInteraction(type);
   };
 
   const healthPercentage = friends.length > 0

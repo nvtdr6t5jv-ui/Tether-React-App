@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   Friend,
   Note,
@@ -773,9 +774,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       console.error("Error signing out from Supabase:", error);
     }
     await storageService.clearAllData();
+    await AsyncStorage.multiRemove([
+      '@tether_gamification',
+      '@tether_daily_streak',
+    ]);
     setState({
       ...initialState,
       isLoading: false,
+      isOnboarded: false,
     });
   };
 

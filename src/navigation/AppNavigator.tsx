@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, ActivityIndicator } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator, NativeStackNavigationOptions } from "@react-navigation/native-stack";
@@ -64,8 +64,12 @@ export const AppNavigator = () => {
     return "Onboarding";
   };
 
+  const navigationKey = useMemo(() => {
+    return `nav-${isAuthenticated}-${isOnboarded}`;
+  }, [isAuthenticated, isOnboarded]);
+
   return (
-    <NavigationContainer>
+    <NavigationContainer key={navigationKey}>
       <Stack.Navigator
         initialRouteName={getInitialRoute()}
         screenOptions={screenOptions}
