@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, Switch, Alert, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
@@ -12,6 +12,8 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  withTiming,
+  runOnJS,
 } from "react-native-reanimated";
 import { useOnboarding, OnboardingContact } from "../context/OnboardingContext";
 import { RootStackParamList } from "../navigation/AppNavigator";
@@ -31,7 +33,21 @@ export const OnboardingSyncScreen = () => {
   const { setSyncMode, setDeviceContacts } = useOnboarding();
   const [syncEnabled, setSyncEnabled] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   const cardScale = useSharedValue(1);
+  const containerOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsReady(true);
+      containerOpacity.value = withTiming(1, { duration: 50 });
+    }, 50);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const containerStyle = useAnimatedStyle(() => ({
+    opacity: containerOpacity.value,
+  }));
 
   const fetchContacts = async (): Promise<OnboardingContact[]> => {
     const { data } = await Contacts.getContactsAsync({
@@ -130,9 +146,15 @@ export const OnboardingSyncScreen = () => {
     transform: [{ scale: cardScale.value }],
   }));
 
+  if (!isReady) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#F4F1DE" }} edges={["top", "bottom"]} />
+    );
+  }
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F4F1DE" }} edges={["top", "bottom"]}>
-      <View style={{ flex: 1 }}>
+      <Animated.View style={[{ flex: 1 }, containerStyle]}>
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 24, paddingVertical: 16 }}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -251,7 +273,7 @@ export const OnboardingSyncScreen = () => {
             By syncing, you agree to allow Tether to access your contact list securely. We never spam your friends.
           </Animated.Text>
         </Animated.View>
-      </View>
+      </Animated.View>
     </SafeAreaView>
   );
 };
