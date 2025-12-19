@@ -19,6 +19,9 @@ import {
   CONVERSATION_STARTERS,
 } from '../types';
 import { storageService } from '../services/StorageService';
+import { syncService } from '../services/sync';
+import { api } from '../services/api';
+import { supabase } from '../services/supabase';
 
 interface AppState {
   isLoading: boolean;
@@ -70,6 +73,7 @@ interface AppContextType extends AppState {
   deleteCalendarEvent: (eventId: string) => Promise<void>;
   getRelationshipHealth: (friendId: string) => RelationshipHealth;
   getConversationStarter: (friendId: string) => string;
+  syncWithCloud: () => Promise<void>;
 }
 
 const getDefaultSettings = (): UserSettings => ({
@@ -139,8 +143,9 @@ const calculateStreak = (interactions: Interaction[], orbitId: string): number =
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, setState] = useState<AppState>(initialState);
+  const [userId, setUserId] = useState<string | null>(null);
 
-  const loadData = useCallback(async () => {
+  const loadLocalData = useCallback(async () => {
     try {
       const [
         isOnboarded,
@@ -180,18 +185,70 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         premiumStatus: premiumStatus || getDefaultPremiumStatus(),
       });
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('Error loading local data:', error);
       setState(prev => ({ ...prev, isLoading: false }));
     }
   }, []);
 
+  const syncFromCloud = useCallback(async () => {
+    try {
+      const result = await syncService.syncFromCloud();
+      if (result.success) {
+        await loadLocalData();
+      }
+    } catch (error) {
+      console.error('Error syncing from cloud:', error);
+    }
+  }, [loadLocalData]);
+
+  const syncWithCloud = useCallback(async () => {
+    if (!userId) return;
+    try {
+      await syncService.fullSync();
+      await loadLocalData();
+    } catch (error) {
+      console.error('Error syncing with cloud:', error);
+    }
+  }, [userId, loadLocalData]);
+
   useEffect(() => {
-    loadData();
+    const initData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id || null);
+      
+      await loadLocalData();
+      
+      if (user) {
+        await syncFromCloud();
+      }
+    };
+
+    initData();
     storageService.clearManualContactsFlag();
-  }, [loadData]);
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const newUserId = session?.user?.id || null;
+      setUserId(newUserId);
+      
+      if (event === 'SIGNED_IN' && session?.user) {
+        await syncFromCloud();
+      } else if (event === 'SIGNED_OUT') {
+        setState({
+          ...initialState,
+          isLoading: false,
+        });
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [loadLocalData, syncFromCloud]);
 
   const completeOnboarding = async (friends: Friend[]) => {
     const now = new Date();
+    const { data: { user } } = await supabase.auth.getUser();
+    
     const processedFriends = friends.map(f => ({
       ...f,
       createdAt: now,
@@ -201,9 +258,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       isFavorite: f.orbitId === 'inner',
     }));
 
+    const { data: profile } = user ? await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single() : { data: null };
+
     const defaultProfile: UserProfile = {
-      id: storageService.generateId(),
-      name: 'Alex Rivera',
+      id: user?.id || storageService.generateId(),
+      name: profile?.full_name || user?.email?.split('@')[0] || 'User',
       memberSince: now,
     };
 
@@ -219,6 +282,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       friends: processedFriends,
       userProfile: defaultProfile,
     }));
+
+    if (user) {
+      await syncService.syncToCloud();
+    }
   };
 
   const addFriend = async (friendData: Omit<Friend, 'id' | 'createdAt' | 'updatedAt' | 'streak'>): Promise<Friend> => {
@@ -233,6 +300,29 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     await storageService.addFriend(friend);
     setState(prev => ({ ...prev, friends: [...prev.friends, friend] }));
+
+    if (userId) {
+      try {
+        await api.friends.create({
+          id: friend.id,
+          user_id: userId,
+          name: friend.name,
+          initials: friend.initials,
+          orbit_id: friend.orbitId as any,
+          phone: friend.phone || null,
+          email: friend.email || null,
+          birthday: friend.birthday || null,
+          notes: friend.notes || null,
+          how_met: friend.howMet || null,
+          is_favorite: friend.isFavorite || false,
+          reminder_frequency: (friend.reminderFrequency || 'monthly') as any,
+          last_contact: friend.lastContact?.toISOString() || null,
+        });
+      } catch (e) {
+        console.error('Failed to sync friend to cloud:', e);
+      }
+    }
+
     return friend;
   };
 
@@ -243,6 +333,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         ...prev,
         friends: prev.friends.map(f => f.id === friendId ? updated : f),
       }));
+
+      if (userId) {
+        try {
+          await api.friends.update(friendId, {
+            name: updates.name,
+            initials: updates.initials,
+            orbit_id: updates.orbitId as any,
+            phone: updates.phone || null,
+            email: updates.email || null,
+            birthday: updates.birthday || null,
+            notes: updates.notes || null,
+            how_met: updates.howMet || null,
+            is_favorite: updates.isFavorite,
+            reminder_frequency: updates.reminderFrequency as any,
+            last_contact: updates.lastContact?.toISOString() || null,
+          });
+        } catch (e) {
+          console.error('Failed to sync friend update to cloud:', e);
+        }
+      }
     }
   };
 
@@ -256,6 +366,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       nudges: prev.nudges.filter(n => n.friendId !== friendId),
       drafts: prev.drafts.filter(d => d.friendId !== friendId),
     }));
+
+    if (userId) {
+      try {
+        await api.friends.delete(friendId);
+      } catch (e) {
+        console.error('Failed to sync friend deletion to cloud:', e);
+      }
+    }
   };
 
   const toggleFavorite = async (friendId: string) => {
@@ -329,6 +447,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           streak: newStreak,
         } : f),
       }));
+
+      if (userId) {
+        try {
+          await api.interactions.create({
+            id: interaction.id,
+            user_id: userId,
+            friend_id: friendId,
+            type: type as any,
+            note: note || null,
+            date: now.toISOString(),
+          });
+          await api.friends.update(friendId, { last_contact: now.toISOString() });
+        } catch (e) {
+          console.error('Failed to sync interaction to cloud:', e);
+        }
+      }
     } else {
       setState(prev => ({ ...prev, interactions: [...prev.interactions, interaction] }));
     }
@@ -392,6 +526,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const updated = { ...state.userProfile, ...updates };
       await storageService.saveUserProfile(updated);
       setState(prev => ({ ...prev, userProfile: updated }));
+
+      if (userId && updates.name) {
+        try {
+          await supabase.from('profiles').update({ full_name: updates.name }).eq('id', userId);
+        } catch (e) {
+          console.error('Failed to sync profile to cloud:', e);
+        }
+      }
     }
   };
 
@@ -559,11 +701,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const refreshData = async () => {
     setState(prev => ({ ...prev, isLoading: true }));
-    await loadData();
+    await loadLocalData();
+    if (userId) {
+      await syncFromCloud();
+    }
   };
 
   const resetApp = async () => {
     await storageService.clearAllData();
+    if (userId) {
+      await syncService.clearCloudData();
+    }
     setState({
       ...initialState,
       isLoading: false,
@@ -573,6 +721,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const addCalendarEvent = async (event: CalendarEvent) => {
     await storageService.addCalendarEvent(event);
     setState(prev => ({ ...prev, calendarEvents: [...prev.calendarEvents, event] }));
+
+    if (userId) {
+      try {
+        await api.calendarEvents.create({
+          id: event.id,
+          user_id: userId,
+          friend_id: event.friendId || null,
+          title: event.title,
+          description: event.description || null,
+          start_date: event.startDate.toISOString(),
+          end_date: event.endDate?.toISOString() || null,
+          is_all_day: event.isAllDay || false,
+          location: event.location || null,
+        });
+      } catch (e) {
+        console.error('Failed to sync calendar event to cloud:', e);
+      }
+    }
   };
 
   const updateCalendarEvent = async (eventId: string, updates: Partial<CalendarEvent>) => {
@@ -581,11 +747,35 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       ...prev,
       calendarEvents: prev.calendarEvents.map(e => e.id === eventId ? { ...e, ...updates } : e),
     }));
+
+    if (userId) {
+      try {
+        await api.calendarEvents.update(eventId, {
+          friend_id: updates.friendId || null,
+          title: updates.title,
+          description: updates.description || null,
+          start_date: updates.startDate?.toISOString(),
+          end_date: updates.endDate?.toISOString() || null,
+          is_all_day: updates.isAllDay,
+          location: updates.location || null,
+        });
+      } catch (e) {
+        console.error('Failed to sync calendar event update to cloud:', e);
+      }
+    }
   };
 
   const deleteCalendarEvent = async (eventId: string) => {
     await storageService.deleteCalendarEvent(eventId);
     setState(prev => ({ ...prev, calendarEvents: prev.calendarEvents.filter(e => e.id !== eventId) }));
+
+    if (userId) {
+      try {
+        await api.calendarEvents.delete(eventId);
+      } catch (e) {
+        console.error('Failed to sync calendar event deletion to cloud:', e);
+      }
+    }
   };
 
   const getRelationshipHealth = (friendId: string): RelationshipHealth => {
@@ -709,6 +899,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         deleteCalendarEvent,
         getRelationshipHealth,
         getConversationStarter,
+        syncWithCloud,
       }}
     >
       {children}

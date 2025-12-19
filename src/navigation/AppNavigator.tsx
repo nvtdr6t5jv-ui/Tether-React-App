@@ -1,4 +1,5 @@
 import React from "react";
+import { View, ActivityIndicator } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator, NativeStackNavigationOptions } from "@react-navigation/native-stack";
 import { OnboardingScreen } from "../screens/OnboardingScreen";
@@ -10,6 +11,8 @@ import { OnboardingManualAddScreen } from "../screens/OnboardingManualAddScreen"
 import { OnboardingAssignOrbitsScreen } from "../screens/OnboardingAssignOrbitsScreen";
 import { OnboardingCompleteScreen } from "../screens/OnboardingCompleteScreen";
 import { MainTabsScreen } from "../screens/MainTabsScreen";
+import { useAuth } from "../context/AuthContext";
+import { useApp } from "../context/AppContext";
 
 export type RootStackParamList = {
   Onboarding: undefined;
@@ -40,10 +43,31 @@ const onboardingFlowOptions: NativeStackNavigationOptions = {
 };
 
 export const AppNavigator = () => {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isOnboarded, isLoading: appLoading } = useApp();
+
+  if (authLoading || appLoading) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F4F1DE" }}>
+        <ActivityIndicator size="large" color="#E07A5F" />
+      </View>
+    );
+  }
+
+  const getInitialRoute = (): keyof RootStackParamList => {
+    if (isAuthenticated && isOnboarded) {
+      return "MainTabs";
+    }
+    if (isAuthenticated && !isOnboarded) {
+      return "OnboardingValuePreview";
+    }
+    return "Onboarding";
+  };
+
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="Onboarding"
+        initialRouteName={getInitialRoute()}
         screenOptions={screenOptions}
       >
         <Stack.Screen name="Onboarding" component={OnboardingScreen} />
