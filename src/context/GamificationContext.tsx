@@ -147,7 +147,10 @@ const defaultState: GamificationState = {
 const GamificationContext = createContext<GamificationContextType | undefined>(undefined);
 
 const getDateString = (date: Date): string => {
-  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -182,12 +185,16 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
       const stored = await AsyncStorage.getItem(STREAK_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        const today = getDateString(new Date());
         const lastActive = parsed.lastActiveDate;
         
         if (lastActive) {
-          const lastDate = new Date(lastActive);
-          const todayDate = new Date(today);
+          const [lastYear, lastMonth, lastDay] = lastActive.split('-').map(Number);
+          const lastDate = new Date(lastYear, lastMonth - 1, lastDay);
+          lastDate.setHours(0, 0, 0, 0);
+          
+          const todayDate = new Date();
+          todayDate.setHours(0, 0, 0, 0);
+          
           const diffDays = Math.floor((todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
           
           if (diffDays > 1) {
@@ -236,10 +243,12 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     let newStreak = 1;
     
     if (streakData.lastActiveDate) {
-      const lastDate = new Date(streakData.lastActiveDate);
+      const [lastYear, lastMonth, lastDay] = streakData.lastActiveDate.split('-').map(Number);
+      const lastDate = new Date(lastYear, lastMonth - 1, lastDay);
+      lastDate.setHours(0, 0, 0, 0);
+      
       const todayDate = new Date();
       todayDate.setHours(0, 0, 0, 0);
-      lastDate.setHours(0, 0, 0, 0);
       
       const diffDays = Math.floor((todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
       
@@ -247,7 +256,7 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         newStreak = streakData.currentStreak + 1;
       } else if (diffDays > 1) {
         newStreak = 1;
-      } else {
+      } else if (diffDays === 0) {
         return false;
       }
     }
