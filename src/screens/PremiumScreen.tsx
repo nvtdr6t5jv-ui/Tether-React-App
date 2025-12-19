@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,19 +8,18 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { 
-  FadeIn, 
   FadeInDown, 
   FadeInUp,
-  SlideInDown,
-  SlideOutDown,
+  FadeIn,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
   runOnJS,
+  interpolate,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
-const { height } = Dimensions.get('window');
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface PremiumScreenProps {
   onClose: () => void;
@@ -62,19 +61,35 @@ const PremiumFeature: React.FC<{
 
 export const PremiumScreen: React.FC<PremiumScreenProps> = ({ onClose }) => {
   const [selectedPlan, setSelectedPlan] = React.useState<'yearly' | 'monthly'>('yearly');
-  const translateY = useSharedValue(0);
-  const backdropOpacity = useSharedValue(1);
+  const translateY = useSharedValue(SCREEN_HEIGHT);
+  const backdropOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    translateY.value = withTiming(0, { duration: 300 });
+    backdropOpacity.value = withTiming(1, { duration: 300 });
+  }, []);
+
+  const closeDrawer = () => {
+    translateY.value = withTiming(SCREEN_HEIGHT, { duration: 250 });
+    backdropOpacity.value = withTiming(0, { duration: 250 }, () => {
+      runOnJS(onClose)();
+    });
+  };
 
   const panGesture = Gesture.Pan()
     .onUpdate((event) => {
       if (event.translationY > 0) {
         translateY.value = event.translationY;
-        backdropOpacity.value = 1 - (event.translationY / 400);
+        backdropOpacity.value = interpolate(
+          event.translationY,
+          [0, 300],
+          [1, 0]
+        );
       }
     })
     .onEnd((event) => {
       if (event.translationY > 100 || event.velocityY > 500) {
-        translateY.value = withTiming(height, { duration: 250 });
+        translateY.value = withTiming(SCREEN_HEIGHT, { duration: 250 });
         backdropOpacity.value = withTiming(0, { duration: 250 }, () => {
           runOnJS(onClose)();
         });
@@ -110,16 +125,12 @@ export const PremiumScreen: React.FC<PremiumScreenProps> = ({ onClose }) => {
         <TouchableOpacity
           style={{ flex: 1 }}
           activeOpacity={1}
-          onPress={onClose}
+          onPress={closeDrawer}
         />
       </Animated.View>
       
       <GestureDetector gesture={panGesture}>
-        <Animated.View 
-          entering={SlideInDown.duration(350)}
-          exiting={SlideOutDown.duration(300)}
-          style={animatedSheetStyle}
-        >
+        <Animated.View style={animatedSheetStyle}>
           <LinearGradient
             colors={['#81B29A', '#457262']}
             start={{ x: 0, y: 0 }}

@@ -1,13 +1,16 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { View, Text, TouchableOpacity, Modal, Dimensions } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Animated, {
   FadeIn,
-  FadeOut,
-  SlideInDown,
-  SlideOutDown,
   FadeInUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  runOnJS,
+  interpolate,
 } from "react-native-reanimated";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { Friend } from "../context/AppContext";
 import Svg, { Circle } from "react-native-svg";
 
@@ -18,7 +21,7 @@ interface HealthStatusModalProps {
   onViewAnalytics: () => void;
 }
 
-const { width } = Dimensions.get("window");
+const { width, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const CircularProgress: React.FC<{ percentage: number; size: number }> = ({ percentage, size }) => {
   const strokeWidth = 12;
@@ -116,6 +119,57 @@ export const HealthStatusModal: React.FC<HealthStatusModalProps> = ({
   friends,
   onViewAnalytics,
 }) => {
+  const translateY = useSharedValue(SCREEN_HEIGHT);
+  const backdropOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    if (visible) {
+      translateY.value = withTiming(0, { duration: 300 });
+      backdropOpacity.value = withTiming(1, { duration: 300 });
+    } else {
+      translateY.value = SCREEN_HEIGHT;
+      backdropOpacity.value = 0;
+    }
+  }, [visible]);
+
+  const closeDrawer = () => {
+    translateY.value = withTiming(SCREEN_HEIGHT, { duration: 250 });
+    backdropOpacity.value = withTiming(0, { duration: 250 }, () => {
+      runOnJS(onClose)();
+    });
+  };
+
+  const panGesture = Gesture.Pan()
+    .onUpdate((event) => {
+      if (event.translationY > 0) {
+        translateY.value = event.translationY;
+        backdropOpacity.value = interpolate(
+          event.translationY,
+          [0, 300],
+          [1, 0]
+        );
+      }
+    })
+    .onEnd((event) => {
+      if (event.translationY > 100 || event.velocityY > 500) {
+        translateY.value = withTiming(SCREEN_HEIGHT, { duration: 250 });
+        backdropOpacity.value = withTiming(0, { duration: 250 }, () => {
+          runOnJS(onClose)();
+        });
+      } else {
+        translateY.value = withTiming(0, { duration: 200 });
+        backdropOpacity.value = withTiming(1, { duration: 200 });
+      }
+    });
+
+  const animatedSheetStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  const animatedBackdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value,
+  }));
+
   const innerCircleFriends = friends.filter(f => f.orbitId === "inner");
   const closeFriends = friends.filter(f => f.orbitId === "close");
   
@@ -132,97 +186,106 @@ export const HealthStatusModal: React.FC<HealthStatusModalProps> = ({
     ? Math.round(((innerCircleFriends.length - innerCircleFriends.filter(f => !f.nextNudge || new Date() > f.nextNudge).length) / innerCircleFriends.length) * 100)
     : 100;
 
+  if (!visible) return null;
+
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="none" onRequestClose={closeDrawer}>
       <View style={{ flex: 1 }}>
         <Animated.View
-          entering={FadeIn.duration(300)}
-          exiting={FadeOut.duration(200)}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(61, 64, 91, 0.4)",
-          }}
+          style={[
+            {
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(61, 64, 91, 0.4)",
+            },
+            animatedBackdropStyle,
+          ]}
         >
-          <TouchableOpacity style={{ flex: 1 }} onPress={onClose} activeOpacity={1} />
+          <TouchableOpacity style={{ flex: 1 }} onPress={closeDrawer} activeOpacity={1} />
         </Animated.View>
 
-        <Animated.View
-          entering={SlideInDown.duration(500).springify()}
-          exiting={SlideOutDown.duration(300)}
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            backgroundColor: "#F4F1DE",
-            borderTopLeftRadius: 40,
-            borderTopRightRadius: 40,
-            padding: 24,
-            paddingBottom: 40,
-          }}
-        >
-          <View style={{ width: 48, height: 6, backgroundColor: "rgba(61, 64, 91, 0.2)", borderRadius: 3, alignSelf: "center", marginBottom: 24 }} />
-
-          <Animated.View entering={FadeIn.delay(100).duration(500)} style={{ alignItems: "center", marginBottom: 32 }}>
-            <CircularProgress percentage={healthPercentage} size={176} />
-            
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 16 }}>
-              <MaterialCommunityIcons name="trending-up" size={18} color="#81B29A" />
-              <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 12, color: "#81B29A", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                +5% from last week
-              </Text>
-            </View>
-          </Animated.View>
-
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16, marginBottom: 24 }}>
-            <View style={{ flexDirection: "row", gap: 16, width: "100%" }}>
-              <StatCard
-                label="Inner Circle"
-                value={`${innerCircleActive}%`}
-                subtext="Active"
-                color="#81B29A"
-                index={0}
-              />
-              <StatCard
-                label="Close Friends"
-                value={overdueFriends.filter(f => f.orbitId === "close").length}
-                subtext="Overdue"
-                color="#E07A5F"
-                index={1}
-              />
-            </View>
-            <View style={{ flexDirection: "row", gap: 16, width: "100%" }}>
-              <StatCard
-                label="New Memories"
-                value={4}
-                subtext="logged"
-                color="#81B29A"
-                index={2}
-              />
-              <StatCard
-                label="Streak"
-                value={3}
-                subtext="Weeks"
-                color="#81B29A"
-                index={3}
-              />
-            </View>
-          </View>
-
-          <TouchableOpacity
-            onPress={onViewAnalytics}
-            style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: 8 }}
+        <GestureDetector gesture={panGesture}>
+          <Animated.View
+            style={[
+              {
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                backgroundColor: "#F4F1DE",
+                borderTopLeftRadius: 40,
+                borderTopRightRadius: 40,
+                padding: 24,
+                paddingBottom: 40,
+              },
+              animatedSheetStyle,
+            ]}
           >
-            <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 14, color: "#81B29A" }}>
-              View Full Analytics
-            </Text>
-            <MaterialCommunityIcons name="chevron-right" size={20} color="#81B29A" />
-          </TouchableOpacity>
-        </Animated.View>
+            <View style={{ width: 48, height: 6, backgroundColor: "rgba(61, 64, 91, 0.2)", borderRadius: 3, alignSelf: "center", marginBottom: 24 }} />
+
+            <Animated.View entering={FadeIn.delay(100).duration(500)} style={{ alignItems: "center", marginBottom: 32 }}>
+              <CircularProgress percentage={healthPercentage} size={176} />
+              
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 16 }}>
+                <MaterialCommunityIcons name="trending-up" size={18} color="#81B29A" />
+                <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 12, color: "#81B29A", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  +5% from last week
+                </Text>
+              </View>
+            </Animated.View>
+
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16, marginBottom: 24 }}>
+              <View style={{ flexDirection: "row", gap: 16, width: "100%" }}>
+                <StatCard
+                  label="Inner Circle"
+                  value={`${innerCircleActive}%`}
+                  subtext="Active"
+                  color="#81B29A"
+                  index={0}
+                />
+                <StatCard
+                  label="Close Friends"
+                  value={overdueFriends.filter(f => f.orbitId === "close").length}
+                  subtext="Overdue"
+                  color="#E07A5F"
+                  index={1}
+                />
+              </View>
+              <View style={{ flexDirection: "row", gap: 16, width: "100%" }}>
+                <StatCard
+                  label="New Memories"
+                  value={4}
+                  subtext="logged"
+                  color="#81B29A"
+                  index={2}
+                />
+                <StatCard
+                  label="Streak"
+                  value={3}
+                  subtext="Weeks"
+                  color="#81B29A"
+                  index={3}
+                />
+              </View>
+            </View>
+
+            <TouchableOpacity
+              onPress={() => {
+                closeDrawer();
+                setTimeout(() => onViewAnalytics(), 300);
+              }}
+              style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: 8 }}
+            >
+              <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 14, color: "#81B29A" }}>
+                View Full Analytics
+              </Text>
+              <MaterialCommunityIcons name="chevron-right" size={20} color="#81B29A" />
+            </TouchableOpacity>
+          </Animated.View>
+        </GestureDetector>
       </View>
     </Modal>
   );

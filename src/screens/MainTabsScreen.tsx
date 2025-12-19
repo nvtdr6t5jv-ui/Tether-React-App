@@ -15,6 +15,7 @@ import { EditProfileScreen } from "./EditProfileScreen";
 import { SocialPulseScreen } from "./SocialPulseScreen";
 import { PremiumScreen } from "./PremiumScreen";
 import { BottomTabBar } from "../components/BottomTabBar";
+import { SwipeableScreen } from "../components/SwipeableScreen";
 import { useApp } from "../context/AppContext";
 
 type TabType = "home" | "people" | "actions" | "settings";
@@ -105,9 +106,11 @@ export const MainTabsScreen = () => {
     switch (homeStack.screen) {
       case "socialPulse":
         return (
-          <SocialPulseScreen
-            onBack={() => setHomeStack({ screen: "main" })}
-          />
+          <SwipeableScreen onSwipeBack={() => setHomeStack({ screen: "main" })}>
+            <SocialPulseScreen
+              onBack={() => setHomeStack({ screen: "main" })}
+            />
+          </SwipeableScreen>
         );
       case "main":
       default:
@@ -137,26 +140,32 @@ export const MainTabsScreen = () => {
         );
       case "profile":
         return (
-          <PersonProfileScreen
-            friendId={peopleStack.friendId}
-            onBack={() => setPeopleStack({ screen: "list" })}
-            onEdit={(friendId) => setPeopleStack({ screen: "editPerson", friendId })}
-          />
+          <SwipeableScreen onSwipeBack={() => setPeopleStack({ screen: "list" })}>
+            <PersonProfileScreen
+              friendId={peopleStack.friendId}
+              onBack={() => setPeopleStack({ screen: "list" })}
+              onEdit={(friendId) => setPeopleStack({ screen: "editPerson", friendId })}
+            />
+          </SwipeableScreen>
         );
       case "newConnection":
         return (
-          <NewConnectionScreen
-            onBack={() => setPeopleStack({ screen: "list" })}
-            onSave={(friendId) => setPeopleStack({ screen: "profile", friendId })}
-          />
+          <SwipeableScreen onSwipeBack={() => setPeopleStack({ screen: "list" })}>
+            <NewConnectionScreen
+              onBack={() => setPeopleStack({ screen: "list" })}
+              onSave={(friendId) => setPeopleStack({ screen: "profile", friendId })}
+            />
+          </SwipeableScreen>
         );
       case "editPerson":
         return (
-          <EditPersonScreen
-            friendId={peopleStack.friendId}
-            onBack={() => setPeopleStack({ screen: "profile", friendId: peopleStack.friendId })}
-            onSave={() => setPeopleStack({ screen: "profile", friendId: peopleStack.friendId })}
-          />
+          <SwipeableScreen onSwipeBack={() => setPeopleStack({ screen: "profile", friendId: peopleStack.friendId })}>
+            <EditPersonScreen
+              friendId={peopleStack.friendId}
+              onBack={() => setPeopleStack({ screen: "profile", friendId: peopleStack.friendId })}
+              onSave={() => setPeopleStack({ screen: "profile", friendId: peopleStack.friendId })}
+            />
+          </SwipeableScreen>
         );
       default:
         return (
@@ -216,28 +225,36 @@ export const MainTabsScreen = () => {
         );
       case "notifications":
         return (
-          <NotificationsScreen
-            onBack={() => setSettingsStack({ screen: "main" })}
-          />
+          <SwipeableScreen onSwipeBack={() => setSettingsStack({ screen: "main" })}>
+            <NotificationsScreen
+              onBack={() => setSettingsStack({ screen: "main" })}
+            />
+          </SwipeableScreen>
         );
       case "appearance":
         return (
-          <AppearanceScreen
-            onBack={() => setSettingsStack({ screen: "main" })}
-          />
+          <SwipeableScreen onSwipeBack={() => setSettingsStack({ screen: "main" })}>
+            <AppearanceScreen
+              onBack={() => setSettingsStack({ screen: "main" })}
+            />
+          </SwipeableScreen>
         );
       case "analytics":
         return (
-          <AnalyticsScreen
-            onBack={() => setSettingsStack({ screen: "main" })}
-          />
+          <SwipeableScreen onSwipeBack={() => setSettingsStack({ screen: "main" })}>
+            <AnalyticsScreen
+              onBack={() => setSettingsStack({ screen: "main" })}
+            />
+          </SwipeableScreen>
         );
       case "editProfile":
         return (
-          <EditProfileScreen
-            onBack={() => setSettingsStack({ screen: "main" })}
-            onSave={() => setSettingsStack({ screen: "main" })}
-          />
+          <SwipeableScreen onSwipeBack={() => setSettingsStack({ screen: "main" })}>
+            <EditProfileScreen
+              onBack={() => setSettingsStack({ screen: "main" })}
+              onSave={() => setSettingsStack({ screen: "main" })}
+            />
+          </SwipeableScreen>
         );
       default:
         return (
