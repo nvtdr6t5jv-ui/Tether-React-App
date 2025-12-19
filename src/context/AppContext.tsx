@@ -869,7 +869,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       suggestions.push(`It's been ${lastInteractionDays} days - time to reach out!`);
     }
     if (lastInteractionDays === 999) {
-      suggestions.push('You haven't connected yet - reach out to start building your relationship!');
+      suggestions.push("You haven't connected yet - reach out to start building your relationship!");
     }
     if (trend === 'declining') {
       suggestions.push('Your connection frequency has decreased recently.');
