@@ -484,14 +484,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       if (userId && isValidUUID(friendId) && isValidUUID(interaction.id)) {
         try {
+          const existingCloudFriend = await api.friends.getById(friendId);
+          if (!existingCloudFriend) {
+            const phoneHash = await hashPhoneNumber(friend.phone);
+            await api.friends.create({
+              id: friendId,
+              phoneHash,
+              orbitId: friend.orbitId as any,
+              isFavorite: friend.isFavorite || false,
+              reminderFrequency: (friend.reminderFrequency || 'monthly') as any,
+              lastContact: now.toISOString(),
+              streak: newStreak,
+            });
+          } else {
+            await api.friends.update(friendId, { lastContact: now.toISOString(), streak: newStreak });
+          }
+          
           await api.interactions.create({
             id: interaction.id,
             friendId: friendId,
             type: type,
-            
             date: now,
           });
-          await api.friends.update(friendId, { lastContact: now.toISOString() });
         } catch (e) {
           console.error('Failed to sync interaction to cloud:', e);
         }
