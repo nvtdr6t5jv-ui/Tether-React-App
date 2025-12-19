@@ -136,11 +136,13 @@ export interface CalendarEvent {
   date: Date;
   endDate?: Date;
   friendId?: string;
+  friendIds?: string[];
   type: 'birthday' | 'anniversary' | 'meetup' | 'call' | 'reminder' | 'custom';
   isRecurring: boolean;
   recurringType?: 'yearly' | 'monthly' | 'weekly';
   color?: string;
   notes?: string;
+  location?: string;
   isCompleted: boolean;
   createdAt: Date;
 }

@@ -146,16 +146,15 @@ export const api = {
       return data;
     },
 
-    async update(id: string, updates: Partial<Omit<Friend, 'id' | 'user_id' | 'created_at'>>): Promise<Friend> {
+    async update(id: string, updates: Partial<Omit<Friend, 'id' | 'user_id' | 'created_at'>>): Promise<Friend | null> {
       const { data, error } = await supabase
         .from('friends')
         .update({ ...updates, updated_at: new Date().toISOString() })
         .eq('id', id)
-        .select()
-        .single();
+        .select();
 
       if (error) throw error;
-      return data;
+      return data && data.length > 0 ? data[0] : null;
     },
 
     async delete(id: string): Promise<void> {

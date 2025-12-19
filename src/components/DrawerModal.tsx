@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { View, Text, TouchableOpacity, Dimensions, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, Dimensions, StyleSheet, Keyboard, TouchableWithoutFeedback, ScrollView } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -42,10 +42,15 @@ export const DrawerModal: React.FC<DrawerModalProps> = ({
   }, [visible]);
 
   const closeDrawer = () => {
+    Keyboard.dismiss();
     translateY.value = withTiming(SCREEN_HEIGHT, { duration: 250 });
     backdropOpacity.value = withTiming(0, { duration: 250 }, () => {
       runOnJS(onClose)();
     });
+  };
+
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
   };
 
   const panGesture = Gesture.Pan()
@@ -104,9 +109,16 @@ export const DrawerModal: React.FC<DrawerModalProps> = ({
           {title && (
             <Text style={styles.title}>{title}</Text>
           )}
-          <View style={styles.content}>
-            {children}
-          </View>
+          <TouchableWithoutFeedback onPress={dismissKeyboard}>
+            <ScrollView 
+              style={styles.content} 
+              contentContainerStyle={styles.contentContainer}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {children}
+            </ScrollView>
+          </TouchableWithoutFeedback>
         </Animated.View>
       </GestureDetector>
     </View>
@@ -126,6 +138,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 40,
     borderTopRightRadius: 40,
     paddingTop: 12,
+    maxHeight: "90%",
   },
   handle: {
     width: 40,
@@ -145,6 +158,8 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 24,
+  },
+  contentContainer: {
     paddingBottom: 40,
   },
 });

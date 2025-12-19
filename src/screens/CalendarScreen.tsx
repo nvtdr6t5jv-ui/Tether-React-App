@@ -132,9 +132,11 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
   
   const [newEventTitle, setNewEventTitle] = useState('');
   const [newEventType, setNewEventType] = useState<CalendarEvent['type']>('custom');
-  const [newEventFriendId, setNewEventFriendId] = useState<string | null>(null);
+  const [newEventFriendIds, setNewEventFriendIds] = useState<string[]>([]);
   const [newEventNotes, setNewEventNotes] = useState('');
+  const [newEventLocation, setNewEventLocation] = useState('');
   const [friendSearchQuery, setFriendSearchQuery] = useState('');
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
 
   const handleImportFromDevice = async () => {
     const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -246,23 +248,57 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
     if (!newEventTitle.trim() || !selectedDate) return;
 
     const event: CalendarEvent = {
-      id: `event-${Date.now()}`,
+      id: editingEvent ? editingEvent.id : `event-${Date.now()}`,
       title: newEventTitle,
       date: selectedDate,
-      friendId: newEventFriendId || undefined,
+      friendId: newEventFriendIds.length > 0 ? newEventFriendIds[0] : undefined,
+      friendIds: newEventFriendIds.length > 0 ? newEventFriendIds : undefined,
       type: newEventType,
       isRecurring: false,
       notes: newEventNotes,
-      isCompleted: false,
-      createdAt: new Date(),
+      location: newEventLocation,
+      isCompleted: editingEvent ? editingEvent.isCompleted : false,
+      createdAt: editingEvent ? editingEvent.createdAt : new Date(),
     };
 
-    await addCalendarEvent(event);
+    if (editingEvent) {
+      await updateCalendarEvent(editingEvent.id, event);
+    } else {
+      await addCalendarEvent(event);
+    }
+    resetEventForm();
+    setShowAddEvent(false);
+  };
+
+  const resetEventForm = () => {
     setNewEventTitle('');
     setNewEventType('custom');
-    setNewEventFriendId(null);
+    setNewEventFriendIds([]);
     setNewEventNotes('');
-    setShowAddEvent(false);
+    setNewEventLocation('');
+    setFriendSearchQuery('');
+    setEditingEvent(null);
+  };
+
+  const handleEditEvent = (event: CalendarEvent) => {
+    setEditingEvent(event);
+    setNewEventTitle(event.title);
+    setNewEventType(event.type);
+    setNewEventFriendIds(event.friendIds || (event.friendId ? [event.friendId] : []));
+    setNewEventNotes(event.notes || '');
+    setNewEventLocation(event.location || '');
+    setSelectedDate(new Date(event.date));
+    setShowEventDetail(null);
+    setShowAddEvent(true);
+  };
+
+  const toggleFriendSelection = (friendId: string) => {
+    setNewEventFriendIds(prev =>
+      prev.includes(friendId)
+        ? prev.filter(id => id !== friendId)
+        : [...prev, friendId]
+    );
+    setFriendSearchQuery('');
   };
 
   const handleDeleteEvent = async (eventId: string) => {
@@ -679,7 +715,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
         </Animated.View>
       </ScrollView>
 
-      <DrawerModal visible={showAddEvent} onClose={() => setShowAddEvent(false)} title="Add Event">
+      <DrawerModal visible={showAddEvent} onClose={() => { resetEventForm(); setShowAddEvent(false); }} title={editingEvent ? "Edit Event" : "Add Event"}>
         <View style={{ gap: 16 }}>
           <View>
             <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 14, color: '#3D405B', marginBottom: 8 }}>
@@ -734,100 +770,101 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
 
           <View>
             <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 14, color: '#3D405B', marginBottom: 8 }}>
-              Link to Friend (Optional)
+              Link to Friends (Optional)
             </Text>
             
-            {newEventFriendId ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    backgroundColor: '#81B29A',
-                    borderRadius: 9999,
-                    paddingLeft: 8,
-                    paddingRight: 12,
-                    paddingVertical: 6,
-                    gap: 8,
-                  }}
-                >
-                  <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 14, color: '#FFF' }}>
-                    {friends.find(f => f.id === newEventFriendId)?.name || 'Friend'}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setNewEventFriendId(null);
-                      setFriendSearchQuery('');
-                    }}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <MaterialCommunityIcons name="close-circle" size={18} color="rgba(255,255,255,0.8)" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ) : (
-              <>
-                <TextInput
-                  value={friendSearchQuery}
-                  onChangeText={setFriendSearchQuery}
-                  placeholder="Search friends..."
-                  placeholderTextColor="rgba(61, 64, 91, 0.4)"
-                  style={{
-                    backgroundColor: '#FFF',
-                    padding: 12,
-                    borderRadius: 12,
-                    fontFamily: 'PlusJakartaSans_500Medium',
-                    fontSize: 14,
-                    color: '#3D405B',
-                    marginBottom: 8,
-                  }}
-                />
-                {friendSearchQuery.length > 0 && (
-                  <ScrollView style={{ maxHeight: 150 }} showsVerticalScrollIndicator={false}>
-                    <TouchableOpacity
-                      onPress={() => {
-                        setNewEventFriendId(null);
-                        setFriendSearchQuery('');
-                      }}
+            {newEventFriendIds.length > 0 && (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+                {newEventFriendIds.map(friendId => {
+                  const friend = friends.find(f => f.id === friendId);
+                  return (
+                    <View
+                      key={friendId}
                       style={{
-                        paddingHorizontal: 16,
-                        paddingVertical: 10,
-                        borderRadius: 12,
-                        backgroundColor: '#F4F1DE',
-                        marginBottom: 4,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        backgroundColor: '#81B29A',
+                        borderRadius: 9999,
+                        paddingLeft: 12,
+                        paddingRight: 8,
+                        paddingVertical: 6,
+                        gap: 6,
                       }}
                     >
-                      <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 14, color: '#3D405B' }}>
-                        None
+                      <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 13, color: '#FFF' }}>
+                        {friend?.name || 'Friend'}
                       </Text>
-                    </TouchableOpacity>
-                    {friends
-                      .filter(f => f.name.toLowerCase().includes(friendSearchQuery.toLowerCase()))
-                      .slice(0, 5)
-                      .map(friend => (
                       <TouchableOpacity
-                        key={friend.id}
-                        onPress={() => {
-                          setNewEventFriendId(friend.id);
-                          setFriendSearchQuery('');
-                        }}
-                        style={{
-                          paddingHorizontal: 16,
-                          paddingVertical: 10,
-                          borderRadius: 12,
-                          backgroundColor: '#F4F1DE',
-                          marginBottom: 4,
-                        }}
+                        onPress={() => toggleFriendSelection(friendId)}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                       >
-                        <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 14, color: '#3D405B' }}>
-                          {friend.name}
-                        </Text>
+                        <MaterialCommunityIcons name="close-circle" size={18} color="rgba(255,255,255,0.8)" />
                       </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                )}
-              </>
+                    </View>
+                  );
+                })}
+              </View>
             )}
+            
+            <TextInput
+              value={friendSearchQuery}
+              onChangeText={setFriendSearchQuery}
+              placeholder="Search friends to add..."
+              placeholderTextColor="rgba(61, 64, 91, 0.4)"
+              style={{
+                backgroundColor: '#FFF',
+                padding: 12,
+                borderRadius: 12,
+                fontFamily: 'PlusJakartaSans_500Medium',
+                fontSize: 14,
+                color: '#3D405B',
+                marginBottom: 8,
+              }}
+            />
+            {friendSearchQuery.length > 0 && (
+              <ScrollView style={{ maxHeight: 150 }} showsVerticalScrollIndicator={false}>
+                {friends
+                  .filter(f => f.name.toLowerCase().includes(friendSearchQuery.toLowerCase()) && !newEventFriendIds.includes(f.id))
+                  .slice(0, 5)
+                  .map(friend => (
+                  <TouchableOpacity
+                    key={friend.id}
+                    onPress={() => toggleFriendSelection(friend.id)}
+                    style={{
+                      paddingHorizontal: 16,
+                      paddingVertical: 10,
+                      borderRadius: 12,
+                      backgroundColor: '#F4F1DE',
+                      marginBottom: 4,
+                    }}
+                  >
+                    <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 14, color: '#3D405B' }}>
+                      {friend.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+
+          <View>
+            <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 14, color: '#3D405B', marginBottom: 8 }}>
+              Location (Optional)
+            </Text>
+            <TextInput
+              value={newEventLocation}
+              onChangeText={setNewEventLocation}
+              placeholder="Enter location..."
+              placeholderTextColor="rgba(61, 64, 91, 0.4)"
+              style={{
+                backgroundColor: '#F4F1DE',
+                padding: 16,
+                borderRadius: 12,
+                fontFamily: 'PlusJakartaSans_500Medium',
+                fontSize: 16,
+                color: '#3D405B',
+              }}
+            />
           </View>
 
           <View>
@@ -865,7 +902,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
             }}
           >
             <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 16, color: '#FFF' }}>
-              Add Event
+              {editingEvent ? 'Save Changes' : 'Add Event'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -905,27 +942,41 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
               </View>
             </View>
 
-            {showEventDetail.friendId && (
-              <TouchableOpacity
-                onPress={() => {
-                  setShowEventDetail(null);
-                  onNavigateToProfile?.(showEventDetail.friendId!);
-                }}
-                style={{
-                  backgroundColor: '#F4F1DE',
-                  padding: 16,
-                  borderRadius: 12,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 12,
-                }}
-              >
-                <MaterialCommunityIcons name="account" size={20} color="#3D405B" />
+            {(showEventDetail.friendIds?.length || showEventDetail.friendId) && (
+              <View style={{ gap: 8 }}>
                 <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 14, color: '#3D405B' }}>
-                  {friends.find(f => f.id === showEventDetail.friendId)?.name}
+                  With
                 </Text>
-                <MaterialCommunityIcons name="chevron-right" size={20} color="rgba(61, 64, 91, 0.4)" style={{ marginLeft: 'auto' }} />
-              </TouchableOpacity>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  {(showEventDetail.friendIds || (showEventDetail.friendId ? [showEventDetail.friendId] : [])).map(fId => {
+                    const friend = friends.find(f => f.id === fId);
+                    if (!friend) return null;
+                    return (
+                      <TouchableOpacity
+                        key={fId}
+                        onPress={() => {
+                          setShowEventDetail(null);
+                          onNavigateToProfile?.(fId);
+                        }}
+                        style={{
+                          backgroundColor: '#F4F1DE',
+                          paddingHorizontal: 12,
+                          paddingVertical: 8,
+                          borderRadius: 9999,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 6,
+                        }}
+                      >
+                        <MaterialCommunityIcons name="account" size={16} color="#3D405B" />
+                        <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 13, color: '#3D405B' }}>
+                          {friend.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
             )}
 
             {showEventDetail.notes && (
@@ -940,40 +991,60 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
             )}
 
             {!showEventDetail.id.startsWith('birthday-') && (
-              <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
+              <>
                 <TouchableOpacity
-                  onPress={() => handleDeleteEvent(showEventDetail.id)}
+                  onPress={() => handleEditEvent(showEventDetail)}
                   style={{
-                    flex: 1,
-                    padding: 16,
-                    borderRadius: 12,
+                    flexDirection: 'row',
                     alignItems: 'center',
-                    borderWidth: 1,
-                    borderColor: '#E07A5F',
+                    justifyContent: 'center',
+                    gap: 8,
+                    padding: 16,
+                    backgroundColor: '#F4F1DE',
+                    borderRadius: 12,
+                    marginTop: 8,
                   }}
                 >
-                  <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 16, color: '#E07A5F' }}>
-                    Delete
+                  <MaterialCommunityIcons name="pencil" size={18} color="#3D405B" />
+                  <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 16, color: '#3D405B' }}>
+                    Edit Event
                   </Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    handleToggleComplete(showEventDetail);
-                    setShowEventDetail(null);
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: 16,
-                    borderRadius: 12,
-                    alignItems: 'center',
-                    backgroundColor: showEventDetail.isCompleted ? '#F4F1DE' : '#81B29A',
-                  }}
-                >
-                  <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 16, color: showEventDetail.isCompleted ? '#3D405B' : '#FFF' }}>
-                    {showEventDetail.isCompleted ? 'Undo' : 'Complete'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
+                <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
+                  <TouchableOpacity
+                    onPress={() => handleDeleteEvent(showEventDetail.id)}
+                    style={{
+                      flex: 1,
+                      padding: 16,
+                      borderRadius: 12,
+                      alignItems: 'center',
+                      borderWidth: 1,
+                      borderColor: '#E07A5F',
+                    }}
+                  >
+                    <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 16, color: '#E07A5F' }}>
+                      Delete
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      handleToggleComplete(showEventDetail);
+                      setShowEventDetail(null);
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: 16,
+                      borderRadius: 12,
+                      alignItems: 'center',
+                      backgroundColor: showEventDetail.isCompleted ? '#F4F1DE' : '#81B29A',
+                    }}
+                  >
+                    <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 16, color: showEventDetail.isCompleted ? '#3D405B' : '#FFF' }}>
+                      {showEventDetail.isCompleted ? 'Undo' : 'Complete'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </>
             )}
 
             <TouchableOpacity

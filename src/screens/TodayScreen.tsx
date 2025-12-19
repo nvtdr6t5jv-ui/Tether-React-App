@@ -59,13 +59,16 @@ interface ActionCardProps {
   index: number;
   onQuickLog: () => void;
   onViewProfile: () => void;
-  onSwipeComplete: () => void;
+  onSwipeCall: () => void;
+  onSwipeText: () => void;
 }
 
-const ActionCard: React.FC<ActionCardProps> = ({ friend, index, onQuickLog, onViewProfile, onSwipeComplete }) => {
+const ActionCard: React.FC<ActionCardProps> = ({ friend, index, onQuickLog, onViewProfile, onSwipeCall, onSwipeText }) => {
   const translateX = useSharedValue(0);
   const cardOpacity = useSharedValue(1);
   const orbit = ORBITS.find(o => o.id === friend.orbitId);
+  const CALL_THRESHOLD = 120;
+  const TEXT_THRESHOLD = 200;
 
   const getTimeSince = () => {
     if (!friend.lastContact) return "Never connected";
@@ -86,10 +89,15 @@ const ActionCard: React.FC<ActionCardProps> = ({ friend, index, onQuickLog, onVi
       }
     })
     .onEnd((event) => {
-      if (event.translationX > 100) {
+      if (event.translationX >= TEXT_THRESHOLD) {
         translateX.value = withTiming(width, { duration: 200 });
         cardOpacity.value = withTiming(0, { duration: 200 }, () => {
-          runOnJS(onSwipeComplete)();
+          runOnJS(onSwipeText)();
+        });
+      } else if (event.translationX >= CALL_THRESHOLD) {
+        translateX.value = withTiming(width, { duration: 200 });
+        cardOpacity.value = withTiming(0, { duration: 200 }, () => {
+          runOnJS(onSwipeCall)();
         });
       } else {
         translateX.value = withSpring(0);
@@ -101,10 +109,21 @@ const ActionCard: React.FC<ActionCardProps> = ({ friend, index, onQuickLog, onVi
     opacity: cardOpacity.value,
   }));
 
-  const swipeIndicatorStyle = useAnimatedStyle(() => ({
-    opacity: Math.min(translateX.value / 100, 1),
-    transform: [{ scale: Math.min(translateX.value / 100, 1) }],
-  }));
+  const callIndicatorStyle = useAnimatedStyle(() => {
+    const showCall = translateX.value >= CALL_THRESHOLD / 2 && translateX.value < TEXT_THRESHOLD;
+    return {
+      opacity: showCall ? interpolate(translateX.value, [CALL_THRESHOLD / 2, CALL_THRESHOLD], [0, 1]) : 0,
+      transform: [{ scale: showCall ? interpolate(translateX.value, [CALL_THRESHOLD / 2, CALL_THRESHOLD], [0.5, 1]) : 0.5 }],
+    };
+  });
+
+  const textIndicatorStyle = useAnimatedStyle(() => {
+    const showText = translateX.value >= TEXT_THRESHOLD;
+    return {
+      opacity: showText ? 1 : 0,
+      transform: [{ scale: showText ? 1 : 0.5 }],
+    };
+  });
 
   return (
     <Animated.View entering={SlideInRight.delay(200 + index * 100).duration(400).springify()}>
@@ -115,15 +134,26 @@ const ActionCard: React.FC<ActionCardProps> = ({ friend, index, onQuickLog, onVi
             left: 0,
             top: 0,
             bottom: 0,
-            width: 80,
+            width: 200,
             backgroundColor: '#81B29A',
             borderRadius: 20,
+            flexDirection: 'row',
             alignItems: 'center',
-            justifyContent: 'center',
+            paddingLeft: 24,
+            gap: 32,
           }}
         >
-          <Animated.View style={swipeIndicatorStyle}>
-            <MaterialCommunityIcons name="check" size={32} color="#FFF" />
+          <Animated.View style={callIndicatorStyle}>
+            <View style={{ alignItems: 'center' }}>
+              <MaterialCommunityIcons name="phone" size={28} color="#FFF" />
+              <Text style={{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 10, color: "#FFF", marginTop: 2 }}>Call</Text>
+            </View>
+          </Animated.View>
+          <Animated.View style={textIndicatorStyle}>
+            <View style={{ alignItems: 'center' }}>
+              <MaterialCommunityIcons name="message-text" size={28} color="#FFF" />
+              <Text style={{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 10, color: "#FFF", marginTop: 2 }}>Text</Text>
+            </View>
           </Animated.View>
         </View>
 
@@ -527,8 +557,13 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
     }
   }, [recordDailyActivity, addXP, checkAndUpdateAchievements, updateChallengeProgress, interactions, streakData, gamificationState]);
 
-  const handleSwipeComplete = async (friend: Friend) => {
-    await logInteraction(friend.id, 'text', 'Quick check-in');
+  const handleSwipeCall = async (friend: Friend) => {
+    await logInteraction(friend.id, 'call', 'Quick call');
+    await updateGamificationOnInteraction('call');
+  };
+
+  const handleSwipeText = async (friend: Friend) => {
+    await logInteraction(friend.id, 'text', 'Quick message');
     await updateGamificationOnInteraction('text');
   };
 
@@ -748,7 +783,8 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
                   index={index}
                   onQuickLog={() => handleQuickLog(friend)}
                   onViewProfile={() => onNavigateToProfile?.(friend.id)}
-                  onSwipeComplete={() => handleSwipeComplete(friend)}
+                  onSwipeCall={() => handleSwipeCall(friend)}
+                  onSwipeText={() => handleSwipeText(friend)}
                 />
               ))}
             </View>
