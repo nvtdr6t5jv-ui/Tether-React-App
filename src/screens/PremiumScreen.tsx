@@ -201,7 +201,7 @@ export const PremiumScreen: React.FC<PremiumScreenProps> = ({ onClose, trigger =
       <GestureDetector gesture={panGesture}>
         <Animated.View style={[animatedSheetStyle, { maxHeight: SCREEN_HEIGHT * 0.9 }]}>
           <LinearGradient
-            colors={['#3D405B', '#4A4E69', '#3D405B']}
+            colors={['#5A8F7B', '#81B29A', '#5A8F7B']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={{

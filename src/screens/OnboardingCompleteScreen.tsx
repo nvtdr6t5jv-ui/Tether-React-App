@@ -235,7 +235,7 @@ export const OnboardingCompleteScreen = () => {
   if (showPremiumStep) {
     return (
       <LinearGradient
-        colors={['#3D405B', '#4A4E69', '#3D405B']}
+        colors={['#5A8F7B', '#81B29A', '#5A8F7B']}
         style={{ flex: 1 }}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}

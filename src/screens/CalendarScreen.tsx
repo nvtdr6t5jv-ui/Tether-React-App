@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  AppState,
+  AppStateStatus,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -90,11 +92,24 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
     lastSyncDate 
   } = useCalendarSync();
 
-  React.useEffect(() => {
+  const appState = useRef(AppState.currentState);
+
+  useEffect(() => {
     if (autoSyncEnabled) {
       performAutoSync(addCalendarEvent, calendarEvents);
     }
-  }, []);
+
+    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      if (appState.current.match(/inactive|background/) && nextAppState === 'active' && autoSyncEnabled) {
+        performAutoSync(addCalendarEvent, calendarEvents);
+      }
+      appState.current = nextAppState;
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [autoSyncEnabled]);
 
   React.useEffect(() => {
     const checkFirstVisit = async () => {
