@@ -21,7 +21,7 @@ import Animated, {
 import { useOnboarding } from "../context/OnboardingContext";
 import { ORBITS } from "../types";
 
-const orbits = ORBITS.map(o => ({ id: o.id, label: o.label, frequency: o.frequency }));
+const orbits = ORBITS.map(o => ({ id: o.id, label: o.name, frequency: o.frequency }));
 import { RootStackParamList } from "../navigation/AppNavigator";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -106,9 +106,9 @@ export const OnboardingAssignOrbitsScreen = () => {
         <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 24 }}>
           <Animated.Text
             entering={FadeInDown.duration(500)}
-            style={{ fontFamily: "Fraunces_600SemiBold", fontSize: 32, color: "#3D405B", textAlign: "center", lineHeight: 36, marginBottom: 24 }}
+            style={{ fontFamily: "Fraunces_600SemiBold", fontSize: 28, color: "#3D405B", textAlign: "center", lineHeight: 36, marginBottom: 16 }}
           >
-            How often do you{"\n"}want to chat?
+            How often do you want to chat?
           </Animated.Text>
 
           <Animated.View
