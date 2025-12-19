@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, Rea
 import { authService, AuthUser } from '../services/auth';
 import { purchasesService } from '../services/purchases';
 import { notificationService } from '../services/notifications';
+import { config } from '../config';
 
 interface AuthState {
   user: AuthUser | null;
@@ -29,6 +30,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
+    if (!config.supabase.isConfigured) {
+      setState({
+        user: null,
+        isLoading: false,
+        isAuthenticated: false,
+      });
+      return;
+    }
+
     const initAuth = async () => {
       try {
         const user = await authService.getCurrentUser();

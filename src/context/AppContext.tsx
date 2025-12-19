@@ -22,6 +22,7 @@ import { storageService } from '../services/StorageService';
 import { syncService } from '../services/sync';
 import { api } from '../services/api';
 import { supabase } from '../services/supabase';
+import { config } from '../config';
 
 interface AppState {
   isLoading: boolean;
@@ -213,18 +214,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   useEffect(() => {
     const initData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUserId(user?.id || null);
-      
-      await loadLocalData();
-      
-      if (user) {
-        await syncFromCloud();
+      if (config.supabase.isConfigured) {
+        const { data: { user } } = await supabase.auth.getUser();
+        setUserId(user?.id || null);
+        
+        await loadLocalData();
+        
+        if (user) {
+          await syncFromCloud();
+        }
+      } else {
+        await loadLocalData();
       }
     };
 
     initData();
     storageService.clearManualContactsFlag();
+
+    if (!config.supabase.isConfigured) {
+      return;
+    }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       const newUserId = session?.user?.id || null;
@@ -247,7 +256,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const completeOnboarding = async (friends: Friend[]) => {
     const now = new Date();
-    const { data: { user } } = await supabase.auth.getUser();
+    let user = null;
+    let profile = null;
+
+    if (config.supabase.isConfigured) {
+      const { data } = await supabase.auth.getUser();
+      user = data.user;
+      if (user) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+        profile = profileData;
+      }
+    }
     
     const processedFriends = friends.map(f => ({
       ...f,
@@ -257,12 +280,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       tags: f.tags || [],
       isFavorite: f.orbitId === 'inner',
     }));
-
-    const { data: profile } = user ? await supabase
-      .from('profiles')
-      .select('full_name')
-      .eq('id', user.id)
-      .single() : { data: null };
 
     const defaultProfile: UserProfile = {
       id: user?.id || storageService.generateId(),
@@ -283,7 +300,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       userProfile: defaultProfile,
     }));
 
-    if (user) {
+    if (user && config.supabase.isConfigured) {
       await syncService.syncToCloud();
     }
   };

@@ -1,7 +1,11 @@
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+
 export const config = {
   supabase: {
-    url: process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://your-project.supabase.co',
-    anonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'your-anon-key',
+    url: supabaseUrl || 'https://placeholder.supabase.co',
+    anonKey: supabaseAnonKey || 'placeholder-key',
+    isConfigured: !!(supabaseUrl && supabaseAnonKey),
   },
   revenueCat: {
     appleApiKey: process.env.EXPO_PUBLIC_REVENUECAT_APPLE_KEY || 'appl_your_api_key',
