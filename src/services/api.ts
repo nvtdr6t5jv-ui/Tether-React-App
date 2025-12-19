@@ -11,6 +11,28 @@ import {
   ReminderFrequency,
 } from './database.types';
 
+export interface CloudFriendData {
+  id: string;
+  user_id: string;
+  phone_hash: string | null;
+  orbit_id: OrbitType;
+  is_favorite: boolean;
+  reminder_frequency: ReminderFrequency;
+  last_contact: string | null;
+  streak: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CloudInteractionData {
+  id: string;
+  user_id: string;
+  friend_id: string;
+  type: InteractionType;
+  date: string;
+  created_at: string;
+}
+
 export const api = {
   profiles: {
     async get(): Promise<Profile | null> {
@@ -80,21 +102,20 @@ export const api = {
   },
 
   friends: {
-    async getAll(): Promise<Friend[]> {
+    async getAll(): Promise<CloudFriendData[]> {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
 
       const { data, error } = await supabase
         .from('friends')
         .select('*')
-        .eq('user_id', user.id)
-        .order('name');
+        .eq('user_id', user.id);
 
       if (error) throw error;
       return data || [];
     },
 
-    async getById(id: string): Promise<Friend | null> {
+    async getById(id: string): Promise<CloudFriendData | null> {
       const { data, error } = await supabase
         .from('friends')
         .select('*')
@@ -106,38 +127,28 @@ export const api = {
     },
 
     async create(friend: {
-      name: string;
+      id: string;
+      phoneHash: string | null;
       orbitId: OrbitType;
-      phone?: string;
-      email?: string;
-      birthday?: string;
-      notes?: string;
-      howMet?: string;
+      isFavorite?: boolean;
       reminderFrequency?: ReminderFrequency;
-    }): Promise<Friend> {
+      lastContact?: string | null;
+      streak?: number;
+    }): Promise<CloudFriendData> {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
-
-      const initials = friend.name
-        .split(' ')
-        .map(n => n[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2);
 
       const { data, error } = await supabase
         .from('friends')
         .insert({
+          id: friend.id,
           user_id: user.id,
-          name: friend.name,
-          initials,
+          phone_hash: friend.phoneHash,
           orbit_id: friend.orbitId,
-          phone: friend.phone,
-          email: friend.email,
-          birthday: friend.birthday,
-          notes: friend.notes,
-          how_met: friend.howMet,
+          is_favorite: friend.isFavorite || false,
           reminder_frequency: friend.reminderFrequency || 'monthly',
+          last_contact: friend.lastContact || null,
+          streak: friend.streak || 0,
         })
         .select()
         .single();
@@ -146,10 +157,26 @@ export const api = {
       return data;
     },
 
-    async update(id: string, updates: Partial<Omit<Friend, 'id' | 'user_id' | 'created_at'>>): Promise<Friend | null> {
+    async update(id: string, updates: {
+      phoneHash?: string | null;
+      orbitId?: OrbitType;
+      isFavorite?: boolean;
+      reminderFrequency?: ReminderFrequency;
+      lastContact?: string | null;
+      streak?: number;
+    }): Promise<CloudFriendData | null> {
+      const updateData: any = { updated_at: new Date().toISOString() };
+      
+      if (updates.phoneHash !== undefined) updateData.phone_hash = updates.phoneHash;
+      if (updates.orbitId !== undefined) updateData.orbit_id = updates.orbitId;
+      if (updates.isFavorite !== undefined) updateData.is_favorite = updates.isFavorite;
+      if (updates.reminderFrequency !== undefined) updateData.reminder_frequency = updates.reminderFrequency;
+      if (updates.lastContact !== undefined) updateData.last_contact = updates.lastContact;
+      if (updates.streak !== undefined) updateData.streak = updates.streak;
+
       const { data, error } = await supabase
         .from('friends')
-        .update({ ...updates, updated_at: new Date().toISOString() })
+        .update(updateData)
         .eq('id', id)
         .select();
 
@@ -194,36 +221,10 @@ export const api = {
         })
         .eq('id', id);
     },
-
-    async getOverdue(): Promise<Friend[]> {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return [];
-
-      const friends = await this.getAll();
-      const now = new Date();
-
-      return friends.filter(friend => {
-        if (!friend.last_contact) return true;
-
-        const lastContact = new Date(friend.last_contact);
-        const daysSince = Math.floor((now.getTime() - lastContact.getTime()) / (1000 * 60 * 60 * 24));
-
-        const thresholds: Record<ReminderFrequency, number> = {
-          daily: 1,
-          weekly: 7,
-          biweekly: 14,
-          monthly: 30,
-          quarterly: 90,
-          yearly: 365,
-        };
-
-        return daysSince > thresholds[friend.reminder_frequency];
-      });
-    },
   },
 
   interactions: {
-    async getAll(): Promise<Interaction[]> {
+    async getAll(): Promise<CloudInteractionData[]> {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
 
@@ -237,7 +238,7 @@ export const api = {
       return data || [];
     },
 
-    async getByFriend(friendId: string): Promise<Interaction[]> {
+    async getByFriend(friendId: string): Promise<CloudInteractionData[]> {
       const { data, error } = await supabase
         .from('interactions')
         .select('*')
@@ -249,21 +250,21 @@ export const api = {
     },
 
     async create(interaction: {
+      id: string;
       friendId: string;
       type: InteractionType;
-      note?: string;
       date?: Date;
-    }): Promise<Interaction> {
+    }): Promise<CloudInteractionData> {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
       const { data, error } = await supabase
         .from('interactions')
         .insert({
+          id: interaction.id,
           user_id: user.id,
           friend_id: interaction.friendId,
           type: interaction.type,
-          note: interaction.note,
           date: interaction.date ? (typeof interaction.date === 'string' ? interaction.date : interaction.date.toISOString()) : new Date().toISOString(),
         })
         .select()
@@ -359,7 +360,6 @@ export const api = {
     async create(reminder: {
       friendId: string;
       scheduledDate: Date;
-      message?: string;
     }): Promise<Reminder> {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
@@ -370,7 +370,6 @@ export const api = {
           user_id: user.id,
           friend_id: reminder.friendId,
           scheduled_date: reminder.scheduledDate.toISOString(),
-          message: reminder.message,
         })
         .select()
         .single();
@@ -470,9 +469,9 @@ export const api = {
     },
 
     async create(event: {
+      id: string;
       friendId?: string;
       title: string;
-      description?: string;
       startDate: Date;
       endDate?: Date;
       isAllDay?: boolean;
@@ -485,10 +484,10 @@ export const api = {
       const { data, error } = await supabase
         .from('calendar_events')
         .insert({
+          id: event.id,
           user_id: user.id,
           friend_id: event.friendId,
           title: event.title,
-          description: event.description,
           start_date: event.startDate.toISOString(),
           end_date: event.endDate?.toISOString(),
           is_all_day: event.isAllDay || false,

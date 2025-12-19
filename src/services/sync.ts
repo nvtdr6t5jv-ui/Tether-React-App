@@ -1,53 +1,9 @@
 import { supabase } from './supabase';
-import { api } from './api';
+import { api, CloudFriendData, CloudInteractionData } from './api';
 import { storageService } from './StorageService';
 import { Friend as LocalFriend, Interaction as LocalInteraction, CalendarEvent as LocalCalendarEvent } from '../types';
-import { Friend as DbFriend, Interaction as DbInteraction, CalendarEvent as DbCalendarEvent } from './database.types';
-
-const mapDbFriendToLocal = (dbFriend: DbFriend): LocalFriend => ({
-  id: dbFriend.id,
-  name: dbFriend.name,
-  initials: dbFriend.initials,
-  orbitId: dbFriend.orbit_id,
-  phone: dbFriend.phone || undefined,
-  email: dbFriend.email || undefined,
-  birthday: dbFriend.birthday || undefined,
-  notes: dbFriend.notes || undefined,
-  howMet: dbFriend.how_met || undefined,
-  photo: undefined,
-  isFavorite: dbFriend.is_favorite,
-  reminderFrequency: dbFriend.reminder_frequency,
-  lastContact: dbFriend.last_contact ? new Date(dbFriend.last_contact) : null,
-  nextNudge: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-  tags: [],
-  createdAt: new Date(dbFriend.created_at),
-  updatedAt: new Date(dbFriend.updated_at),
-  streak: 0,
-});
-
-const mapLocalFriendToDb = (localFriend: LocalFriend, userId: string): Partial<DbFriend> => ({
-  user_id: userId,
-  name: localFriend.name,
-  initials: localFriend.initials,
-  orbit_id: localFriend.orbitId as any,
-  phone: localFriend.phone || null,
-  email: localFriend.email || null,
-  birthday: localFriend.birthday || null,
-  notes: localFriend.notes || null,
-  how_met: localFriend.howMet || null,
-  is_favorite: localFriend.isFavorite || false,
-  reminder_frequency: (localFriend.reminderFrequency || 'monthly') as any,
-  last_contact: localFriend.lastContact instanceof Date ? localFriend.lastContact.toISOString() : (localFriend.lastContact || null),
-});
-
-const mapDbInteractionToLocal = (dbInteraction: DbInteraction): LocalInteraction => ({
-  id: dbInteraction.id,
-  friendId: dbInteraction.friend_id,
-  type: dbInteraction.type,
-  note: dbInteraction.note || undefined,
-  date: new Date(dbInteraction.date),
-  createdAt: new Date(dbInteraction.created_at),
-});
+import { CalendarEvent as DbCalendarEvent } from './database.types';
+import { hashPhoneNumber } from '../utils/crypto';
 
 const mapDbEventToLocal = (dbEvent: DbCalendarEvent): LocalCalendarEvent => ({
   id: dbEvent.id,
@@ -89,13 +45,26 @@ export const syncService = {
       ]);
 
       for (const friend of localFriends) {
+        const phoneHash = await hashPhoneNumber(friend.phone);
         const existing = await api.friends.getById(friend.id);
+        
+        const cloudData = {
+          orbitId: friend.orbitId as any,
+          isFavorite: friend.isFavorite || false,
+          reminderFrequency: (friend.reminderFrequency || 'monthly') as any,
+          lastContact: friend.lastContact instanceof Date 
+            ? friend.lastContact.toISOString() 
+            : (friend.lastContact || null),
+          streak: friend.streak || 0,
+          phoneHash,
+        };
+
         if (existing) {
-          await api.friends.update(friend.id, mapLocalFriendToDb(friend, user.id) as any);
+          await api.friends.update(friend.id, cloudData);
         } else {
-          await supabase.from('friends').insert({
+          await api.friends.create({
             id: friend.id,
-            ...mapLocalFriendToDb(friend, user.id),
+            ...cloudData,
           });
         }
       }
@@ -109,7 +78,6 @@ export const syncService = {
           user_id: user.id,
           friend_id: interaction.friendId,
           type: interaction.type as any,
-          note: interaction.note || null,
           date: dateStr,
         });
       }
@@ -123,11 +91,10 @@ export const syncService = {
           user_id: user.id,
           friend_id: event.friendId || null,
           title: event.title,
-          description: event.notes || null,
           start_date: startDateStr,
           end_date: getDateString(event.endDate),
           is_all_day: false,
-          location: null,
+          location: event.location || null,
         });
       }
 
@@ -145,13 +112,13 @@ export const syncService = {
         return { success: false, error: 'Not authenticated' };
       }
 
-      const [dbFriends, dbInteractions, dbEvents] = await Promise.all([
+      const [cloudFriendsMeta, cloudInteractions, dbEvents] = await Promise.all([
         api.friends.getAll(),
         api.interactions.getAll(),
         api.calendarEvents.getAll(),
       ]);
 
-      if (dbFriends.length === 0 && dbInteractions.length === 0 && dbEvents.length === 0) {
+      if (cloudFriendsMeta.length === 0 && cloudInteractions.length === 0 && dbEvents.length === 0) {
         return { success: true };
       }
 
@@ -161,26 +128,40 @@ export const syncService = {
         storageService.getCalendarEvents(),
       ]);
 
-      const cloudFriends = dbFriends.map(mapDbFriendToLocal);
-      const cloudInteractions = dbInteractions.map(mapDbInteractionToLocal);
-      const cloudEvents = dbEvents.map(mapDbEventToLocal);
+      const localPhoneHashes = new Map<string, LocalFriend>();
+      for (const friend of localFriends) {
+        if (friend.phone) {
+          const hash = await hashPhoneNumber(friend.phone);
+          if (hash) {
+            localPhoneHashes.set(hash, friend);
+          }
+        }
+      }
 
       const mergedFriends = [...localFriends];
-      for (const cloudFriend of cloudFriends) {
-        const existingByIdIndex = mergedFriends.findIndex(f => f.id === cloudFriend.id);
-        if (existingByIdIndex >= 0) {
-          const local = mergedFriends[existingByIdIndex];
-          if (cloudFriend.updatedAt > local.updatedAt) {
-            mergedFriends[existingByIdIndex] = cloudFriend;
+      
+      for (const cloudMeta of cloudFriendsMeta) {
+        const existingById = mergedFriends.find(f => f.id === cloudMeta.id);
+        
+        if (existingById) {
+          const cloudUpdatedAt = new Date(cloudMeta.updated_at);
+          if (cloudUpdatedAt > existingById.updatedAt) {
+            existingById.orbitId = cloudMeta.orbit_id;
+            existingById.isFavorite = cloudMeta.is_favorite;
+            existingById.reminderFrequency = cloudMeta.reminder_frequency;
+            existingById.lastContact = cloudMeta.last_contact ? new Date(cloudMeta.last_contact) : null;
+            existingById.streak = cloudMeta.streak;
+            existingById.updatedAt = cloudUpdatedAt;
           }
-        } else {
-          const existingByPhoneOrEmail = mergedFriends.findIndex(f => 
-            (f.phone && cloudFriend.phone && f.phone === cloudFriend.phone) ||
-            (f.email && cloudFriend.email && f.email === cloudFriend.email) ||
-            (f.name === cloudFriend.name && f.orbitId === cloudFriend.orbitId)
-          );
-          if (existingByPhoneOrEmail < 0) {
-            mergedFriends.push(cloudFriend);
+        } else if (cloudMeta.phone_hash) {
+          const matchedByPhone = localPhoneHashes.get(cloudMeta.phone_hash);
+          if (matchedByPhone) {
+            matchedByPhone.id = cloudMeta.id;
+            matchedByPhone.orbitId = cloudMeta.orbit_id;
+            matchedByPhone.isFavorite = cloudMeta.is_favorite;
+            matchedByPhone.reminderFrequency = cloudMeta.reminder_frequency;
+            matchedByPhone.lastContact = cloudMeta.last_contact ? new Date(cloudMeta.last_contact) : null;
+            matchedByPhone.streak = cloudMeta.streak;
           }
         }
       }
@@ -188,10 +169,17 @@ export const syncService = {
       const mergedInteractions = [...localInteractions];
       for (const cloudInt of cloudInteractions) {
         if (!mergedInteractions.some(i => i.id === cloudInt.id)) {
-          mergedInteractions.push(cloudInt);
+          mergedInteractions.push({
+            id: cloudInt.id,
+            friendId: cloudInt.friend_id,
+            type: cloudInt.type,
+            date: new Date(cloudInt.date),
+            createdAt: new Date(cloudInt.created_at),
+          });
         }
       }
 
+      const cloudEvents = dbEvents.map(mapDbEventToLocal);
       const mergedEvents = [...localEvents];
       for (const cloudEvent of cloudEvents) {
         if (!mergedEvents.some(e => e.id === cloudEvent.id)) {

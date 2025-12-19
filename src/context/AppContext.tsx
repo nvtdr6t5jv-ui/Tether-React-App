@@ -23,6 +23,7 @@ import { syncService } from '../services/sync';
 import { api } from '../services/api';
 import { supabase } from '../services/supabase';
 import { config } from '../config';
+import { hashPhoneNumber } from '../utils/crypto';
 
 interface AppState {
   isLoading: boolean;
@@ -336,20 +337,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     if (userId) {
       try {
+        const phoneHash = await hashPhoneNumber(friend.phone);
         await api.friends.create({
           id: friend.id,
-          user_id: userId,
-          name: friend.name,
-          initials: friend.initials,
-          orbit_id: friend.orbitId as any,
-          phone: friend.phone || null,
-          email: friend.email || null,
-          birthday: friend.birthday || null,
-          notes: friend.notes || null,
-          how_met: friend.howMet || null,
-          is_favorite: friend.isFavorite || false,
-          reminder_frequency: (friend.reminderFrequency || 'monthly') as any,
-          last_contact: friend.lastContact?.toISOString() || null,
+          phoneHash,
+          orbitId: friend.orbitId as any,
+          isFavorite: friend.isFavorite || false,
+          reminderFrequency: (friend.reminderFrequency || 'monthly') as any,
+          lastContact: friend.lastContact?.toISOString() || null,
+          streak: 0,
         });
       } catch (e) {
         console.error('Failed to sync friend to cloud:', e);
@@ -369,19 +365,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       if (userId) {
         try {
-          await api.friends.update(friendId, {
-            name: updates.name,
-            initials: updates.initials,
-            orbit_id: updates.orbitId as any,
-            phone: updates.phone || null,
-            email: updates.email || null,
-            birthday: updates.birthday || null,
-            notes: updates.notes || null,
-            how_met: updates.howMet || null,
-            is_favorite: updates.isFavorite,
-            reminder_frequency: updates.reminderFrequency as any,
-            last_contact: updates.lastContact?.toISOString() || null,
-          });
+          const cloudUpdates: any = {};
+          if (updates.orbitId !== undefined) cloudUpdates.orbitId = updates.orbitId;
+          if (updates.isFavorite !== undefined) cloudUpdates.isFavorite = updates.isFavorite;
+          if (updates.reminderFrequency !== undefined) cloudUpdates.reminderFrequency = updates.reminderFrequency;
+          if (updates.lastContact !== undefined) cloudUpdates.lastContact = updates.lastContact?.toISOString() || null;
+          if (updates.streak !== undefined) cloudUpdates.streak = updates.streak;
+          if (updates.phone !== undefined) {
+            cloudUpdates.phoneHash = await hashPhoneNumber(updates.phone);
+          }
+          
+          if (Object.keys(cloudUpdates).length > 0) {
+            await api.friends.update(friendId, cloudUpdates);
+          }
         } catch (e) {
           console.error('Failed to sync friend update to cloud:', e);
         }
@@ -489,12 +485,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (userId) {
         try {
           await api.interactions.create({
+            id: interaction.id,
             friendId: friendId,
             type: type,
-            note: note || undefined,
+            
             date: now,
           });
-          await api.friends.update(friendId, { last_contact: now.toISOString() });
+          await api.friends.update(friendId, { lastContact: now.toISOString() });
         } catch (e) {
           console.error('Failed to sync interaction to cloud:', e);
         }

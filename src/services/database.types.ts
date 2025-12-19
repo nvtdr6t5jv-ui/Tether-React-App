@@ -67,51 +67,36 @@ export interface Database {
         Row: {
           id: string;
           user_id: string;
-          name: string;
-          initials: string;
+          phone_hash: string | null;
           orbit_id: OrbitType;
-          phone: string | null;
-          email: string | null;
-          birthday: string | null;
-          notes: string | null;
-          how_met: string | null;
           is_favorite: boolean;
           reminder_frequency: ReminderFrequency;
           last_contact: string | null;
+          streak: number;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
           user_id: string;
-          name: string;
-          initials: string;
+          phone_hash?: string | null;
           orbit_id: OrbitType;
-          phone?: string | null;
-          email?: string | null;
-          birthday?: string | null;
-          notes?: string | null;
-          how_met?: string | null;
           is_favorite?: boolean;
           reminder_frequency?: ReminderFrequency;
           last_contact?: string | null;
+          streak?: number;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           id?: string;
           user_id?: string;
-          name?: string;
-          initials?: string;
+          phone_hash?: string | null;
           orbit_id?: OrbitType;
-          phone?: string | null;
-          email?: string | null;
-          birthday?: string | null;
-          notes?: string | null;
-          how_met?: string | null;
           is_favorite?: boolean;
           reminder_frequency?: ReminderFrequency;
           last_contact?: string | null;
+          streak?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -122,7 +107,6 @@ export interface Database {
           user_id: string;
           friend_id: string;
           type: InteractionType;
-          note: string | null;
           date: string;
           created_at: string;
         };
@@ -131,7 +115,6 @@ export interface Database {
           user_id: string;
           friend_id: string;
           type: InteractionType;
-          note?: string | null;
           date?: string;
           created_at?: string;
         };
@@ -140,7 +123,6 @@ export interface Database {
           user_id?: string;
           friend_id?: string;
           type?: InteractionType;
-          note?: string | null;
           date?: string;
           created_at?: string;
         };
@@ -151,7 +133,6 @@ export interface Database {
           user_id: string;
           friend_id: string;
           scheduled_date: string;
-          message: string | null;
           is_completed: boolean;
           created_at: string;
         };
@@ -160,7 +141,6 @@ export interface Database {
           user_id: string;
           friend_id: string;
           scheduled_date: string;
-          message?: string | null;
           is_completed?: boolean;
           created_at?: string;
         };
@@ -169,7 +149,6 @@ export interface Database {
           user_id?: string;
           friend_id?: string;
           scheduled_date?: string;
-          message?: string | null;
           is_completed?: boolean;
           created_at?: string;
         };
@@ -200,7 +179,6 @@ export interface Database {
           user_id: string;
           friend_id: string | null;
           title: string;
-          description: string | null;
           start_date: string;
           end_date: string | null;
           is_all_day: boolean;
@@ -214,7 +192,6 @@ export interface Database {
           user_id: string;
           friend_id?: string | null;
           title: string;
-          description?: string | null;
           start_date: string;
           end_date?: string | null;
           is_all_day?: boolean;
@@ -228,7 +205,6 @@ export interface Database {
           user_id?: string;
           friend_id?: string | null;
           title?: string;
-          description?: string | null;
           start_date?: string;
           end_date?: string | null;
           is_all_day?: boolean;
