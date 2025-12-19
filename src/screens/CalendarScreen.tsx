@@ -736,74 +736,98 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
             <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 14, color: '#3D405B', marginBottom: 8 }}>
               Link to Friend (Optional)
             </Text>
-            <TextInput
-              value={friendSearchQuery}
-              onChangeText={setFriendSearchQuery}
-              placeholder="Search friends..."
-              placeholderTextColor="rgba(61, 64, 91, 0.4)"
-              style={{
-                backgroundColor: '#F4F1DE',
-                padding: 12,
-                borderRadius: 12,
-                fontFamily: 'PlusJakartaSans_500Medium',
-                fontSize: 14,
-                color: '#3D405B',
-                marginBottom: 8,
-              }}
-            />
-            <ScrollView style={{ maxHeight: 150 }} showsVerticalScrollIndicator={false}>
-              <TouchableOpacity
-                onPress={() => {
-                  setNewEventFriendId(null);
-                  setFriendSearchQuery('');
-                }}
-                style={{
-                  paddingHorizontal: 16,
-                  paddingVertical: 10,
-                  borderRadius: 12,
-                  backgroundColor: !newEventFriendId ? '#3D405B' : 'transparent',
-                  marginBottom: 4,
-                }}
-              >
-                <Text
+            
+            {newEventFriendId ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <View
                   style={{
-                    fontFamily: 'PlusJakartaSans_600SemiBold',
-                    fontSize: 14,
-                    color: !newEventFriendId ? '#FFF' : '#3D405B',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    backgroundColor: '#81B29A',
+                    borderRadius: 9999,
+                    paddingLeft: 8,
+                    paddingRight: 12,
+                    paddingVertical: 6,
+                    gap: 8,
                   }}
                 >
-                  None
-                </Text>
-              </TouchableOpacity>
-              {friends
-                .filter(f => friendSearchQuery === '' || f.name.toLowerCase().includes(friendSearchQuery.toLowerCase()))
-                .map(friend => (
-                <TouchableOpacity
-                  key={friend.id}
-                  onPress={() => {
-                    setNewEventFriendId(friend.id);
-                    setFriendSearchQuery(friend.name);
-                  }}
-                  style={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 10,
-                    borderRadius: 12,
-                    backgroundColor: newEventFriendId === friend.id ? '#81B29A' : 'transparent',
-                    marginBottom: 4,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontFamily: 'PlusJakartaSans_600SemiBold',
-                      fontSize: 14,
-                      color: newEventFriendId === friend.id ? '#FFF' : '#3D405B',
-                    }}
-                  >
-                    {friend.name}
+                  <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 14, color: '#FFF' }}>
+                    {friends.find(f => f.id === newEventFriendId)?.name || 'Friend'}
                   </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setNewEventFriendId(null);
+                      setFriendSearchQuery('');
+                    }}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <MaterialCommunityIcons name="close-circle" size={18} color="rgba(255,255,255,0.8)" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <>
+                <TextInput
+                  value={friendSearchQuery}
+                  onChangeText={setFriendSearchQuery}
+                  placeholder="Search friends..."
+                  placeholderTextColor="rgba(61, 64, 91, 0.4)"
+                  style={{
+                    backgroundColor: '#FFF',
+                    padding: 12,
+                    borderRadius: 12,
+                    fontFamily: 'PlusJakartaSans_500Medium',
+                    fontSize: 14,
+                    color: '#3D405B',
+                    marginBottom: 8,
+                  }}
+                />
+                {friendSearchQuery.length > 0 && (
+                  <ScrollView style={{ maxHeight: 150 }} showsVerticalScrollIndicator={false}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setNewEventFriendId(null);
+                        setFriendSearchQuery('');
+                      }}
+                      style={{
+                        paddingHorizontal: 16,
+                        paddingVertical: 10,
+                        borderRadius: 12,
+                        backgroundColor: '#F4F1DE',
+                        marginBottom: 4,
+                      }}
+                    >
+                      <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 14, color: '#3D405B' }}>
+                        None
+                      </Text>
+                    </TouchableOpacity>
+                    {friends
+                      .filter(f => f.name.toLowerCase().includes(friendSearchQuery.toLowerCase()))
+                      .slice(0, 5)
+                      .map(friend => (
+                      <TouchableOpacity
+                        key={friend.id}
+                        onPress={() => {
+                          setNewEventFriendId(friend.id);
+                          setFriendSearchQuery('');
+                        }}
+                        style={{
+                          paddingHorizontal: 16,
+                          paddingVertical: 10,
+                          borderRadius: 12,
+                          backgroundColor: '#F4F1DE',
+                          marginBottom: 4,
+                        }}
+                      >
+                        <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 14, color: '#3D405B' }}>
+                          {friend.name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                )}
+              </>
+            )}
           </View>
 
           <View>

@@ -216,75 +216,122 @@ export const LogConnectionModal: React.FC<LogConnectionModalProps> = ({
                     <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 18, color: "#3D405B" }}>
                       Who did you connect with?
                     </Text>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        backgroundColor: "#FFF",
-                        borderRadius: 9999,
-                        paddingHorizontal: 16,
-                        shadowColor: "#3D405B",
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 0.05,
-                        shadowRadius: 8,
-                        elevation: 2,
-                      }}
-                    >
-                      <MaterialCommunityIcons name="magnify" size={24} color="rgba(61, 64, 91, 0.4)" />
-                      <TextInput
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                        placeholder="Search friend..."
-                        placeholderTextColor="rgba(61, 64, 91, 0.4)"
-                        style={{
-                          flex: 1,
-                          fontFamily: "PlusJakartaSans_500Medium",
-                          fontSize: 16,
-                          color: "#3D405B",
-                          paddingVertical: 14,
-                          paddingHorizontal: 12,
-                        }}
-                      />
-                    </View>
-
-                    {searchQuery.length > 0 && filteredFriends.length > 0 && !selectedFriend && (
-                      <View style={{ backgroundColor: "#FFF", borderRadius: 16, overflow: "hidden" }}>
-                        {filteredFriends.slice(0, 4).map((friend, index) => (
-                          <TouchableOpacity
-                            key={friend.id}
-                            onPress={() => {
-                              setSelectedFriend(friend);
-                              setSearchQuery(friend.name);
-                            }}
+                    
+                    {selectedFriend ? (
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            backgroundColor: "#81B29A",
+                            borderRadius: 9999,
+                            paddingLeft: 4,
+                            paddingRight: 12,
+                            paddingVertical: 4,
+                            gap: 8,
+                          }}
+                        >
+                          <View
                             style={{
-                              flexDirection: "row",
+                              width: 32,
+                              height: 32,
+                              borderRadius: 16,
+                              backgroundColor: "rgba(255,255,255,0.3)",
                               alignItems: "center",
-                              gap: 12,
-                              padding: 12,
-                              borderBottomWidth: index < filteredFriends.length - 1 ? 1 : 0,
-                              borderBottomColor: "rgba(61, 64, 91, 0.1)",
+                              justifyContent: "center",
                             }}
                           >
-                            <View
-                              style={{
-                                width: 40,
-                                height: 40,
-                                borderRadius: 20,
-                                backgroundColor: getAvatarColor(index),
-                                alignItems: "center",
-                                justifyContent: "center",
-                              }}
-                            >
-                              <Text style={{ fontFamily: "Fraunces_600SemiBold", fontSize: 16, color: "#FFF" }}>
-                                {friend.initials}
-                              </Text>
-                            </View>
-                            <Text style={{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 16, color: "#3D405B" }}>
-                              {friend.name}
+                            <Text style={{ fontFamily: "Fraunces_600SemiBold", fontSize: 12, color: "#FFF" }}>
+                              {selectedFriend.initials}
                             </Text>
+                          </View>
+                          <Text style={{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 14, color: "#FFF" }}>
+                            {selectedFriend.name}
+                          </Text>
+                          <TouchableOpacity
+                            onPress={() => {
+                              setSelectedFriend(null);
+                              setSearchQuery("");
+                            }}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          >
+                            <MaterialCommunityIcons name="close-circle" size={18} color="rgba(255,255,255,0.8)" />
                           </TouchableOpacity>
-                        ))}
+                        </View>
                       </View>
+                    ) : (
+                      <>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            backgroundColor: "#FFF",
+                            borderRadius: 9999,
+                            paddingHorizontal: 16,
+                            shadowColor: "#3D405B",
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.05,
+                            shadowRadius: 8,
+                            elevation: 2,
+                          }}
+                        >
+                          <MaterialCommunityIcons name="magnify" size={24} color="rgba(61, 64, 91, 0.4)" />
+                          <TextInput
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                            placeholder="Search friend..."
+                            placeholderTextColor="rgba(61, 64, 91, 0.4)"
+                            style={{
+                              flex: 1,
+                              fontFamily: "PlusJakartaSans_500Medium",
+                              fontSize: 16,
+                              color: "#3D405B",
+                              paddingVertical: 14,
+                              paddingHorizontal: 12,
+                            }}
+                          />
+                        </View>
+
+                        {searchQuery.length > 0 && filteredFriends.length > 0 && (
+                          <View style={{ backgroundColor: "#FFF", borderRadius: 16, overflow: "hidden" }}>
+                            {filteredFriends.slice(0, 4).map((friend, index) => (
+                              <TouchableOpacity
+                                key={friend.id}
+                                onPress={() => {
+                                  setSelectedFriend(friend);
+                                  setSearchQuery("");
+                                }}
+                                style={{
+                                  flexDirection: "row",
+                                  alignItems: "center",
+                                  gap: 12,
+                                  padding: 12,
+                                  borderBottomWidth: index < Math.min(filteredFriends.length, 4) - 1 ? 1 : 0,
+                                  borderBottomColor: "rgba(61, 64, 91, 0.1)",
+                                }}
+                              >
+                                <View
+                                  style={{
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: 20,
+                                    backgroundColor: getAvatarColor(index),
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                  }}
+                                >
+                                  <Text style={{ fontFamily: "Fraunces_600SemiBold", fontSize: 16, color: "#FFF" }}>
+                                    {friend.initials}
+                                  </Text>
+                                </View>
+                                <Text style={{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 16, color: "#3D405B" }}>
+                                  {friend.name}
+                                </Text>
+                              </TouchableOpacity>
+                            ))}
+                          </View>
+                        )}
+                      </>
                     )}
                   </Animated.View>
 

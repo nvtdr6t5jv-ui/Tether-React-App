@@ -102,7 +102,7 @@ export const syncService = {
 
       for (const interaction of localInteractions) {
         const dateStr = getDateString(interaction.date);
-        if (!dateStr) continue;
+        if (!dateStr || !interaction.friendId) continue;
         
         await supabase.from('interactions').upsert({
           id: interaction.id,

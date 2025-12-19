@@ -288,7 +288,7 @@ export const PeopleScreen: React.FC<PeopleScreenProps> = ({
   onNavigateToNewConnection,
   onPremiumRequired,
 }) => {
-  const { friends, getOverdueFriends, refreshData, isLoading, canAddMoreFriends, getRemainingFreeSlots, premiumStatus, logInteraction } = useApp();
+  const { friends, getOverdueFriends, refreshData, isLoading, canAddMoreFriends, getRemainingFreeSlots, premiumStatus, logInteraction, deleteFriend } = useApp();
 
   const handleAddConnection = () => {
     if (!canAddMoreFriends()) {
@@ -333,7 +333,7 @@ export const PeopleScreen: React.FC<PeopleScreenProps> = ({
           `Are you sure you want to remove ${menuFriend.name}?`,
           [
             { text: 'Cancel', style: 'cancel' },
-            { text: 'Remove', style: 'destructive', onPress: () => {} },
+            { text: 'Remove', style: 'destructive', onPress: () => deleteFriend(menuFriend.id) },
           ]
         );
         break;
