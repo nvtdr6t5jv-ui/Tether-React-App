@@ -84,11 +84,11 @@ struct StreakWidgetView: View {
     @Environment(\.widgetFamily) var family
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Image(systemName: "flame.fill")
                     .foregroundColor(.orange)
-                    .font(.system(size: 20))
+                    .font(.system(size: 18))
                 Spacer()
                 Text("Tether")
                     .font(.caption2)
@@ -98,22 +98,22 @@ struct StreakWidgetView: View {
             Spacer()
             
             Text("\(entry.widgetData?.streak.current ?? 0)")
-                .font(.system(size: 44, weight: .bold, design: .rounded))
+                .font(.system(size: 40, weight: .bold, design: .rounded))
                 .foregroundColor(.primary)
             
             Text("Day Streak")
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
-        .padding()
     }
 }
 
 struct TodayFocusWidgetView: View {
     var entry: Provider.Entry
+    @Environment(\.widgetFamily) var family
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Text("Today's Focus")
                     .font(.caption)
@@ -127,36 +127,37 @@ struct TodayFocusWidgetView: View {
             Spacer()
             
             if let focus = entry.widgetData?.todayFocus {
-                HStack(spacing: 12) {
+                HStack(spacing: 10) {
                     ZStack {
                         Circle()
                             .fill(Color(red: 0.878, green: 0.478, blue: 0.373))
-                            .frame(width: 44, height: 44)
+                            .frame(width: family == .systemSmall ? 36 : 40, height: family == .systemSmall ? 36 : 40)
                         Text(focus.friendInitials)
-                            .font(.system(size: 16, weight: .bold))
+                            .font(.system(size: family == .systemSmall ? 14 : 16, weight: .bold))
                             .foregroundColor(.white)
                     }
                     
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: 1) {
                         Text(focus.friendName)
-                            .font(.headline)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
                             .lineLimit(1)
                         Text("\(focus.daysSinceContact) days ago")
-                            .font(.caption)
+                            .font(.caption2)
                             .foregroundColor(.secondary)
                     }
                 }
             } else {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text("All caught up!")
-                        .font(.headline)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
                     Text("Great job staying connected")
-                        .font(.caption)
+                        .font(.caption2)
                         .foregroundColor(.secondary)
                 }
             }
         }
-        .padding()
     }
 }
 
@@ -176,7 +177,7 @@ struct GardenWidgetView: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Text("Garden")
                     .font(.caption)
@@ -189,42 +190,42 @@ struct GardenWidgetView: View {
             
             HStack {
                 Text(plantEmoji)
-                    .font(.system(size: 36))
+                    .font(.system(size: 32))
                 
                 Spacer()
                 
-                VStack(alignment: .trailing, spacing: 2) {
+                VStack(alignment: .trailing, spacing: 1) {
                     Text("Level \(entry.widgetData?.garden.level ?? 1)")
-                        .font(.headline)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
                     Text("\(entry.widgetData?.garden.xp ?? 0) XP")
-                        .font(.caption)
+                        .font(.caption2)
                         .foregroundColor(Color(red: 0.506, green: 0.698, blue: 0.604))
                 }
             }
             
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 4)
+                    RoundedRectangle(cornerRadius: 3)
                         .fill(Color.gray.opacity(0.2))
-                        .frame(height: 6)
+                        .frame(height: 5)
                     
                     let progress = Double(entry.widgetData?.garden.xp ?? 0) / Double(entry.widgetData?.garden.xpToNextLevel ?? 100)
-                    RoundedRectangle(cornerRadius: 4)
+                    RoundedRectangle(cornerRadius: 3)
                         .fill(Color(red: 0.506, green: 0.698, blue: 0.604))
-                        .frame(width: geo.size.width * CGFloat(min(progress, 1.0)), height: 6)
+                        .frame(width: geo.size.width * CGFloat(min(progress, 1.0)), height: 5)
                 }
             }
-            .frame(height: 6)
+            .frame(height: 5)
         }
-        .padding()
     }
 }
 
 struct QuickLogWidgetView: View {
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 8) {
             Image(systemName: "plus.circle.fill")
-                .font(.system(size: 32))
+                .font(.system(size: 28))
                 .foregroundColor(Color(red: 0.878, green: 0.478, blue: 0.373))
             
             Text("Quick Log")
@@ -238,9 +239,10 @@ struct QuickLogWidgetView: View {
 
 struct StatsWidgetView: View {
     var entry: Provider.Entry
+    @Environment(\.widgetFamily) var family
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("This Week")
                     .font(.caption)
@@ -253,10 +255,10 @@ struct StatsWidgetView: View {
             
             Spacer()
             
-            HStack(spacing: 16) {
-                VStack(alignment: .leading) {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 1) {
                     Text("\(entry.widgetData?.stats.connectionsThisWeek ?? 0)")
-                        .font(.title2)
+                        .font(.title3)
                         .fontWeight(.bold)
                     Text("Connections")
                         .font(.caption2)
@@ -265,9 +267,9 @@ struct StatsWidgetView: View {
                 
                 Spacer()
                 
-                VStack(alignment: .leading) {
+                VStack(alignment: .leading, spacing: 1) {
                     Text("\(entry.widgetData?.stats.overdueCount ?? 0)")
-                        .font(.title2)
+                        .font(.title3)
                         .fontWeight(.bold)
                         .foregroundColor(entry.widgetData?.stats.overdueCount ?? 0 > 0 ? .orange : .primary)
                     Text("Overdue")
@@ -276,7 +278,6 @@ struct StatsWidgetView: View {
                 }
             }
         }
-        .padding()
     }
 }
 
@@ -297,11 +298,13 @@ struct StreakWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             StreakWidgetView(entry: entry)
+                .padding(12)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Streak")
         .description("Track your daily connection streak")
         .supportedFamilies([.systemSmall])
+        .contentMarginsDisabled()
     }
 }
 
@@ -311,11 +314,13 @@ struct TodayFocusWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             TodayFocusWidgetView(entry: entry)
+                .padding(12)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Today's Focus")
         .description("See who to connect with today")
         .supportedFamilies([.systemSmall, .systemMedium])
+        .contentMarginsDisabled()
     }
 }
 
@@ -325,11 +330,13 @@ struct GardenWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             GardenWidgetView(entry: entry)
+                .padding(12)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Garden")
         .description("Watch your connection garden grow")
         .supportedFamilies([.systemSmall])
+        .contentMarginsDisabled()
     }
 }
 
@@ -341,11 +348,13 @@ struct QuickLogWidget: Widget {
             Link(destination: URL(string: "tether://quicklog")!) {
                 QuickLogWidgetView()
             }
+            .padding(12)
             .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Quick Log")
         .description("Quickly log a connection")
         .supportedFamilies([.systemSmall])
+        .contentMarginsDisabled()
     }
 }
 
@@ -355,10 +364,12 @@ struct StatsWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             StatsWidgetView(entry: entry)
+                .padding(12)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Weekly Stats")
         .description("Your connection statistics")
         .supportedFamilies([.systemSmall, .systemMedium])
+        .contentMarginsDisabled()
     }
 }
