@@ -632,10 +632,6 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
           />
         </Animated.View>
 
-        <Animated.View entering={FadeIn.delay(250).duration(400)} style={{ paddingHorizontal: 16, marginBottom: 24 }}>
-          <WidgetTutorialCard />
-        </Animated.View>
-
         <Animated.View entering={FadeIn.delay(300).duration(600)} style={{ paddingHorizontal: 16, marginBottom: 24 }}>
           <TouchableOpacity
             onPress={() => onNavigate?.("people")}
@@ -768,6 +764,10 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
               ))}
             </View>
           )}
+        </Animated.View>
+
+        <Animated.View entering={FadeInUp.delay(450).duration(400)} style={{ paddingHorizontal: 16, marginBottom: 24 }}>
+          <WidgetTutorialCard />
         </Animated.View>
 
         {upcomingBirthdays.length > 0 && (
