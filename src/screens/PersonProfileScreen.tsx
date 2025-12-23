@@ -18,6 +18,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useApp } from '../context/AppContext';
 import { useGamification } from '../context/GamificationContext';
+import { usePendingAction } from '../context/PendingActionContext';
 import { ORBITS, NOTE_TYPE_CONFIG, INTERACTION_ICONS } from '../types';
 import { LogConnectionModal } from '../components/LogConnectionModal';
 import { NewNoteModal } from '../components/NewNoteModal';
@@ -89,6 +90,7 @@ export const PersonProfileScreen: React.FC<PersonProfileScreenProps> = ({
     streakData,
   } = useGamification();
 
+  const { setPendingAction } = usePendingAction();
   const allInteractions = useApp().interactions;
 
   const [showLogModal, setShowLogModal] = useState(false);
@@ -149,9 +151,16 @@ export const PersonProfileScreen: React.FC<PersonProfileScreenProps> = ({
       onPremiumRequired?.('deep_link');
       return;
     }
+    setPendingAction({
+      friendId: friend.id,
+      friendName: friend.name,
+      friendInitials: friend.initials,
+      friendPhoto: friend.photo,
+      type: 'call',
+      startedAt: new Date().toISOString(),
+      phone: friend.phone,
+    });
     Linking.openURL(`tel:${friend.phone}`);
-    await logInteraction(friendId, 'call');
-    await updateGamificationOnInteraction('call');
   };
 
   const handleText = async () => {
@@ -163,9 +172,16 @@ export const PersonProfileScreen: React.FC<PersonProfileScreenProps> = ({
       onPremiumRequired?.('deep_link');
       return;
     }
+    setPendingAction({
+      friendId: friend.id,
+      friendName: friend.name,
+      friendInitials: friend.initials,
+      friendPhoto: friend.photo,
+      type: 'text',
+      startedAt: new Date().toISOString(),
+      phone: friend.phone,
+    });
     Linking.openURL(`sms:${friend.phone}`);
-    await logInteraction(friendId, 'text');
-    await updateGamificationOnInteraction('text');
   };
 
   const smartSuggestion = getSmartSuggestion(friendId);

@@ -19,7 +19,10 @@ import { PremiumScreen } from "./PremiumScreen";
 import { GamificationScreen } from "./GamificationScreen";
 import { BottomTabBar } from "../components/BottomTabBar";
 import { SwipeableScreen } from "../components/SwipeableScreen";
+import { CompleteActionModal } from "../components/CompleteActionModal";
 import { useApp } from "../context/AppContext";
+import { usePendingAction } from "../context/PendingActionContext";
+import { useGamification } from "../context/GamificationContext";
 
 type TabType = "people" | "today" | "calendar" | "insights" | "settings";
 
@@ -53,7 +56,9 @@ type CalendarStack =
 type PremiumTrigger = 'contact_limit' | 'deep_link' | 'templates' | 'analytics' | 'history' | 'bulk_actions' | 'general';
 
 export const MainTabsScreen = () => {
-  const { resetApp } = useApp();
+  const { resetApp, logInteraction, updateInteraction, interactions } = useApp();
+  const { pendingAction, showCompleteModal, setShowCompleteModal, clearPendingAction } = usePendingAction();
+  const { recordDailyActivity, checkAndUpdateAchievements, updateChallengeProgress, state: gamificationState, streakData } = useGamification();
   const [activeTab, setActiveTab] = useState<TabType>("today");
   
   const [peopleStack, setPeopleStack] = useState<PeopleStack>({ screen: "list" });
@@ -67,6 +72,53 @@ export const MainTabsScreen = () => {
   const showPremiumModal = (trigger: PremiumTrigger = 'general') => {
     setPremiumTrigger(trigger);
     setShowPremium(true);
+  };
+
+  const handleCompleteAction = async (type: string, note: string, outcome: 'completed' | 'no_response' | 'voicemail') => {
+    if (!pendingAction) return;
+    
+    const finalNote = outcome === 'no_response' 
+      ? 'No response' 
+      : outcome === 'voicemail' 
+        ? 'Left voicemail' 
+        : note || `Quick ${type}`;
+    
+    await logInteraction(pendingAction.friendId, type as any, finalNote);
+    await recordDailyActivity();
+    
+    const callCount = interactions.filter(i => i.type === 'call').length + (type === 'call' ? 1 : 0);
+    const textCount = interactions.filter(i => i.type === 'text').length + (type === 'text' ? 1 : 0);
+    const inPersonCount = interactions.filter(i => i.type === 'in_person' || i.type === 'meetup').length;
+    
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const weekInteractions = interactions.filter(i => new Date(i.date) >= oneWeekAgo);
+    const uniquePeople = new Set(weekInteractions.map(i => i.friendId)).size;
+    const completedChallenges = gamificationState.weeklyChallenges.filter(c => c.isCompleted).length;
+    
+    checkAndUpdateAchievements({
+      totalInteractions: interactions.length + 1,
+      callCount,
+      textCount,
+      inPersonCount,
+      uniquePeopleThisWeek: uniquePeople,
+      reconnections: 0,
+      currentStreak: streakData.currentStreak,
+      challengesCompleted: completedChallenges,
+    });
+    
+    const challenges = gamificationState.weeklyChallenges;
+    if (type === 'call') {
+      const callChallenge = challenges.find(c => c.type === 'calls' && !c.isCompleted);
+      if (callChallenge) {
+        updateChallengeProgress(callChallenge.id, callChallenge.progress + 1);
+      }
+    }
+    
+    clearPendingAction();
+  };
+
+  const handleDiscardAction = () => {
+    clearPendingAction();
   };
 
   useFocusEffect(
@@ -353,6 +405,13 @@ export const MainTabsScreen = () => {
       >
         <PremiumScreen onClose={() => setShowPremium(false)} trigger={premiumTrigger} />
       </Modal>
+      <CompleteActionModal
+        visible={showCompleteModal}
+        onClose={() => setShowCompleteModal(false)}
+        pendingAction={pendingAction}
+        onComplete={handleCompleteAction}
+        onDiscard={handleDiscardAction}
+      />
     </View>
   );
 };
