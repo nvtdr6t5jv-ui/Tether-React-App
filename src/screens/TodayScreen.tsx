@@ -32,6 +32,7 @@ import { QuickLogModal } from "../components/QuickLogModal";
 import { DailyCheckInModal } from "../components/DailyCheckInModal";
 import { MilestoneModal } from "../components/MilestoneModal";
 import { UserAvatar } from "../components/UserAvatar";
+import { WidgetTutorialCard } from "../components/WidgetTutorialCard";
 
 const { width } = Dimensions.get("window");
 const ORBIT_SIZE = width - 64;
@@ -629,6 +630,10 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
             connectionsThisWeek={stats.connectionsThisWeek}
             onPress={onNavigateToProgress}
           />
+        </Animated.View>
+
+        <Animated.View entering={FadeIn.delay(250).duration(400)} style={{ paddingHorizontal: 16, marginBottom: 24 }}>
+          <WidgetTutorialCard />
         </Animated.View>
 
         <Animated.View entering={FadeIn.delay(300).duration(600)} style={{ paddingHorizontal: 16, marginBottom: 24 }}>

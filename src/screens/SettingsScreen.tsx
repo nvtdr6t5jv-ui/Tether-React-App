@@ -14,6 +14,7 @@ import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated'
 import { useApp } from '../context/AppContext';
 import { exportService } from '../services/ExportService';
 import { UserAvatar } from '../components/UserAvatar';
+import { resetWidgetTutorial } from '../components/WidgetTutorialCard';
 
 interface SettingsScreenProps {
   onNavigateToNotifications: () => void;
@@ -329,6 +330,18 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               showChevron={!isExporting}
               onPress={handleExport}
               rightElement={isExporting ? <ActivityIndicator size="small" color="#81B29A" /> : undefined}
+            />
+            <View style={{ height: 1, backgroundColor: 'rgba(0,0,0,0.03)', marginHorizontal: 16 }} />
+            <SettingsRow
+              icon="widgets"
+              iconBg="rgba(129, 178, 154, 0.1)"
+              iconColor="#81B29A"
+              title="Widget Setup Guide"
+              subtitle="Learn how to add home screen widgets"
+              onPress={async () => {
+                await resetWidgetTutorial();
+                Alert.alert('Widget Guide', 'The widget tutorial will appear on your Today screen.');
+              }}
             />
           </View>
         </Animated.View>
