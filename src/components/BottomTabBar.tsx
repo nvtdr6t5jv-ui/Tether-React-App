@@ -17,7 +17,7 @@ interface TabBarProps {
 const tabs = [
   { key: "people", label: "People", icon: "account-group-outline" as const, iconFilled: "account-group" as const },
   { key: "calendar", label: "Calendar", icon: "calendar-month-outline" as const, iconFilled: "calendar-month" as const },
-  { key: "today", label: "Today", icon: "calendar-today" as const, iconFilled: "calendar-today" as const },
+  { key: "today", label: "Today", icon: "white-balance-sunny" as const, iconFilled: "white-balance-sunny" as const },
   { key: "insights", label: "Insights", icon: "chart-line" as const, iconFilled: "chart-line" as const },
   { key: "settings", label: "Settings", icon: "cog-outline" as const, iconFilled: "cog" as const },
 ];

@@ -19,6 +19,11 @@ import Animated, {
   FadeInDown,
   FadeInUp,
   SlideInRight,
+  SlideInLeft,
+  FadeOut,
+  FadeOutLeft,
+  FadeOutRight,
+  Layout,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
@@ -137,6 +142,8 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
   const [newEventLocation, setNewEventLocation] = useState('');
   const [friendSearchQuery, setFriendSearchQuery] = useState('');
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right');
+  const [monthKey, setMonthKey] = useState(0);
 
   const normalizeTitle = (title: string): string => {
     return title.toLowerCase().trim().replace(/\s+/g, ' ');
@@ -259,10 +266,14 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
   }, [allEvents]);
 
   const handlePrevMonth = () => {
+    setSlideDirection('left');
+    setMonthKey(prev => prev + 1);
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
   };
 
   const handleNextMonth = () => {
+    setSlideDirection('right');
+    setMonthKey(prev => prev + 1);
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   };
 
@@ -487,7 +498,11 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
       </Animated.View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
-        <Animated.View entering={FadeIn.delay(200).duration(400)}>
+        {/* Month view with animation */}
+        <Animated.View
+          key={monthKey}
+          entering={slideDirection === 'right' ? SlideInRight.duration(300) : SlideInLeft.duration(300)}
+        >
           {renderMonthView()}
         </Animated.View>
 

@@ -8,6 +8,7 @@ import { NewConnectionScreen } from "./NewConnectionScreen";
 import { EditPersonScreen } from "./EditPersonScreen";
 import { CalendarScreen } from "./CalendarScreen";
 import { SettingsScreen } from "./SettingsScreen";
+import { OrbitSettingsScreen } from "./OrbitSettingsScreen";
 import { NotificationsScreen } from "./NotificationsScreen";
 import { AppearanceScreen } from "./AppearanceScreen";
 import { AnalyticsScreen } from "./AnalyticsScreen";
@@ -34,7 +35,8 @@ type SettingsStack =
   | { screen: "appearance" }
   | { screen: "analytics" }
   | { screen: "editProfile" }
-  | { screen: "premium" };
+  | { screen: "premium" }
+  | { screen: "orbitSettings" };
 
 type TodayStack =
   | { screen: "main" }
@@ -243,6 +245,7 @@ export const MainTabsScreen = () => {
             onNavigateToAnalytics={() => setSettingsStack({ screen: "analytics" })}
             onNavigateToEditProfile={() => setSettingsStack({ screen: "editProfile" })}
             onNavigateToPremium={() => setShowPremium(true)}
+            onNavigateToOrbitSettings={() => setSettingsStack({ screen: "orbitSettings" })}
             onLogout={async () => {
               await resetApp();
             }}
@@ -281,6 +284,14 @@ export const MainTabsScreen = () => {
             />
           </SwipeableScreen>
         );
+      case "orbitSettings":
+        return (
+          <SwipeableScreen onSwipeBack={() => setSettingsStack({ screen: "main" })}>
+            <OrbitSettingsScreen
+              onBack={() => setSettingsStack({ screen: "main" })}
+            />
+          </SwipeableScreen>
+        );
       default:
         return (
           <SettingsScreen
@@ -289,6 +300,7 @@ export const MainTabsScreen = () => {
             onNavigateToAnalytics={() => setSettingsStack({ screen: "analytics" })}
             onNavigateToEditProfile={() => setSettingsStack({ screen: "editProfile" })}
             onNavigateToPremium={() => setShowPremium(true)}
+            onNavigateToOrbitSettings={() => setSettingsStack({ screen: "orbitSettings" })}
             onLogout={async () => {
               await resetApp();
             }}

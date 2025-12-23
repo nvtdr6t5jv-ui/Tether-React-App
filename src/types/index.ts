@@ -91,6 +91,7 @@ export interface UserSettings {
   vacationMode: boolean;
   contactsSynced: boolean;
   hapticFeedback: boolean;
+  customOrbits?: Orbit[];
 }
 
 export interface PremiumStatus {

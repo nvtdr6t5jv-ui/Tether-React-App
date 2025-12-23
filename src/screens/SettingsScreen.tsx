@@ -21,6 +21,7 @@ interface SettingsScreenProps {
   onNavigateToAnalytics: () => void;
   onNavigateToEditProfile: () => void;
   onNavigateToPremium: () => void;
+  onNavigateToOrbitSettings: () => void;
   onLogout: () => void;
 }
 
@@ -91,9 +92,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   onNavigateToAnalytics,
   onNavigateToEditProfile,
   onNavigateToPremium,
+  onNavigateToOrbitSettings,
   onLogout,
 }) => {
-  const { userProfile, userSettings, updateUserSettings, getSocialHealthStats, resetApp, logout } = useApp();
+  const { userProfile, userSettings, updateUserSettings, getSocialHealthStats, resetApp, logout, premiumStatus } = useApp();
   const [isExporting, setIsExporting] = useState(false);
 
   const stats = getSocialHealthStats();
@@ -215,6 +217,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', fontSize: 12, color: 'rgba(61, 64, 91, 0.5)', marginTop: 4 }}>
             Member since {userProfile?.memberSince ? new Date(userProfile.memberSince).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'September 2024'}
           </Text>
+          {premiumStatus.isPremium && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, backgroundColor: 'rgba(129, 178, 154, 0.15)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 9999 }}>
+              <MaterialCommunityIcons name="crown" size={16} color="#FFD700" />
+              <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12, color: '#81B29A' }}>Premium Member</Text>
+            </View>
+          )}
           <TouchableOpacity
             onPress={onNavigateToEditProfile}
             style={{
@@ -292,6 +300,19 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               value={userSettings.theme === 'system' ? 'System Default' : userSettings.theme === 'dark' ? 'Dark' : 'Light'}
               onPress={onNavigateToAppearance}
             />
+            {premiumStatus.isPremium && (
+              <>
+                <View style={{ height: 1, backgroundColor: 'rgba(0,0,0,0.03)', marginHorizontal: 16 }} />
+                <SettingsRow
+                  icon="orbit"
+                  iconBg="rgba(224, 122, 95, 0.1)"
+                  iconColor="#E07A5F"
+                  title="Orbit Settings"
+                  subtitle="Customize reminder frequencies"
+                  onPress={onNavigateToOrbitSettings}
+                />
+              </>
+            )}
           </View>
         </Animated.View>
 
@@ -341,59 +362,106 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </View>
         </Animated.View>
 
-        <Animated.View entering={FadeInUp.delay(500).duration(400)} style={{ paddingHorizontal: 20, marginTop: 24 }}>
-          <View
-            style={{
-              backgroundColor: '#81B29A',
-              borderRadius: 16,
-              padding: 20,
-              overflow: 'hidden',
-              shadowColor: '#81B29A',
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: 0.2,
-              shadowRadius: 16,
-              elevation: 4,
-            }}
-          >
-            <View style={{ position: 'absolute', top: -40, right: -40, width: 128, height: 128, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 64 }} />
-            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 16 }}>
-              <View
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  backgroundColor: 'rgba(255,255,255,0.2)',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <MaterialCommunityIcons name="star" size={20} color="#FFF" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 18, color: '#FFF', marginBottom: 4 }}>
-                  Unlock Unlimited History
-                </Text>
-                <Text style={{ fontFamily: 'PlusJakartaSans_400Regular', fontSize: 14, color: 'rgba(255,255,255,0.9)', lineHeight: 20, marginBottom: 12 }}>
-                  View your full relationship timeline and never miss a memory.
-                </Text>
-                <TouchableOpacity
-                  onPress={onNavigateToPremium}
+        {premiumStatus.isPremium ? (
+          <Animated.View entering={FadeInUp.delay(500).duration(400)} style={{ paddingHorizontal: 20, marginTop: 24 }}>
+            <View
+              style={{
+                backgroundColor: '#81B29A',
+                borderRadius: 16,
+                padding: 20,
+                overflow: 'hidden',
+                shadowColor: '#81B29A',
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.2,
+                shadowRadius: 16,
+                elevation: 4,
+              }}
+            >
+              <View style={{ position: 'absolute', top: -40, right: -40, width: 128, height: 128, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 64 }} />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                <View
                   style={{
-                    alignSelf: 'flex-start',
-                    backgroundColor: '#FFF',
-                    paddingHorizontal: 20,
-                    paddingVertical: 10,
-                    borderRadius: 9999,
+                    width: 48,
+                    height: 48,
+                    borderRadius: 24,
+                    backgroundColor: 'rgba(255,255,255,0.2)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                   }}
                 >
-                  <Text style={{ fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 12, color: '#81B29A', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    Upgrade
+                  <MaterialCommunityIcons name="crown" size={26} color="#FFD700" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 20, color: '#FFF' }}>
+                      Premium Active
+                    </Text>
+                    <View style={{ backgroundColor: 'rgba(255,215,0,0.3)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 }}>
+                      <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 10, color: '#FFD700' }}>PRO</Text>
+                    </View>
+                  </View>
+                  <Text style={{ fontFamily: 'PlusJakartaSans_400Regular', fontSize: 14, color: 'rgba(255,255,255,0.9)', marginTop: 4 }}>
+                    Thank you for supporting Tether!
                   </Text>
-                </TouchableOpacity>
+                </View>
               </View>
             </View>
-          </View>
-        </Animated.View>
+          </Animated.View>
+        ) : (
+          <Animated.View entering={FadeInUp.delay(500).duration(400)} style={{ paddingHorizontal: 20, marginTop: 24 }}>
+            <View
+              style={{
+                backgroundColor: '#81B29A',
+                borderRadius: 16,
+                padding: 20,
+                overflow: 'hidden',
+                shadowColor: '#81B29A',
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.2,
+                shadowRadius: 16,
+                elevation: 4,
+              }}
+            >
+              <View style={{ position: 'absolute', top: -40, right: -40, width: 128, height: 128, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 64 }} />
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 16 }}>
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    backgroundColor: 'rgba(255,255,255,0.2)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <MaterialCommunityIcons name="star" size={20} color="#FFF" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 18, color: '#FFF', marginBottom: 4 }}>
+                    Unlock Unlimited History
+                  </Text>
+                  <Text style={{ fontFamily: 'PlusJakartaSans_400Regular', fontSize: 14, color: 'rgba(255,255,255,0.9)', lineHeight: 20, marginBottom: 12 }}>
+                    View your full relationship timeline and never miss a memory.
+                  </Text>
+                  <TouchableOpacity
+                    onPress={onNavigateToPremium}
+                    style={{
+                      alignSelf: 'flex-start',
+                      backgroundColor: '#FFF',
+                      paddingHorizontal: 20,
+                      paddingVertical: 10,
+                      borderRadius: 9999,
+                    }}
+                  >
+                    <Text style={{ fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 12, color: '#81B29A', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      Upgrade
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Animated.View>
+        )}
 
 
         <Animated.View entering={FadeInUp.delay(600).duration(400)} style={{ paddingHorizontal: 20, marginTop: 24 }}>

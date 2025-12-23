@@ -11,6 +11,7 @@ import {
   SocialHealthStats,
   PremiumStatus,
   CalendarEvent,
+  Orbit,
   RelationshipHealth,
   ORBITS,
   InteractionType,
@@ -78,6 +79,8 @@ interface AppContextType extends AppState {
   getConversationStarter: (friendId: string) => string;
   syncWithCloud: () => Promise<void>;
   logout: () => Promise<void>;
+  getOrbits: () => Orbit[];
+  updateCustomOrbits: (orbits: Orbit[]) => Promise<void>;
 }
 
 const getDefaultSettings = (): UserSettings => ({
@@ -810,6 +813,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
   };
 
+  const getOrbits = (): Orbit[] => {
+    if (state.premiumStatus.isPremium && state.userSettings.customOrbits && state.userSettings.customOrbits.length > 0) {
+      return state.userSettings.customOrbits;
+    }
+    return ORBITS;
+  };
+
+  const updateCustomOrbits = async (orbits: Orbit[]) => {
+    if (!state.premiumStatus.isPremium) return;
+    await updateUserSettings({ customOrbits: orbits });
+  };
+
   const addCalendarEvent = async (event: CalendarEvent) => {
     await storageService.addCalendarEvent(event);
     setState(prev => ({ ...prev, calendarEvents: [...prev.calendarEvents, event] }));
@@ -991,13 +1006,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         refreshData,
         resetApp,
         logout,
+        getOrbits,
+        updateCustomOrbits,
         canAddMoreFriends,
         getRemainingFreeSlots,
         upgradeToPremium,
         getSmartSuggestion,
         addCalendarEvent,
+  Orbit,
         updateCalendarEvent,
+  Orbit,
         deleteCalendarEvent,
+  Orbit,
         getRelationshipHealth,
         getConversationStarter,
         syncWithCloud,
