@@ -13,6 +13,7 @@ struct WidgetData: Codable {
         let friendPhoto: String?
         let daysSinceContact: Int
         let orbitName: String
+        let friendId: String?
     }
     
     struct Garden: Codable {
@@ -84,14 +85,14 @@ struct StreakWidgetView: View {
     @Environment(\.widgetFamily) var family
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 2) {
             HStack {
                 Image(systemName: "flame.fill")
                     .foregroundColor(.white)
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.system(size: 14, weight: .bold))
                 Spacer()
                 Text("STREAK")
-                    .font(.system(size: 9, weight: .heavy))
+                    .font(.system(size: 8, weight: .heavy))
                     .foregroundColor(.white.opacity(0.7))
                     .tracking(1)
             }
@@ -99,14 +100,16 @@ struct StreakWidgetView: View {
             Spacer()
             
             Text("\(entry.widgetData?.streak.current ?? 0)")
-                .font(.system(size: 48, weight: .black, design: .rounded))
+                .font(.system(size: 44, weight: .black, design: .rounded))
                 .foregroundColor(.white)
+                .minimumScaleFactor(0.8)
             
             Text("day\(entry.widgetData?.streak.current == 1 ? "" : "s")")
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(.white.opacity(0.8))
         }
-        .padding()
+        .padding(12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .containerBackground(for: .widget) {
             LinearGradient(
                 colors: [Color(red: 0.878, green: 0.478, blue: 0.373), Color(red: 0.95, green: 0.55, blue: 0.4)],
@@ -122,22 +125,22 @@ struct TodayFocusWidgetView: View {
     @Environment(\.widgetFamily) var family
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text("TODAY'S FOCUS")
-                    .font(.system(size: 9, weight: .heavy))
+                    .font(.system(size: 8, weight: .heavy))
                     .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36).opacity(0.5))
                     .tracking(1)
                 Spacer()
                 Circle()
                     .fill(Color(red: 0.878, green: 0.478, blue: 0.373))
-                    .frame(width: 8, height: 8)
+                    .frame(width: 6, height: 6)
             }
             
             Spacer()
             
             if let focus = entry.widgetData?.todayFocus {
-                HStack(spacing: 12) {
+                HStack(spacing: 10) {
                     ZStack {
                         Circle()
                             .fill(LinearGradient(
@@ -145,23 +148,22 @@ struct TodayFocusWidgetView: View {
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ))
-                            .frame(width: 48, height: 48)
+                            .frame(width: 40, height: 40)
                         Text(focus.friendInitials)
-                            .font(.system(size: 18, weight: .bold))
+                            .font(.system(size: 15, weight: .bold))
                             .foregroundColor(.white)
                     }
-                    .shadow(color: Color(red: 0.878, green: 0.478, blue: 0.373).opacity(0.3), radius: 8, x: 0, y: 4)
                     
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: 1) {
                         Text(focus.friendName)
-                            .font(.system(size: 17, weight: .bold))
+                            .font(.system(size: 15, weight: .bold))
                             .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36))
                             .lineLimit(1)
-                        HStack(spacing: 4) {
+                        HStack(spacing: 3) {
                             Image(systemName: "clock")
-                                .font(.system(size: 10))
+                                .font(.system(size: 9))
                             Text("\(focus.daysSinceContact)d ago")
-                                .font(.system(size: 12, weight: .medium))
+                                .font(.system(size: 11, weight: .medium))
                         }
                         .foregroundColor(focus.daysSinceContact > 7 ? Color(red: 0.878, green: 0.478, blue: 0.373) : Color(red: 0.24, green: 0.25, blue: 0.36).opacity(0.5))
                     }
@@ -169,39 +171,41 @@ struct TodayFocusWidgetView: View {
                     if family == .systemMedium {
                         Spacer()
                         
-                        VStack(spacing: 8) {
+                        HStack(spacing: 8) {
                             Image(systemName: "phone.fill")
-                                .font(.system(size: 14))
+                                .font(.system(size: 12))
                                 .foregroundColor(Color(red: 0.506, green: 0.698, blue: 0.604))
-                                .frame(width: 36, height: 36)
+                                .frame(width: 32, height: 32)
                                 .background(Color(red: 0.506, green: 0.698, blue: 0.604).opacity(0.15))
                                 .clipShape(Circle())
                             
                             Image(systemName: "message.fill")
-                                .font(.system(size: 14))
+                                .font(.system(size: 12))
                                 .foregroundColor(Color(red: 0.506, green: 0.698, blue: 0.604))
-                                .frame(width: 36, height: 36)
+                                .frame(width: 32, height: 32)
                                 .background(Color(red: 0.506, green: 0.698, blue: 0.604).opacity(0.15))
                                 .clipShape(Circle())
                         }
                     }
                 }
             } else {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 6) {
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 5) {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundColor(Color(red: 0.506, green: 0.698, blue: 0.604))
+                            .font(.system(size: 14))
                         Text("All caught up!")
-                            .font(.system(size: 17, weight: .bold))
+                            .font(.system(size: 15, weight: .bold))
                             .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36))
                     }
                     Text("Great job staying connected")
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.system(size: 11, weight: .medium))
                         .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36).opacity(0.5))
                 }
             }
         }
-        .padding()
+        .padding(12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .containerBackground(for: .widget) {
             Color(red: 0.957, green: 0.945, blue: 0.871)
         }
@@ -224,55 +228,53 @@ struct GardenWidgetView: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 2) {
             HStack {
                 Text("GARDEN")
-                    .font(.system(size: 9, weight: .heavy))
+                    .font(.system(size: 8, weight: .heavy))
                     .foregroundColor(.white.opacity(0.7))
                     .tracking(1)
                 Spacer()
+                Text("LVL")
+                    .font(.system(size: 8, weight: .heavy))
+                    .foregroundColor(.white.opacity(0.6))
+            }
+            
+            HStack {
+                Spacer()
+                Text("\(entry.widgetData?.garden.level ?? 1)")
+                    .font(.system(size: 26, weight: .black, design: .rounded))
+                    .foregroundColor(.white)
             }
             
             Spacer()
             
-            HStack(alignment: .bottom) {
-                Image(systemName: plantIcon)
-                    .font(.system(size: 36, weight: .medium))
-                    .foregroundColor(.white)
-                
-                Spacer()
-                
-                VStack(alignment: .trailing, spacing: 0) {
-                    Text("LVL")
-                        .font(.system(size: 9, weight: .heavy))
-                        .foregroundColor(.white.opacity(0.6))
-                    Text("\(entry.widgetData?.garden.level ?? 1)")
-                        .font(.system(size: 28, weight: .black, design: .rounded))
-                        .foregroundColor(.white)
-                }
-            }
+            Image(systemName: plantIcon)
+                .font(.system(size: 32, weight: .medium))
+                .foregroundColor(.white)
             
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 3)
+                    RoundedRectangle(cornerRadius: 2)
                         .fill(Color.white.opacity(0.3))
-                        .frame(height: 6)
+                        .frame(height: 5)
                     
                     let xpVal = entry.widgetData?.garden.xp ?? 0
                     let xpMax = max(entry.widgetData?.garden.xpToNextLevel ?? 100, 1)
                     let progress = Double(xpVal) / Double(xpMax)
-                    RoundedRectangle(cornerRadius: 3)
+                    RoundedRectangle(cornerRadius: 2)
                         .fill(Color.white)
-                        .frame(width: geo.size.width * CGFloat(min(progress, 1.0)), height: 6)
+                        .frame(width: geo.size.width * CGFloat(min(progress, 1.0)), height: 5)
                 }
             }
-            .frame(height: 6)
+            .frame(height: 5)
             
             Text("\(entry.widgetData?.garden.xp ?? 0) / \(entry.widgetData?.garden.xpToNextLevel ?? 100) XP")
-                .font(.system(size: 10, weight: .semibold))
+                .font(.system(size: 9, weight: .semibold))
                 .foregroundColor(.white.opacity(0.8))
         }
-        .padding()
+        .padding(12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .containerBackground(for: .widget) {
             LinearGradient(
                 colors: [Color(red: 0.506, green: 0.698, blue: 0.604), Color(red: 0.4, green: 0.6, blue: 0.5)],
@@ -285,19 +287,19 @@ struct GardenWidgetView: View {
 
 struct QuickLogWidgetView: View {
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 6) {
             ZStack {
                 Circle()
                     .fill(Color.white.opacity(0.15))
-                    .frame(width: 56, height: 56)
+                    .frame(width: 50, height: 50)
                 
                 Image(systemName: "plus")
-                    .font(.system(size: 28, weight: .bold))
+                    .font(.system(size: 24, weight: .bold))
                     .foregroundColor(.white)
             }
             
             Text("Quick Log")
-                .font(.system(size: 13, weight: .bold))
+                .font(.system(size: 12, weight: .bold))
                 .foregroundColor(.white)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -316,22 +318,22 @@ struct StatsWidgetView: View {
     @Environment(\.widgetFamily) var family
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text("THIS WEEK")
-                    .font(.system(size: 9, weight: .heavy))
+                    .font(.system(size: 8, weight: .heavy))
                     .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36).opacity(0.5))
                     .tracking(1)
                 Spacer()
                 Image(systemName: "chart.bar.fill")
                     .foregroundColor(Color(red: 0.506, green: 0.698, blue: 0.604))
-                    .font(.system(size: 14))
+                    .font(.system(size: 12))
             }
             
             Spacer()
             
             if family == .systemMedium {
-                HStack(spacing: 16) {
+                HStack(spacing: 12) {
                     StatItem(
                         value: entry.widgetData?.stats.connectionsThisWeek ?? 0,
                         label: "Connections",
@@ -351,13 +353,13 @@ struct StatsWidgetView: View {
                     )
                 }
             } else {
-                HStack(spacing: 16) {
+                HStack(spacing: 12) {
                     VStack(alignment: .leading, spacing: 0) {
                         Text("\(entry.widgetData?.stats.connectionsThisWeek ?? 0)")
-                            .font(.system(size: 28, weight: .black, design: .rounded))
+                            .font(.system(size: 26, weight: .black, design: .rounded))
                             .foregroundColor(Color(red: 0.506, green: 0.698, blue: 0.604))
                         Text("connections")
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(.system(size: 9, weight: .semibold))
                             .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36).opacity(0.5))
                     }
                     
@@ -366,17 +368,18 @@ struct StatsWidgetView: View {
                     if (entry.widgetData?.stats.overdueCount ?? 0) > 0 {
                         VStack(alignment: .trailing, spacing: 0) {
                             Text("\(entry.widgetData?.stats.overdueCount ?? 0)")
-                                .font(.system(size: 20, weight: .bold, design: .rounded))
+                                .font(.system(size: 18, weight: .bold, design: .rounded))
                                 .foregroundColor(Color(red: 0.878, green: 0.478, blue: 0.373))
                             Text("overdue")
-                                .font(.system(size: 10, weight: .semibold))
+                                .font(.system(size: 9, weight: .semibold))
                                 .foregroundColor(Color(red: 0.878, green: 0.478, blue: 0.373).opacity(0.7))
                         }
                     }
                 }
             }
         }
-        .padding()
+        .padding(12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .containerBackground(for: .widget) {
             Color(red: 0.957, green: 0.945, blue: 0.871)
         }
@@ -389,12 +392,12 @@ struct StatItem: View {
     let color: Color
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 1) {
             Text("\(value)")
-                .font(.system(size: 24, weight: .black, design: .rounded))
+                .font(.system(size: 22, weight: .black, design: .rounded))
                 .foregroundColor(color)
             Text(label)
-                .font(.system(size: 10, weight: .semibold))
+                .font(.system(size: 9, weight: .semibold))
                 .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36).opacity(0.5))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -417,7 +420,9 @@ struct StreakWidget: Widget {
     
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
-            StreakWidgetView(entry: entry)
+            Link(destination: URL(string: "tether://progress")!) {
+                StreakWidgetView(entry: entry)
+            }
         }
         .configurationDisplayName("Streak")
         .description("Track your daily connection streak")
@@ -430,7 +435,9 @@ struct TodayFocusWidget: Widget {
     
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
-            TodayFocusWidgetView(entry: entry)
+            Link(destination: URL(string: "tether://today")!) {
+                TodayFocusWidgetView(entry: entry)
+            }
         }
         .configurationDisplayName("Today's Focus")
         .description("See who to connect with today")
@@ -443,7 +450,9 @@ struct GardenWidget: Widget {
     
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
-            GardenWidgetView(entry: entry)
+            Link(destination: URL(string: "tether://garden")!) {
+                GardenWidgetView(entry: entry)
+            }
         }
         .configurationDisplayName("Garden")
         .description("Watch your connection garden grow")
@@ -471,7 +480,9 @@ struct StatsWidget: Widget {
     
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
-            StatsWidgetView(entry: entry)
+            Link(destination: URL(string: "tether://insights")!) {
+                StatsWidgetView(entry: entry)
+            }
         }
         .configurationDisplayName("Weekly Stats")
         .description("Your connection statistics")

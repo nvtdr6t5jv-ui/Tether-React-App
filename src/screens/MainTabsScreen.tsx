@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { View, BackHandler, Modal } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { TodayScreen } from "./TodayScreen";
@@ -20,9 +20,11 @@ import { GamificationScreen } from "./GamificationScreen";
 import { BottomTabBar } from "../components/BottomTabBar";
 import { SwipeableScreen } from "../components/SwipeableScreen";
 import { CompleteActionModal } from "../components/CompleteActionModal";
+import { LogConnectionModal } from "../components/LogConnectionModal";
 import { useApp } from "../context/AppContext";
 import { usePendingAction } from "../context/PendingActionContext";
 import { useGamification } from "../context/GamificationContext";
+import { useDeepLink } from "../context/DeepLinkContext";
 
 type TabType = "people" | "today" | "calendar" | "insights" | "settings";
 
@@ -56,7 +58,7 @@ type CalendarStack =
 type PremiumTrigger = 'contact_limit' | 'deep_link' | 'templates' | 'analytics' | 'history' | 'bulk_actions' | 'general';
 
 export const MainTabsScreen = () => {
-  const { resetApp, logInteraction, updateInteraction, interactions } = useApp();
+  const { resetApp, logInteraction, updateInteraction, interactions, friends } = useApp();
   const { pendingAction, showCompleteModal, setShowCompleteModal, clearPendingAction } = usePendingAction();
   const { recordDailyActivity, checkAndUpdateAchievements, updateChallengeProgress, state: gamificationState, streakData } = useGamification();
   const [activeTab, setActiveTab] = useState<TabType>("today");
@@ -68,6 +70,51 @@ export const MainTabsScreen = () => {
   const [calendarStack, setCalendarStack] = useState<CalendarStack>({ screen: "main" });
   const [showPremium, setShowPremium] = useState(false);
   const [premiumTrigger, setPremiumTrigger] = useState<PremiumTrigger>('general');
+  const [showQuickLogModal, setShowQuickLogModal] = useState(false);
+  
+  const { pendingDeepLink, clearDeepLink } = useDeepLink();
+
+  useEffect(() => {
+    if (pendingDeepLink) {
+      switch (pendingDeepLink.route) {
+        case 'today':
+          setActiveTab('today');
+          setTodayStack({ screen: 'main' });
+          break;
+        case 'people':
+          setActiveTab('people');
+          setPeopleStack({ screen: 'list' });
+          break;
+        case 'calendar':
+          setActiveTab('calendar');
+          break;
+        case 'insights':
+          setActiveTab('insights');
+          break;
+        case 'settings':
+          setActiveTab('settings');
+          setSettingsStack({ screen: 'main' });
+          break;
+        case 'progress':
+        case 'garden':
+          setActiveTab('today');
+          setTodayStack({ screen: 'progress' });
+          break;
+        case 'quicklog':
+          setActiveTab('today');
+          setTodayStack({ screen: 'main' });
+          setTimeout(() => setShowQuickLogModal(true), 300);
+          break;
+        case 'profile':
+          if (pendingDeepLink.params?.id) {
+            setActiveTab('people');
+            setPeopleStack({ screen: 'profile', friendId: pendingDeepLink.params.id });
+          }
+          break;
+      }
+      clearDeepLink();
+    }
+  }, [pendingDeepLink, clearDeepLink]);
 
   const showPremiumModal = (trigger: PremiumTrigger = 'general') => {
     setPremiumTrigger(trigger);
@@ -411,6 +458,16 @@ export const MainTabsScreen = () => {
         pendingAction={pendingAction}
         onComplete={handleCompleteAction}
         onDiscard={handleDiscardAction}
+      />
+      <LogConnectionModal
+        visible={showQuickLogModal}
+        onClose={() => setShowQuickLogModal(false)}
+        friends={friends}
+        onLogConnection={async (friendId, type, note, date) => {
+          await logInteraction(friendId, type as any, note, undefined, date);
+          await recordDailyActivity();
+          setShowQuickLogModal(false);
+        }}
       />
     </View>
   );

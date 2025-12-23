@@ -22,6 +22,7 @@ import { GamificationProvider } from "./src/context/GamificationContext";
 import { AuthProvider } from "./src/context/AuthContext";
 import { WidgetProvider } from "./src/context/WidgetContext";
 import { PendingActionProvider } from "./src/context/PendingActionContext";
+import { DeepLinkProvider } from "./src/context/DeepLinkContext";
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -50,10 +51,12 @@ export default function App() {
             <GamificationProvider>
               <WidgetProvider>
                 <PendingActionProvider>
-                  <OnboardingProvider>
-                    <StatusBar style="dark" />
-                    <AppNavigator />
-                  </OnboardingProvider>
+                  <DeepLinkProvider>
+                    <OnboardingProvider>
+                      <StatusBar style="dark" />
+                      <AppNavigator />
+                    </OnboardingProvider>
+                  </DeepLinkProvider>
                 </PendingActionProvider>
               </WidgetProvider>
             </GamificationProvider>
