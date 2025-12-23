@@ -14,11 +14,18 @@ import Animated, {
   FadeIn,
 } from 'react-native-reanimated';
 import { useGamification } from '../context/GamificationContext';
-import { PLANT_STAGES } from '../types/gamification';
 
 interface GardenModuleProps {
   onPress: () => void;
 }
+
+const STAGE_DATA = [
+  { stage: 'seed', icon: 'seed', name: 'Seed', size: 28, color: '#8B6914' },
+  { stage: 'sprout', icon: 'sprout', name: 'Sprout', size: 32, color: '#81B29A' },
+  { stage: 'growing', icon: 'leaf', name: 'Growing', size: 36, color: '#5A8F7B' },
+  { stage: 'blooming', icon: 'flower', name: 'Blooming', size: 40, color: '#E07A5F' },
+  { stage: 'flourishing', icon: 'tree', name: 'Flourishing', size: 44, color: '#2D5A47' },
+];
 
 export const GardenModule: React.FC<GardenModuleProps> = ({ onPress }) => {
   const { state, streakData } = useGamification();
@@ -27,13 +34,19 @@ export const GardenModule: React.FC<GardenModuleProps> = ({ onPress }) => {
 
   const currentStreak = streakData.currentStreak || 0;
   const gardenHealth = state.garden?.gardenHealth || 50;
-  const currentStageIndex = Math.min(
-    Math.floor(currentStreak / 3),
-    PLANT_STAGES.length - 1
-  );
-  const currentStage = PLANT_STAGES[currentStageIndex] || PLANT_STAGES[0];
   const level = state.level?.level || 1;
   const totalXP = state.level?.totalXP || 0;
+
+  const getStageIndexByLevel = (lvl: number): number => {
+    if (lvl >= 20) return 4;
+    if (lvl >= 10) return 3;
+    if (lvl >= 5) return 2;
+    if (lvl >= 2) return 1;
+    return 0;
+  };
+
+  const currentStageIndex = getStageIndexByLevel(level);
+  const currentStage = STAGE_DATA[currentStageIndex];
 
   useEffect(() => {
     swayAnim.value = withRepeat(
@@ -121,11 +134,13 @@ export const GardenModule: React.FC<GardenModuleProps> = ({ onPress }) => {
               }}
             />
             <Animated.View style={[swayStyle, { alignItems: 'center' }]}>
-              <Text style={{ fontSize: currentStage.size, marginBottom: -8 }}>
-                {currentStage.emoji}
-              </Text>
+              <MaterialCommunityIcons 
+                name={currentStage.icon as any} 
+                size={currentStage.size} 
+                color={currentStage.color} 
+              />
             </Animated.View>
-            {currentStreak >= 7 && (
+            {level >= 5 && (
               <Animated.View
                 style={[
                   sparkleStyle,

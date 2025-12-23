@@ -187,12 +187,12 @@ const PREMIUM_FEATURES = [
 
 export const OnboardingCompleteScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { selectedFriends, orbitAssignments, resetOnboarding } = useOnboarding();
-  const { completeOnboarding, upgradeToPremium } = useApp();
+  const { selectedFriends, orbitAssignments, resetOnboarding, syncMode } = useOnboarding();
+  const { completeOnboarding, upgradeToPremium, updateUserSettings } = useApp();
   const [showPremiumStep, setShowPremiumStep] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<'yearly' | 'monthly'>('yearly');
 
-  const handleEnterTether = () => {
+  const handleEnterTether = async () => {
     const now = new Date();
     const tetheredFriends: Friend[] = selectedFriends.map(friend => {
       const orbitId = orbitAssignments[friend.id] || "close";
@@ -214,7 +214,12 @@ export const OnboardingCompleteScreen = () => {
       };
     });
 
-    completeOnboarding(tetheredFriends);
+    await completeOnboarding(tetheredFriends);
+    
+    if (syncMode === 'contacts') {
+      await updateUserSettings({ contactsSynced: true });
+    }
+    
     resetOnboarding();
     
     navigation.reset({
@@ -229,7 +234,7 @@ export const OnboardingCompleteScreen = () => {
 
   const handleSubscribe = async () => {
     await upgradeToPremium(selectedPlan);
-    handleEnterTether();
+    await handleEnterTether();
   };
 
   const displayFriends = selectedFriends.slice(0, 3);

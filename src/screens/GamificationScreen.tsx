@@ -28,7 +28,6 @@ import {
   AchievementTier,
   TIER_COLORS,
   TIER_BG_COLORS,
-  PLANT_STAGES,
   WeeklyChallenge,
   LeaderboardEntry,
 } from '../types/gamification';
@@ -344,13 +343,27 @@ const LeaderboardRow: React.FC<{ entry: LeaderboardEntry; index: number }> = ({ 
   );
 };
 
-const GardenView: React.FC<{ streak: number; gardenHealth: number; onWater: () => void }> = ({
+const GARDEN_STAGE_DATA = [
+  { stage: 'seed', icon: 'seed', name: 'Seed', size: 60, color: '#8B6914', minLevel: 1 },
+  { stage: 'sprout', icon: 'sprout', name: 'Sprout', size: 70, color: '#81B29A', minLevel: 2 },
+  { stage: 'growing', icon: 'leaf', name: 'Growing', size: 80, color: '#5A8F7B', minLevel: 5 },
+  { stage: 'blooming', icon: 'flower', name: 'Blooming', size: 90, color: '#E07A5F', minLevel: 10 },
+  { stage: 'flourishing', icon: 'tree', name: 'Flourishing', size: 100, color: '#2D5A47', minLevel: 20 },
+];
+
+const GardenView: React.FC<{ streak: number; gardenHealth: number; level: number; onWater: () => void; onGoToChallenge: () => void }> = ({
   streak,
   gardenHealth,
+  level,
   onWater,
+  onGoToChallenge,
 }) => {
-  const currentStage = PLANT_STAGES.filter(s => s.streakRequired <= streak).pop() || PLANT_STAGES[0];
-  const nextStage = PLANT_STAGES.find(s => s.streakRequired > streak);
+  const getStageByLevel = (lvl: number) => {
+    return GARDEN_STAGE_DATA.filter(s => s.minLevel <= lvl).pop() || GARDEN_STAGE_DATA[0];
+  };
+  
+  const currentStage = getStageByLevel(level);
+  const nextStage = GARDEN_STAGE_DATA.find(s => s.minLevel > level);
 
   const swayAnim = useSharedValue(0);
 
@@ -384,14 +397,14 @@ const GardenView: React.FC<{ streak: number; gardenHealth: number; onWater: () =
             borderColor: 'rgba(129, 178, 154, 0.3)',
           }}
         >
-          <MaterialCommunityIcons name={currentStage.icon as any} size={80} color="#81B29A" />
+          <MaterialCommunityIcons name={currentStage.icon as any} size={currentStage.size} color={currentStage.color} />
         </View>
       </Animated.View>
       <Text style={{ fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 24, color: '#3D405B', marginTop: 20 }}>
-        Connection {currentStage.stage.charAt(0).toUpperCase() + currentStage.stage.slice(1)}
+        {currentStage.name}
       </Text>
       <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', fontSize: 14, color: 'rgba(61, 64, 91, 0.6)', marginTop: 4 }}>
-        Your {streak}-day streak keeps it growing!
+        Level {level} - Keep growing by earning XP!
       </Text>
 
       {nextStage && (
@@ -400,14 +413,14 @@ const GardenView: React.FC<{ streak: number; gardenHealth: number; onWater: () =
             <MaterialCommunityIcons name={nextStage.icon as any} size={32} color="rgba(61, 64, 91, 0.4)" />
             <View style={{ flex: 1 }}>
               <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 13, color: '#3D405B' }}>
-                Next: {nextStage.stage.charAt(0).toUpperCase() + nextStage.stage.slice(1)}
+                Next: {nextStage.name}
               </Text>
               <Text style={{ fontFamily: 'PlusJakartaSans_400Regular', fontSize: 12, color: 'rgba(61, 64, 91, 0.6)' }}>
-                Reach a {nextStage.streakRequired}-day streak
+                Reach level {nextStage.minLevel}
               </Text>
             </View>
             <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 14, color: '#81B29A' }}>
-              {nextStage.streakRequired - streak} days
+              {nextStage.minLevel - level} level{nextStage.minLevel - level !== 1 ? 's' : ''} away
             </Text>
           </View>
         </View>
@@ -423,19 +436,60 @@ const GardenView: React.FC<{ streak: number; gardenHealth: number; onWater: () =
             Garden Health
           </Text>
         </View>
-        <TouchableOpacity
-          onPress={onWater}
-          style={{ flex: 1, backgroundColor: '#81B29A', borderRadius: 12, padding: 16, alignItems: 'center' }}
-        >
-          <MaterialCommunityIcons name="watering-can" size={24} color="#FFF" />
-          <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 14, color: '#FFF', marginTop: 8 }}>
-            Water
+        <View style={{ flex: 1, backgroundColor: '#FFF', borderRadius: 12, padding: 16, alignItems: 'center' }}>
+          <MaterialCommunityIcons name="fire" size={24} color="#F59E0B" />
+          <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 20, color: '#3D405B', marginTop: 8 }}>
+            {streak}
           </Text>
-          <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', fontSize: 11, color: 'rgba(255, 255, 255, 0.8)' }}>
-            Log a connection
+          <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', fontSize: 11, color: 'rgba(61, 64, 91, 0.6)' }}>
+            Day Streak
           </Text>
-        </TouchableOpacity>
+        </View>
       </View>
+
+      <TouchableOpacity
+        onPress={onGoToChallenge}
+        activeOpacity={0.8}
+        style={{
+          marginTop: 20,
+          width: '100%',
+          backgroundColor: '#81B29A',
+          borderRadius: 12,
+          padding: 16,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+        }}
+      >
+        <MaterialCommunityIcons name="target" size={20} color="#FFF" />
+        <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 15, color: '#FFF' }}>
+          Complete Challenges to Level Up
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        onPress={onWater}
+        activeOpacity={0.8}
+        style={{
+          marginTop: 12,
+          width: '100%',
+          backgroundColor: '#FFF',
+          borderRadius: 12,
+          padding: 16,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          borderWidth: 1,
+          borderColor: 'rgba(129, 178, 154, 0.3)',
+        }}
+      >
+        <MaterialCommunityIcons name="watering-can" size={20} color="#81B29A" />
+        <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 15, color: '#81B29A' }}>
+          Log a Connection
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -815,7 +869,9 @@ export const GamificationScreen: React.FC<GamificationScreenProps> = ({ onBack }
           <GardenView
             streak={state.garden.currentStreak}
             gardenHealth={state.garden.gardenHealth}
+            level={state.level.level}
             onWater={waterGarden}
+            onGoToChallenge={() => setActiveTab('challenges')}
           />
         )}
       </ScrollView>
