@@ -99,11 +99,11 @@ struct StreakWidgetView: View {
                 endPoint: .bottomTrailing
             )
             
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Image(systemName: "flame.fill")
                         .foregroundColor(.white)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(size: 18, weight: .semibold))
                     Spacer()
                     Text("Tether")
                         .font(.system(size: 10, weight: .medium))
@@ -113,18 +113,18 @@ struct StreakWidgetView: View {
                 Spacer()
                 
                 Text("\(entry.widgetData?.streak.current ?? 0)")
-                    .font(.system(size: 48, weight: .bold, design: .rounded))
+                    .font(.system(size: 52, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
                 
                 Text("Day Streak")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.white.opacity(0.9))
                 
                 Text(streakMessage)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.white.opacity(0.7))
             }
-            .padding(16)
+            .padding(8)
         }
         .widgetURL(URL(string: "tether://progress"))
     }
@@ -138,62 +138,62 @@ struct TodayFocusWidgetView: View {
         ZStack {
             Color(red: 0.96, green: 0.95, blue: 0.87)
             
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Text("Today's Focus")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.system(size: 13, weight: .bold))
                         .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36))
                     Spacer()
                     Image(systemName: "sparkles")
                         .foregroundColor(Color(red: 0.88, green: 0.48, blue: 0.37))
-                        .font(.system(size: 14))
+                        .font(.system(size: 16))
                 }
                 
                 Spacer()
                 
                 if let focus = entry.widgetData?.todayFocus {
-                    HStack(spacing: 12) {
+                    HStack(spacing: 10) {
                         ZStack {
                             Circle()
                                 .fill(Color(red: 0.88, green: 0.48, blue: 0.37))
-                                .frame(width: 44, height: 44)
+                                .frame(width: 48, height: 48)
                             Text(focus.friendInitials)
-                                .font(.system(size: 16, weight: .bold))
+                                .font(.system(size: 18, weight: .bold))
                                 .foregroundColor(.white)
                         }
                         
                         VStack(alignment: .leading, spacing: 2) {
                             Text(focus.friendName)
-                                .font(.system(size: 16, weight: .bold))
+                                .font(.system(size: 17, weight: .bold))
                                 .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36))
                                 .lineLimit(1)
                             Text("\(focus.daysSinceContact)d since last contact")
-                                .font(.system(size: 11, weight: .medium))
+                                .font(.system(size: 12, weight: .medium))
                                 .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36).opacity(0.6))
                         }
                         Spacer()
                     }
                     
                     Text("Tap to reach out")
-                        .font(.system(size: 10, weight: .medium))
+                        .font(.system(size: 11, weight: .semibold))
                         .foregroundColor(Color(red: 0.88, green: 0.48, blue: 0.37))
                 } else {
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 8) {
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundColor(Color(red: 0.51, green: 0.70, blue: 0.60))
-                                .font(.system(size: 24))
+                                .font(.system(size: 28))
                             Text("All caught up!")
-                                .font(.system(size: 18, weight: .bold))
+                                .font(.system(size: 20, weight: .bold))
                                 .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36))
                         }
                         Text("Great job staying connected")
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.system(size: 13, weight: .medium))
                             .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36).opacity(0.6))
                     }
                 }
             }
-            .padding(16)
+            .padding(8)
         }
         .widgetURL(URL(string: "tether://today"))
     }
@@ -228,10 +228,10 @@ struct GardenWidgetView: View {
                 endPoint: .bottomTrailing
             )
             
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Text("My Garden")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.system(size: 13, weight: .bold))
                         .foregroundColor(.white)
                     Spacer()
                     Text("Tether")
@@ -243,16 +243,16 @@ struct GardenWidgetView: View {
                 
                 HStack(alignment: .bottom) {
                     Text(plantEmoji)
-                        .font(.system(size: 44))
+                        .font(.system(size: 48))
                     
                     Spacer()
                     
                     VStack(alignment: .trailing, spacing: 2) {
                         Text("Level \(entry.widgetData?.garden.level ?? 1)")
-                            .font(.system(size: 18, weight: .bold))
+                            .font(.system(size: 20, weight: .bold))
                             .foregroundColor(.white)
                         Text("\(entry.widgetData?.garden.xp ?? 0) XP")
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.system(size: 13, weight: .semibold))
                             .foregroundColor(.white.opacity(0.8))
                     }
                 }
@@ -270,7 +270,7 @@ struct GardenWidgetView: View {
                 }
                 .frame(height: 8)
             }
-            .padding(16)
+            .padding(8)
         }
         .widgetURL(URL(string: "tether://garden"))
     }
@@ -281,22 +281,22 @@ struct QuickLogWidgetView: View {
         ZStack {
             Color(red: 0.96, green: 0.95, blue: 0.87)
             
-            VStack(spacing: 10) {
+            VStack(spacing: 8) {
                 ZStack {
                     Circle()
                         .fill(Color(red: 0.88, green: 0.48, blue: 0.37).opacity(0.15))
-                        .frame(width: 56, height: 56)
+                        .frame(width: 60, height: 60)
                     Image(systemName: "plus")
-                        .font(.system(size: 26, weight: .semibold))
+                        .font(.system(size: 28, weight: .semibold))
                         .foregroundColor(Color(red: 0.88, green: 0.48, blue: 0.37))
                 }
                 
                 Text("Quick Log")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.system(size: 15, weight: .bold))
                     .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36))
                 
                 Text("Tap to log")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36).opacity(0.5))
             }
         }
@@ -312,23 +312,23 @@ struct StatsWidgetView: View {
         ZStack {
             Color(red: 0.96, green: 0.95, blue: 0.87)
             
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 6) {
                 HStack {
                     Text("This Week")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.system(size: 13, weight: .bold))
                         .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36))
                     Spacer()
                     Image(systemName: "chart.bar.fill")
                         .foregroundColor(Color(red: 0.51, green: 0.70, blue: 0.60))
-                        .font(.system(size: 14))
+                        .font(.system(size: 16))
                 }
                 
                 Spacer()
                 
-                HStack(spacing: family == .systemMedium ? 32 : 16) {
-                    VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: family == .systemMedium ? 24 : 12) {
+                    VStack(alignment: .leading, spacing: 2) {
                         Text("\(entry.widgetData?.stats.connectionsThisWeek ?? 0)")
-                            .font(.system(size: 32, weight: .bold, design: .rounded))
+                            .font(.system(size: 36, weight: .bold, design: .rounded))
                             .foregroundColor(Color(red: 0.51, green: 0.70, blue: 0.60))
                         Text("Connections")
                             .font(.system(size: 11, weight: .semibold))
@@ -339,9 +339,9 @@ struct StatsWidgetView: View {
                         Spacer()
                     }
                     
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 2) {
                         Text("\(entry.widgetData?.stats.overdueCount ?? 0)")
-                            .font(.system(size: 32, weight: .bold, design: .rounded))
+                            .font(.system(size: 36, weight: .bold, design: .rounded))
                             .foregroundColor(entry.widgetData?.stats.overdueCount ?? 0 > 0 ? Color(red: 0.88, green: 0.48, blue: 0.37) : Color(red: 0.24, green: 0.25, blue: 0.36))
                         Text("Overdue")
                             .font(.system(size: 11, weight: .semibold))
@@ -351,9 +351,9 @@ struct StatsWidgetView: View {
                     if family == .systemMedium {
                         Spacer()
                         
-                        VStack(alignment: .leading, spacing: 4) {
+                        VStack(alignment: .leading, spacing: 2) {
                             Text("\(entry.widgetData?.stats.upcomingBirthdays ?? 0)")
-                                .font(.system(size: 32, weight: .bold, design: .rounded))
+                                .font(.system(size: 36, weight: .bold, design: .rounded))
                                 .foregroundColor(Color(red: 0.39, green: 0.40, blue: 0.96))
                             Text("Birthdays")
                                 .font(.system(size: 11, weight: .semibold))
@@ -362,7 +362,7 @@ struct StatsWidgetView: View {
                     }
                 }
             }
-            .padding(16)
+            .padding(8)
         }
         .widgetURL(URL(string: "tether://insights"))
     }
