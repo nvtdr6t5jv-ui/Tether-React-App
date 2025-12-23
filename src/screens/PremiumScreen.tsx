@@ -72,14 +72,18 @@ const PremiumFeature: React.FC<{
 );
 
 const FEATURES = [
-  { id: 'contacts', icon: 'account-group', title: 'Unlimited Contacts', description: 'Track more than 5 people in your orbit.' },
-  { id: 'deep_link', icon: 'link-variant', title: 'Quick Actions', description: 'Tap to message or call directly from the app.' },
-  { id: 'templates', icon: 'text-box-multiple', title: 'Message Templates', description: 'Suggested conversation starters for any occasion.' },
-  { id: 'analytics', icon: 'chart-line', title: 'Full Analytics', description: 'Unlock the complete Social Pulse dashboard.' },
-  { id: 'history', icon: 'history', title: 'Unlimited History', description: 'See all your interactions, not just 30 days.' },
-  { id: 'suggestions', icon: 'lightbulb', title: 'Smart Suggestions', description: 'AI-powered insights on when to reach out.' },
-  { id: 'bulk_actions', icon: 'checkbox-multiple-marked', title: 'Bulk Actions', description: 'Mark multiple friends as contacted at once.' },
-  { id: 'frequencies', icon: 'clock-edit', title: 'Custom Frequencies', description: 'Set personalized nudge schedules per friend.' },
+  { id: 'contacts', icon: 'account-group', title: 'Unlimited Contacts', description: 'Track all the people in your life, not just 5.' },
+  { id: 'deep_link', icon: 'link-variant', title: 'Quick Actions', description: 'Call or text directly from the app with one tap.' },
+  { id: 'templates', icon: 'text-box-multiple', title: 'Message Templates', description: 'Never struggle with what to say again.' },
+  { id: 'analytics', icon: 'chart-line', title: 'Full Analytics', description: 'See detailed insights into your social health.' },
+  { id: 'history', icon: 'history', title: 'Unlimited History', description: 'Access your complete connection history, forever.' },
+  { id: 'suggestions', icon: 'lightbulb', title: 'Smart Suggestions', description: 'AI-powered tips on when and how to reach out.' },
+  { id: 'bulk_actions', icon: 'checkbox-multiple-marked', title: 'Bulk Actions', description: 'Mark multiple people as contacted at once.' },
+  { id: 'frequencies', icon: 'clock-edit', title: 'Custom Frequencies', description: 'Set personalized reminder schedules per friend.' },
+  { id: 'orbits', icon: 'orbit', title: 'Custom Orbits', description: 'Rename and customize your orbit categories.' },
+  { id: 'themes', icon: 'palette', title: 'Premium Themes', description: 'Personalize your app with exclusive themes.' },
+  { id: 'export', icon: 'export', title: 'Data Export', description: 'Export your connection history anytime.' },
+  { id: 'priority', icon: 'star-circle', title: 'Priority Support', description: 'Get faster help when you need it.' },
 ];
 
 const TRIGGER_HEADLINES: Record<string, { title: string; subtitle: string }> = {
@@ -255,7 +259,7 @@ export const PremiumScreen: React.FC<PremiumScreenProps> = ({ onClose, trigger =
               </Animated.View>
 
               <View style={{ gap: 12, marginBottom: 24 }}>
-                {sortedFeatures.slice(0, 4).map((feature, index) => (
+                {sortedFeatures.slice(0, 6).map((feature, index) => (
                   <PremiumFeature
                     key={feature.id}
                     icon={feature.icon}
@@ -266,6 +270,35 @@ export const PremiumScreen: React.FC<PremiumScreenProps> = ({ onClose, trigger =
                   />
                 ))}
               </View>
+
+              {sortedFeatures.length > 6 && (
+                <View style={{ marginBottom: 20 }}>
+                  <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12, color: 'rgba(255,255,255,0.6)', marginBottom: 12, textAlign: 'center' }}>
+                    Plus {sortedFeatures.length - 6} more premium features
+                  </Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 }}>
+                    {sortedFeatures.slice(6).map((feature) => (
+                      <View
+                        key={feature.id}
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 4,
+                          backgroundColor: 'rgba(255,255,255,0.1)',
+                          paddingHorizontal: 10,
+                          paddingVertical: 6,
+                          borderRadius: 9999,
+                        }}
+                      >
+                        <MaterialCommunityIcons name={feature.icon as any} size={12} color="rgba(255,255,255,0.8)" />
+                        <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', fontSize: 11, color: 'rgba(255,255,255,0.8)' }}>
+                          {feature.title}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
 
               <Animated.View entering={FadeIn.delay(500).duration(400)} style={{ flexDirection: 'row', gap: 12, marginBottom: 20, marginTop: 12 }}>
                 <View style={{ flex: 1, position: 'relative' }}>

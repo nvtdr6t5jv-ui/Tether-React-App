@@ -12,10 +12,12 @@ import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated'
 import { useApp } from '../context/AppContext';
 import Svg, { Circle } from 'react-native-svg';
 import { ORBITS } from '../types';
+import { GardenModule } from '../components/GardenModule';
 
 interface InsightsScreenProps {
   onPremiumRequired?: () => void;
   onNavigateToProfile?: (friendId: string) => void;
+  onNavigateToGarden?: () => void;
 }
 
 const ProgressRing: React.FC<{
@@ -151,7 +153,7 @@ const OrbitBar: React.FC<{
   </View>
 );
 
-export const InsightsScreen: React.FC<InsightsScreenProps> = ({ onPremiumRequired, onNavigateToProfile }) => {
+export const InsightsScreen: React.FC<InsightsScreenProps> = ({ onPremiumRequired, onNavigateToProfile, onNavigateToGarden }) => {
   const { getSocialHealthStats, friends, interactions, premiumStatus, getOverdueFriends } = useApp();
 
   const stats = useMemo(() => getSocialHealthStats(), [getSocialHealthStats, friends, interactions]);
@@ -228,6 +230,10 @@ export const InsightsScreen: React.FC<InsightsScreenProps> = ({ onPremiumRequire
         contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       >
+        {onNavigateToGarden && (
+          <GardenModule onPress={onNavigateToGarden} />
+        )}
+
         <Animated.View
           entering={FadeInDown.duration(400)}
           style={{

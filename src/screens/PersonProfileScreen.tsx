@@ -22,6 +22,8 @@ import { ORBITS, NOTE_TYPE_CONFIG, INTERACTION_ICONS } from '../types';
 import { LogConnectionModal } from '../components/LogConnectionModal';
 import { NewNoteModal } from '../components/NewNoteModal';
 import { SwipeableScreen } from '../components/SwipeableScreen';
+import { EditInteractionModal } from '../components/EditInteractionModal';
+import { Interaction } from '../types';
 
 interface PersonProfileScreenProps {
   friendId: string;
@@ -67,6 +69,8 @@ export const PersonProfileScreen: React.FC<PersonProfileScreenProps> = ({
     getInteractionsByFriend,
     getInteractionsByFriendLimited,
     logInteraction,
+    updateInteraction,
+    deleteInteraction,
     deleteNote,
     deleteFriend,
     friends,
@@ -89,6 +93,8 @@ export const PersonProfileScreen: React.FC<PersonProfileScreenProps> = ({
 
   const [showLogModal, setShowLogModal] = useState(false);
   const [showNoteModal, setShowNoteModal] = useState(false);
+  const [showEditInteractionModal, setShowEditInteractionModal] = useState(false);
+  const [selectedInteraction, setSelectedInteraction] = useState<Interaction | null>(null);
 
   const friend = getFriendById(friendId);
   const notes = useMemo(() => getNotesByFriend(friendId), [friendId, getNotesByFriend]);
@@ -623,49 +629,63 @@ export const PersonProfileScreen: React.FC<PersonProfileScreenProps> = ({
                 <Animated.View
                   key={interaction.id}
                   entering={SlideInRight.delay(index * 50).duration(300)}
-                  style={{
-                    backgroundColor: '#FFF',
-                    padding: 16,
-                    borderRadius: 16,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 16,
-                  }}
                 >
-                  <View
+                  <TouchableOpacity
+                    onPress={() => {
+                      setSelectedInteraction(interaction);
+                      setShowEditInteractionModal(true);
+                    }}
+                    activeOpacity={0.8}
                     style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 20,
-                      backgroundColor: 'rgba(0,0,0,0.05)',
+                      backgroundColor: '#FFF',
+                      padding: 16,
+                      borderRadius: 16,
+                      flexDirection: 'row',
                       alignItems: 'center',
-                      justifyContent: 'center',
+                      gap: 16,
                     }}
                   >
-                    <MaterialCommunityIcons
-                      name={
-                        interaction.type === 'call' ? 'phone' :
-                        interaction.type === 'text' ? 'chat' :
-                        interaction.type === 'video_call' ? 'video' :
-                        interaction.type === 'in_person' ? 'coffee' :
-                        'dots-horizontal'
-                      }
-                      size={18}
-                      color="rgba(61, 64, 91, 0.4)"
-                    />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 14, color: '#3D405B' }}>
-                      {interaction.type === 'call' ? 'Called' :
-                       interaction.type === 'text' ? 'Texted' :
-                       interaction.type === 'video_call' ? 'Video call' :
-                       interaction.type === 'in_person' ? 'Met in person' :
-                       'Connected'}
-                    </Text>
-                    <Text style={{ fontFamily: 'PlusJakartaSans_400Regular', fontSize: 12, color: 'rgba(61, 64, 91, 0.6)' }}>
-                      {formatInteractionDate(interaction.date)}
-                    </Text>
-                  </View>
+                    <View
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 20,
+                        backgroundColor: 'rgba(0,0,0,0.05)',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <MaterialCommunityIcons
+                        name={
+                          interaction.type === 'call' ? 'phone' :
+                          interaction.type === 'text' ? 'chat' :
+                          interaction.type === 'video_call' ? 'video' :
+                          interaction.type === 'in_person' ? 'coffee' :
+                          'dots-horizontal'
+                        }
+                        size={18}
+                        color="rgba(61, 64, 91, 0.4)"
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 14, color: '#3D405B' }}>
+                        {interaction.type === 'call' ? 'Called' :
+                         interaction.type === 'text' ? 'Texted' :
+                         interaction.type === 'video_call' ? 'Video call' :
+                         interaction.type === 'in_person' ? 'Met in person' :
+                         'Connected'}
+                      </Text>
+                      <Text style={{ fontFamily: 'PlusJakartaSans_400Regular', fontSize: 12, color: 'rgba(61, 64, 91, 0.6)' }}>
+                        {formatInteractionDate(interaction.date)}
+                      </Text>
+                      {interaction.note && (
+                        <Text style={{ fontFamily: 'PlusJakartaSans_400Regular', fontSize: 11, color: 'rgba(61, 64, 91, 0.4)', marginTop: 2 }} numberOfLines={1}>
+                          {interaction.note}
+                        </Text>
+                      )}
+                    </View>
+                    <MaterialCommunityIcons name="chevron-right" size={20} color="rgba(61, 64, 91, 0.3)" />
+                  </TouchableOpacity>
                 </Animated.View>
               ))}
               {!premiumStatus.isPremium && interactions.length > displayedInteractions.length && (
@@ -719,6 +739,22 @@ export const PersonProfileScreen: React.FC<PersonProfileScreenProps> = ({
         friendName={friend.name}
         friendPhoto={friend.photo}
         friendInitials={friend.initials}
+      />
+
+      <EditInteractionModal
+        visible={showEditInteractionModal}
+        interaction={selectedInteraction}
+        friendName={friend.name}
+        onClose={() => {
+          setShowEditInteractionModal(false);
+          setSelectedInteraction(null);
+        }}
+        onSave={async (updatedInteraction) => {
+          await updateInteraction(updatedInteraction.id, updatedInteraction);
+        }}
+        onDelete={async (interactionId) => {
+          await deleteInteraction(interactionId);
+        }}
       />
       </SafeAreaView>
     </SwipeableScreen>

@@ -175,12 +175,14 @@ const getNextNudgeDate = (orbitId: string): Date => {
 };
 
 const PREMIUM_FEATURES = [
-  { icon: 'account-group', title: 'Unlimited Contacts', description: 'Track all the people who matter, not just 5' },
-  { icon: 'chart-line', title: 'Full Analytics', description: 'See your complete Social Pulse dashboard' },
+  { icon: 'account-group', title: 'Unlimited Contacts', description: 'Track everyone who matters, not just 5 people' },
   { icon: 'link-variant', title: 'Quick Actions', description: 'Message or call directly from the app' },
-  { icon: 'text-box-multiple', title: 'Message Templates', description: 'Never run out of things to say' },
-  { icon: 'history', title: 'Unlimited History', description: 'See all your interactions, not just 30 days' },
-  { icon: 'clock-edit', title: 'Custom Frequencies', description: 'Set personalized nudge schedules' },
+  { icon: 'chart-line', title: 'Full Analytics', description: 'Unlock your complete Social Pulse dashboard' },
+  { icon: 'history', title: 'Unlimited History', description: 'Access your entire connection history forever' },
+  { icon: 'lightbulb', title: 'Smart Suggestions', description: 'AI-powered tips on when to reach out' },
+  { icon: 'clock-edit', title: 'Custom Reminders', description: 'Set personalized nudge schedules per friend' },
+  { icon: 'orbit', title: 'Custom Orbits', description: 'Rename and customize your orbit categories' },
+  { icon: 'text-box-multiple', title: 'Message Templates', description: 'Never struggle with what to say again' },
 ];
 
 export const OnboardingCompleteScreen = () => {
@@ -226,7 +228,7 @@ export const OnboardingCompleteScreen = () => {
   };
 
   const handleSubscribe = async () => {
-    await upgradeToPremium();
+    await upgradeToPremium(selectedPlan);
     handleEnterTether();
   };
 

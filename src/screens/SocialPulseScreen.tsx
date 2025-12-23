@@ -12,10 +12,12 @@ import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated'
 import { useApp } from '../context/AppContext';
 import Svg, { Circle } from 'react-native-svg';
 import { SwipeableScreen } from '../components/SwipeableScreen';
+import { GardenModule } from '../components/GardenModule';
 
 interface SocialPulseScreenProps {
   onBack: () => void;
   onPremiumRequired?: () => void;
+  onNavigateToGarden?: () => void;
 }
 
 const ProgressRing: React.FC<{
@@ -151,7 +153,7 @@ const OrbitBar: React.FC<{
   </View>
 );
 
-export const SocialPulseScreen: React.FC<SocialPulseScreenProps> = ({ onBack, onPremiumRequired }) => {
+export const SocialPulseScreen: React.FC<SocialPulseScreenProps> = ({ onBack, onPremiumRequired, onNavigateToGarden }) => {
   const { getSocialHealthStats, friends, interactions, premiumStatus } = useApp();
 
   const stats = useMemo(() => getSocialHealthStats(), [getSocialHealthStats, friends, interactions]);
@@ -224,6 +226,10 @@ export const SocialPulseScreen: React.FC<SocialPulseScreenProps> = ({ onBack, on
         contentContainerStyle={{ padding: 24, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
       >
+        {onNavigateToGarden && (
+          <GardenModule onPress={onNavigateToGarden} />
+        )}
+
         <Animated.View
           entering={FadeInDown.duration(400)}
           style={{

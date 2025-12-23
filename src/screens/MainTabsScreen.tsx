@@ -128,6 +128,7 @@ export const MainTabsScreen = () => {
             <SocialPulseScreen
               onBack={() => setTodayStack({ screen: "main" })}
               onPremiumRequired={() => showPremiumModal('analytics')}
+              onNavigateToGarden={() => setTodayStack({ screen: "progress" })}
             />
           </SwipeableScreen>
         );
@@ -179,6 +180,10 @@ export const MainTabsScreen = () => {
         onNavigateToProfile={(friendId) => {
           setActiveTab("people");
           setPeopleStack({ screen: "profile", friendId });
+        }}
+        onNavigateToGarden={() => {
+          setActiveTab("today");
+          setTodayStack({ screen: "progress" });
         }}
       />
     );

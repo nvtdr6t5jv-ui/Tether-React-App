@@ -51,6 +51,8 @@ interface AppContextType extends AppState {
   updateNote: (noteId: string, content: string) => Promise<void>;
   deleteNote: (noteId: string) => Promise<void>;
   logInteraction: (friendId: string, type: InteractionType, note?: string, duration?: number, date?: Date) => Promise<void>;
+  updateInteraction: (interactionId: string, updates: Partial<Interaction>) => Promise<void>;
+  deleteInteraction: (interactionId: string) => Promise<void>;
   addDraft: (friendId: string, content: string) => Promise<Draft>;
   deleteDraft: (draftId: string) => Promise<void>;
   sendDraft: (draftId: string) => Promise<void>;
@@ -544,6 +546,46 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  const updateInteraction = async (interactionId: string, updates: Partial<Interaction>) => {
+    const updatedInteractions = state.interactions.map(i => 
+      i.id === interactionId ? { ...i, ...updates } : i
+    );
+    await storageService.saveInteractions(updatedInteractions);
+    setState(prev => ({ ...prev, interactions: updatedInteractions }));
+
+    if (userId && isValidUUID(interactionId)) {
+      try {
+        const cloudUpdates: any = {};
+        if (updates.type) cloudUpdates.type = updates.type;
+        if (updates.date) cloudUpdates.date = updates.date instanceof Date ? updates.date.toISOString() : updates.date;
+        if (updates.note !== undefined) cloudUpdates.notes = updates.note;
+        await api.interactions.update(interactionId, cloudUpdates);
+      } catch (e) {
+        console.error('Failed to sync interaction update to cloud:', e);
+      }
+    }
+  };
+
+  const deleteInteraction = async (interactionId: string) => {
+    const updatedInteractions = state.interactions.filter(i => i.id !== interactionId);
+    await storageService.saveInteractions(updatedInteractions);
+    setState(prev => ({ ...prev, interactions: updatedInteractions }));
+
+    const relatedEvent = state.calendarEvents.find(e => e.id === `interaction-${interactionId}`);
+    if (relatedEvent) {
+      await storageService.deleteCalendarEvent(relatedEvent.id);
+      setState(prev => ({ ...prev, calendarEvents: prev.calendarEvents.filter(e => e.id !== relatedEvent.id) }));
+    }
+
+    if (userId && isValidUUID(interactionId)) {
+      try {
+        await api.interactions.delete(interactionId);
+      } catch (e) {
+        console.error('Failed to sync interaction deletion to cloud:', e);
+      }
+    }
+  };
+
   const addDraft = async (friendId: string, content: string): Promise<Draft> => {
     const now = new Date();
     const draft: Draft = {
@@ -988,6 +1030,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         updateNote,
         deleteNote,
         logInteraction,
+        updateInteraction,
+        deleteInteraction,
         addDraft,
         deleteDraft,
         sendDraft,
@@ -1013,11 +1057,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         upgradeToPremium,
         getSmartSuggestion,
         addCalendarEvent,
-  Orbit,
         updateCalendarEvent,
-  Orbit,
         deleteCalendarEvent,
-  Orbit,
         getRelationshipHealth,
         getConversationStarter,
         syncWithCloud,
