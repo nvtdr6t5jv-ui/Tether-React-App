@@ -34,6 +34,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useApp } from '../context/AppContext';
 import { CalendarEvent, ORBITS } from '../types';
 import { DrawerModal } from '../components/DrawerModal';
+import { FullScreenDrawerModal } from '../components/FullScreenDrawerModal';
 import { useCalendarSync } from '../hooks/useCalendarSync';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -766,7 +767,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
         </Animated.View>
       </ScrollView>
 
-      <DrawerModal visible={showAddEvent} onClose={() => { resetEventForm(); setShowAddEvent(false); }} title={editingEvent ? "Edit Event" : "Add Event"}>
+      <FullScreenDrawerModal visible={showAddEvent} onClose={() => { resetEventForm(); setShowAddEvent(false); }} title={editingEvent ? "Edit Event" : "Add Event"}>
         <View style={{ gap: 16 }}>
           <View>
             <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 14, color: '#3D405B', marginBottom: 8 }}>
@@ -957,7 +958,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
             </Text>
           </TouchableOpacity>
         </View>
-      </DrawerModal>
+      </FullScreenDrawerModal>
 
       <DrawerModal
         visible={!!showEventDetail}

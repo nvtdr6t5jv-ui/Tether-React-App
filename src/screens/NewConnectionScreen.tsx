@@ -10,10 +10,12 @@ import {
   Modal,
   FlatList,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Contacts from 'expo-contacts';
 import { useApp } from '../context/AppContext';
 import { OrbitId, ORBITS } from '../types';
@@ -40,12 +42,17 @@ const getInitials = (name: string): string => {
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 };
 
+const formatBirthday = (date: Date | null): string => {
+  if (!date) return '';
+  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+};
+
 export const NewConnectionScreen: React.FC<NewConnectionScreenProps> = ({
   onBack,
   onSave,
   onPremiumRequired,
 }) => {
-  const { addFriend, canAddMoreFriends, getRemainingFreeSlots, premiumStatus } = useApp();
+  const { addFriend, addCalendarEvent, canAddMoreFriends, getRemainingFreeSlots, premiumStatus } = useApp();
   
   React.useEffect(() => {
     if (!canAddMoreFriends() && onPremiumRequired) {
@@ -58,7 +65,8 @@ export const NewConnectionScreen: React.FC<NewConnectionScreenProps> = ({
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [photo, setPhoto] = useState<string | undefined>();
-  const [birthday, setBirthday] = useState('');
+  const [birthday, setBirthday] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [notes, setNotes] = useState('');
   const [selectedOrbit, setSelectedOrbit] = useState<OrbitId>('close');
   const [lastSpoken, setLastSpoken] = useState<'today' | 'week' | 'month' | 'longer'>('today');
@@ -91,6 +99,36 @@ export const NewConnectionScreen: React.FC<NewConnectionScreenProps> = ({
     return new Date(Date.now() + days * 24 * 60 * 60 * 1000);
   };
 
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+    if (selectedDate) {
+      setBirthday(selectedDate);
+    }
+  };
+
+  const addBirthdayToCalendar = async (friendId: string, friendName: string, birthdayDate: Date) => {
+    try {
+      const thisYear = new Date().getFullYear();
+      const birthdayThisYear = new Date(thisYear, birthdayDate.getMonth(), birthdayDate.getDate());
+      
+      if (birthdayThisYear < new Date()) {
+        birthdayThisYear.setFullYear(thisYear + 1);
+      }
+
+      await addCalendarEvent({
+        title: `${friendName}'s Birthday`,
+        date: birthdayThisYear,
+        type: 'birthday',
+        friendIds: [friendId],
+        isRecurring: true,
+      });
+    } catch (error) {
+      console.error('Failed to add birthday to calendar:', error);
+    }
+  };
+
   const handleSave = async () => {
     if (!canSave) return;
 
@@ -101,13 +139,17 @@ export const NewConnectionScreen: React.FC<NewConnectionScreenProps> = ({
         phone: phone.trim() || undefined,
         email: email.trim() || undefined,
         photo: photo,
-        birthday: birthday.trim() || undefined,
+        birthday: birthday ? birthday.toISOString() : undefined,
         orbitId: selectedOrbit,
         lastContact: getLastContactDate(),
         nextNudge: getNextNudgeDate(),
         isFavorite: selectedOrbit === 'inner',
         tags: [],
       });
+
+      if (birthday) {
+        await addBirthdayToCalendar(friend.id, name.trim(), birthday);
+      }
 
       onSave(friend.id);
     } catch (error) {
@@ -462,6 +504,7 @@ export const NewConnectionScreen: React.FC<NewConnectionScreenProps> = ({
           }}
         >
           <TouchableOpacity
+            onPress={() => setShowDatePicker(true)}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
@@ -475,20 +518,47 @@ export const NewConnectionScreen: React.FC<NewConnectionScreenProps> = ({
               Birthday
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <TextInput
-                value={birthday}
-                onChangeText={setBirthday}
-                placeholder="Add Date"
-                placeholderTextColor="rgba(61, 64, 91, 0.4)"
+              <Text
                 style={{
                   fontFamily: 'PlusJakartaSans_500Medium',
                   fontSize: 14,
-                  color: '#3D405B',
+                  color: birthday ? '#3D405B' : 'rgba(61, 64, 91, 0.4)',
                 }}
-              />
+              >
+                {birthday ? formatBirthday(birthday) : 'Add Date'}
+              </Text>
               <MaterialCommunityIcons name="calendar" size={20} color="#E07A5F" />
             </View>
           </TouchableOpacity>
+          
+          {showDatePicker && (
+            <View style={{ backgroundColor: '#F4F1DE', paddingBottom: Platform.OS === 'ios' ? 20 : 0 }}>
+              <DateTimePicker
+                value={birthday || new Date()}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={handleDateChange}
+                maximumDate={new Date()}
+              />
+              {Platform.OS === 'ios' && (
+                <TouchableOpacity
+                  onPress={() => setShowDatePicker(false)}
+                  style={{
+                    alignSelf: 'center',
+                    paddingHorizontal: 24,
+                    paddingVertical: 10,
+                    backgroundColor: '#81B29A',
+                    borderRadius: 9999,
+                    marginTop: 8,
+                  }}
+                >
+                  <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 14, color: '#FFF' }}>
+                    Done
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
 
           <View
             style={{

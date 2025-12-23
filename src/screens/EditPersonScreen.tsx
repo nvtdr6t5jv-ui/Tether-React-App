@@ -6,10 +6,12 @@ import {
   ScrollView,
   TextInput,
   Alert,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useApp } from '../context/AppContext';
 import { OrbitId, ORBITS } from '../types';
 import { SwipeableScreen } from '../components/SwipeableScreen';
@@ -27,17 +29,29 @@ const getInitials = (name: string): string => {
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 };
 
+const formatBirthday = (date: Date | null): string => {
+  if (!date) return '';
+  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+};
+
+const parseBirthdayString = (str: string): Date | null => {
+  if (!str) return null;
+  const parsed = new Date(str);
+  return isNaN(parsed.getTime()) ? null : parsed;
+};
+
 export const EditPersonScreen: React.FC<EditPersonScreenProps> = ({
   friendId,
   onBack,
   onSave,
 }) => {
-  const { getFriendById, updateFriend } = useApp();
+  const { getFriendById, updateFriend, addCalendarEvent } = useApp();
   const friend = getFriendById(friendId);
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [birthday, setBirthday] = useState('');
+  const [birthday, setBirthday] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedOrbit, setSelectedOrbit] = useState<OrbitId>('close');
   const [isFavorite, setIsFavorite] = useState(false);
 
@@ -45,7 +59,7 @@ export const EditPersonScreen: React.FC<EditPersonScreenProps> = ({
     if (friend) {
       setName(friend.name);
       setPhone(friend.phone || '');
-      setBirthday(friend.birthday || '');
+      setBirthday(parseBirthdayString(friend.birthday || ''));
       setSelectedOrbit(friend.orbitId);
       setIsFavorite(friend.isFavorite);
     }
@@ -66,18 +80,56 @@ export const EditPersonScreen: React.FC<EditPersonScreenProps> = ({
 
   const canSave = name.trim().length > 0;
 
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+    if (selectedDate) {
+      setBirthday(selectedDate);
+    }
+  };
+
+  const addBirthdayToCalendar = async (friendName: string, birthdayDate: Date) => {
+    try {
+      const thisYear = new Date().getFullYear();
+      const birthdayThisYear = new Date(thisYear, birthdayDate.getMonth(), birthdayDate.getDate());
+      
+      if (birthdayThisYear < new Date()) {
+        birthdayThisYear.setFullYear(thisYear + 1);
+      }
+
+      await addCalendarEvent({
+        title: `${friendName}'s Birthday`,
+        date: birthdayThisYear,
+        type: 'birthday',
+        friendIds: [friendId],
+        isRecurring: true,
+      });
+    } catch (error) {
+      console.error('Failed to add birthday to calendar:', error);
+    }
+  };
+
   const handleSave = async () => {
     if (!canSave) return;
 
     try {
+      const birthdayStr = birthday ? birthday.toISOString() : undefined;
+      const oldBirthday = friend.birthday;
+
       await updateFriend(friendId, {
         name: name.trim(),
         initials: getInitials(name),
         phone: phone.trim() || undefined,
-        birthday: birthday.trim() || undefined,
+        birthday: birthdayStr,
         orbitId: selectedOrbit,
         isFavorite,
       });
+
+      if (birthday && birthdayStr !== oldBirthday) {
+        await addBirthdayToCalendar(name.trim(), birthday);
+      }
+
       onSave();
     } catch (error) {
       Alert.alert('Error', 'Failed to update connection. Please try again.');
@@ -277,6 +329,7 @@ export const EditPersonScreen: React.FC<EditPersonScreenProps> = ({
           }}
         >
           <TouchableOpacity
+            onPress={() => setShowDatePicker(true)}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
@@ -288,20 +341,47 @@ export const EditPersonScreen: React.FC<EditPersonScreenProps> = ({
               Birthday
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <TextInput
-                value={birthday}
-                onChangeText={setBirthday}
-                placeholder="Add Date"
-                placeholderTextColor="rgba(61, 64, 91, 0.4)"
+              <Text
                 style={{
                   fontFamily: 'PlusJakartaSans_500Medium',
                   fontSize: 14,
-                  color: '#3D405B',
+                  color: birthday ? '#3D405B' : 'rgba(61, 64, 91, 0.4)',
                 }}
-              />
+              >
+                {birthday ? formatBirthday(birthday) : 'Add Date'}
+              </Text>
               <MaterialCommunityIcons name="calendar" size={20} color="#E07A5F" />
             </View>
           </TouchableOpacity>
+          
+          {showDatePicker && (
+            <View style={{ backgroundColor: '#F4F1DE', paddingBottom: Platform.OS === 'ios' ? 20 : 0 }}>
+              <DateTimePicker
+                value={birthday || new Date()}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={handleDateChange}
+                maximumDate={new Date()}
+              />
+              {Platform.OS === 'ios' && (
+                <TouchableOpacity
+                  onPress={() => setShowDatePicker(false)}
+                  style={{
+                    alignSelf: 'center',
+                    paddingHorizontal: 24,
+                    paddingVertical: 10,
+                    backgroundColor: '#81B29A',
+                    borderRadius: 9999,
+                    marginTop: 8,
+                  }}
+                >
+                  <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 14, color: '#FFF' }}>
+                    Done
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
         </Animated.View>
         </ScrollView>
       </SafeAreaView>
