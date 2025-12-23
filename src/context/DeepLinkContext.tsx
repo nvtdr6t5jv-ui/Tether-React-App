@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { Linking } from 'react-native';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef } from 'react';
+import { Linking, AppState, AppStateStatus } from 'react-native';
 import * as ExpoLinking from 'expo-linking';
 
 export type DeepLinkRoute = 
@@ -22,13 +22,21 @@ const DeepLinkContext = createContext<DeepLinkContextType | undefined>(undefined
 
 export const DeepLinkProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [pendingDeepLink, setPendingDeepLink] = useState<{ route: DeepLinkRoute; params?: Record<string, string> } | null>(null);
+  const appState = useRef(AppState.currentState);
+  const hasCheckedInitial = useRef(false);
 
-  const parseUrl = useCallback((url: string | null) => {
+  const parseUrl = useCallback((url: string | null): { route: DeepLinkRoute; params?: Record<string, string> } | null => {
     if (!url) return null;
     
     try {
-      const parsed = ExpoLinking.parse(url);
-      const path = parsed.path?.toLowerCase() || '';
+      let path = '';
+      
+      if (url.startsWith('tether://')) {
+        path = url.replace('tether://', '').split('?')[0].toLowerCase();
+      } else {
+        const parsed = ExpoLinking.parse(url);
+        path = parsed.path?.toLowerCase() || '';
+      }
       
       switch (path) {
         case 'today':
@@ -49,10 +57,13 @@ export const DeepLinkProvider: React.FC<{ children: ReactNode }> = ({ children }
         case 'quicklog':
           return { route: 'quicklog' as DeepLinkRoute };
         case 'profile':
-          return { 
-            route: 'profile' as DeepLinkRoute, 
-            params: parsed.queryParams as Record<string, string> 
-          };
+          const queryString = url.split('?')[1] || '';
+          const params: Record<string, string> = {};
+          queryString.split('&').forEach(param => {
+            const [key, value] = param.split('=');
+            if (key && value) params[key] = decodeURIComponent(value);
+          });
+          return { route: 'profile' as DeepLinkRoute, params };
         default:
           return null;
       }
@@ -61,27 +72,48 @@ export const DeepLinkProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   }, []);
 
+  const handleUrl = useCallback((url: string | null) => {
+    const link = parseUrl(url);
+    if (link) {
+      setPendingDeepLink(link);
+    }
+  }, [parseUrl]);
+
   useEffect(() => {
     const handleDeepLink = (event: { url: string }) => {
-      const link = parseUrl(event.url);
-      if (link) {
-        setPendingDeepLink(link);
-      }
+      handleUrl(event.url);
     };
 
     const subscription = Linking.addEventListener('url', handleDeepLink);
 
-    Linking.getInitialURL().then((url) => {
-      const link = parseUrl(url);
-      if (link) {
-        setPendingDeepLink(link);
-      }
-    });
+    if (!hasCheckedInitial.current) {
+      hasCheckedInitial.current = true;
+      Linking.getInitialURL().then(handleUrl);
+    }
 
     return () => {
       subscription.remove();
     };
-  }, [parseUrl]);
+  }, [handleUrl]);
+
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+        Linking.getInitialURL().then((url) => {
+          if (url) {
+            handleUrl(url);
+          }
+        });
+      }
+      appState.current = nextAppState;
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      subscription.remove();
+    };
+  }, [handleUrl]);
 
   const clearDeepLink = useCallback(() => {
     setPendingDeepLink(null);

@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, Dimensions, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, {
   FadeInDown,
-  FadeOut,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
   withSequence,
   withTiming,
+  withSpring,
+  runOnJS,
+  Easing,
 } from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -22,7 +24,10 @@ interface WidgetTutorialCardProps {
 
 export const WidgetTutorialCard: React.FC<WidgetTutorialCardProps> = ({ onDismiss, compact = false }) => {
   const [visible, setVisible] = useState(false);
+  const [shouldRender, setShouldRender] = useState(false);
   const pulseScale = useSharedValue(1);
+  const dismissProgress = useSharedValue(1);
+  const translateY = useSharedValue(0);
 
   useEffect(() => {
     checkDismissed();
@@ -40,30 +45,59 @@ export const WidgetTutorialCard: React.FC<WidgetTutorialCardProps> = ({ onDismis
     try {
       const dismissed = await AsyncStorage.getItem(STORAGE_KEY);
       if (dismissed !== 'true') {
-        setVisible(true);
+        setShouldRender(true);
+        setTimeout(() => setVisible(true), 100);
       }
     } catch {
-      setVisible(true);
+      setShouldRender(true);
+      setTimeout(() => setVisible(true), 100);
     }
   };
+
+  const finishDismiss = useCallback(() => {
+    setShouldRender(false);
+    onDismiss?.();
+  }, [onDismiss]);
 
   const handleDismiss = async () => {
     try {
       await AsyncStorage.setItem(STORAGE_KEY, 'true');
     } catch {}
+    
     setVisible(false);
-    onDismiss?.();
+    
+    dismissProgress.value = withTiming(0, { 
+      duration: 300,
+      easing: Easing.out(Easing.cubic)
+    });
+    translateY.value = withTiming(-20, { 
+      duration: 300,
+      easing: Easing.out(Easing.cubic)
+    }, () => {
+      runOnJS(finishDismiss)();
+    });
   };
+
+  const containerStyle = useAnimatedStyle(() => ({
+    opacity: dismissProgress.value,
+    transform: [
+      { translateY: translateY.value },
+      { scale: 0.95 + (dismissProgress.value * 0.05) }
+    ],
+  }));
 
   const pulseStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulseScale.value }],
   }));
 
-  if (!visible) return null;
+  if (!shouldRender) return null;
 
   if (compact) {
     return (
-      <Animated.View entering={FadeInDown.duration(400)} exiting={FadeOut.duration(300)}>
+      <Animated.View 
+        entering={FadeInDown.duration(400).springify()} 
+        style={containerStyle}
+      >
         <TouchableOpacity
           activeOpacity={0.9}
           style={{
@@ -109,7 +143,10 @@ export const WidgetTutorialCard: React.FC<WidgetTutorialCardProps> = ({ onDismis
   }
 
   return (
-    <Animated.View entering={FadeInDown.duration(400)} exiting={FadeOut.duration(300)}>
+    <Animated.View 
+      entering={FadeInDown.duration(400).springify()} 
+      style={containerStyle}
+    >
       <View
         style={{
           backgroundColor: '#FFF',

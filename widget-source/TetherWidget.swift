@@ -124,7 +124,7 @@ struct StreakWidgetView: View {
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.white.opacity(0.7))
             }
-            .padding(8)
+            .padding(16)
         }
         .widgetURL(URL(string: "tether://progress"))
     }
@@ -193,7 +193,7 @@ struct TodayFocusWidgetView: View {
                     }
                 }
             }
-            .padding(8)
+            .padding(16)
         }
         .widgetURL(URL(string: "tether://today"))
     }
@@ -270,7 +270,7 @@ struct GardenWidgetView: View {
                 }
                 .frame(height: 8)
             }
-            .padding(8)
+            .padding(16)
         }
         .widgetURL(URL(string: "tether://garden"))
     }
@@ -362,7 +362,7 @@ struct StatsWidgetView: View {
                     }
                 }
             }
-            .padding(8)
+            .padding(16)
         }
         .widgetURL(URL(string: "tether://insights"))
     }
