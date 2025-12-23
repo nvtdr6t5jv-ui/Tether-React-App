@@ -13,7 +13,6 @@ struct WidgetData: Codable {
         let friendPhoto: String?
         let daysSinceContact: Int
         let orbitName: String
-        let friendId: String?
     }
     
     struct Garden: Codable {
@@ -85,335 +84,199 @@ struct StreakWidgetView: View {
     @Environment(\.widgetFamily) var family
     
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                LinearGradient(
-                    colors: [Color(red: 0.878, green: 0.478, blue: 0.373), Color(red: 0.95, green: 0.55, blue: 0.4)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack {
-                        Image(systemName: "flame.fill")
-                            .foregroundColor(.white)
-                            .font(.system(size: 14, weight: .bold))
-                        Spacer()
-                        Text("STREAK")
-                            .font(.system(size: 8, weight: .heavy))
-                            .foregroundColor(.white.opacity(0.7))
-                            .tracking(1)
-                    }
-                    
-                    Spacer()
-                    
-                    Text("\(entry.widgetData?.streak.current ?? 0)")
-                        .font(.system(size: 44, weight: .black, design: .rounded))
-                        .foregroundColor(.white)
-                        .minimumScaleFactor(0.8)
-                    
-                    Text("day\(entry.widgetData?.streak.current == 1 ? "" : "s")")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.8))
-                }
-                .padding(16)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: "flame.fill")
+                    .foregroundColor(.orange)
+                    .font(.system(size: 20))
+                Spacer()
+                Text("Tether")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
             }
+            
+            Spacer()
+            
+            Text("\(entry.widgetData?.streak.current ?? 0)")
+                .font(.system(size: 44, weight: .bold, design: .rounded))
+                .foregroundColor(.primary)
+            
+            Text("Day Streak")
+                .font(.caption)
+                .foregroundColor(.secondary)
         }
-        .widgetURL(URL(string: "tether://progress"))
+        .padding()
     }
 }
 
 struct TodayFocusWidgetView: View {
     var entry: Provider.Entry
-    @Environment(\.widgetFamily) var family
     
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                Color(red: 0.957, green: 0.945, blue: 0.871)
-                
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack {
-                        Text("TODAY'S FOCUS")
-                            .font(.system(size: 8, weight: .heavy))
-                            .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36).opacity(0.5))
-                            .tracking(1)
-                        Spacer()
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Today's Focus")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.secondary)
+                Spacer()
+                Image(systemName: "person.circle.fill")
+                    .foregroundColor(Color(red: 0.506, green: 0.561, blue: 0.604))
+            }
+            
+            Spacer()
+            
+            if let focus = entry.widgetData?.todayFocus {
+                HStack(spacing: 12) {
+                    ZStack {
                         Circle()
                             .fill(Color(red: 0.878, green: 0.478, blue: 0.373))
-                            .frame(width: 6, height: 6)
+                            .frame(width: 44, height: 44)
+                        Text(focus.friendInitials)
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.white)
                     }
                     
-                    Spacer()
-                    
-                    if let focus = entry.widgetData?.todayFocus {
-                        HStack(spacing: 10) {
-                            ZStack {
-                                Circle()
-                                    .fill(LinearGradient(
-                                        colors: [Color(red: 0.878, green: 0.478, blue: 0.373), Color(red: 0.95, green: 0.55, blue: 0.4)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ))
-                                    .frame(width: 40, height: 40)
-                                Text(focus.friendInitials)
-                                    .font(.system(size: 15, weight: .bold))
-                                    .foregroundColor(.white)
-                            }
-                            
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(focus.friendName)
-                                    .font(.system(size: 15, weight: .bold))
-                                    .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36))
-                                    .lineLimit(1)
-                                HStack(spacing: 3) {
-                                    Image(systemName: "clock")
-                                        .font(.system(size: 9))
-                                    Text("\(focus.daysSinceContact)d ago")
-                                        .font(.system(size: 11, weight: .medium))
-                                }
-                                .foregroundColor(focus.daysSinceContact > 7 ? Color(red: 0.878, green: 0.478, blue: 0.373) : Color(red: 0.24, green: 0.25, blue: 0.36).opacity(0.5))
-                            }
-                            
-                            if family == .systemMedium {
-                                Spacer()
-                                
-                                HStack(spacing: 8) {
-                                    Image(systemName: "phone.fill")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(Color(red: 0.506, green: 0.698, blue: 0.604))
-                                        .frame(width: 32, height: 32)
-                                        .background(Color(red: 0.506, green: 0.698, blue: 0.604).opacity(0.15))
-                                        .clipShape(Circle())
-                                    
-                                    Image(systemName: "message.fill")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(Color(red: 0.506, green: 0.698, blue: 0.604))
-                                        .frame(width: 32, height: 32)
-                                        .background(Color(red: 0.506, green: 0.698, blue: 0.604).opacity(0.15))
-                                        .clipShape(Circle())
-                                }
-                            }
-                        }
-                    } else {
-                        VStack(alignment: .leading, spacing: 3) {
-                            HStack(spacing: 5) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(Color(red: 0.506, green: 0.698, blue: 0.604))
-                                    .font(.system(size: 14))
-                                Text("All caught up!")
-                                    .font(.system(size: 15, weight: .bold))
-                                    .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36))
-                            }
-                            Text("Great job staying connected")
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36).opacity(0.5))
-                        }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(focus.friendName)
+                            .font(.headline)
+                            .lineLimit(1)
+                        Text("\(focus.daysSinceContact) days ago")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
                 }
-                .padding(16)
+            } else {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("All caught up!")
+                        .font(.headline)
+                    Text("Great job staying connected")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
             }
         }
-        .widgetURL(URL(string: "tether://today"))
+        .padding()
     }
 }
 
 struct GardenWidgetView: View {
     var entry: Provider.Entry
     
-    var plantIcon: String {
+    var plantEmoji: String {
         let stage = entry.widgetData?.garden.plantStage ?? 1
         switch stage {
-        case 1: return "leaf"
-        case 2: return "leaf.fill"
-        case 3: return "camera.macro"
-        case 4: return "tree"
-        case 5: return "tree.fill"
-        default: return "leaf"
+        case 1: return "🌱"
+        case 2: return "🌿"
+        case 3: return "🪴"
+        case 4: return "🌳"
+        case 5: return "🌲"
+        default: return "🌱"
         }
     }
     
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                LinearGradient(
-                    colors: [Color(red: 0.506, green: 0.698, blue: 0.604), Color(red: 0.4, green: 0.6, blue: 0.5)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack {
-                        Text("GARDEN")
-                            .font(.system(size: 8, weight: .heavy))
-                            .foregroundColor(.white.opacity(0.7))
-                            .tracking(1)
-                        Spacer()
-                        Text("LVL")
-                            .font(.system(size: 8, weight: .heavy))
-                            .foregroundColor(.white.opacity(0.6))
-                    }
-                    
-                    HStack {
-                        Spacer()
-                        Text("\(entry.widgetData?.garden.level ?? 1)")
-                            .font(.system(size: 26, weight: .black, design: .rounded))
-                            .foregroundColor(.white)
-                    }
-                    
-                    Spacer()
-                    
-                    Image(systemName: plantIcon)
-                        .font(.system(size: 32, weight: .medium))
-                        .foregroundColor(.white)
-                    
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(Color.white.opacity(0.3))
-                            .frame(height: 5)
-                        
-                        let xpVal = entry.widgetData?.garden.xp ?? 0
-                        let xpMax = max(entry.widgetData?.garden.xpToNextLevel ?? 100, 1)
-                        let progress = Double(xpVal) / Double(xpMax)
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(Color.white)
-                            .frame(width: (geometry.size.width - 32) * CGFloat(min(progress, 1.0)), height: 5)
-                    }
-                    .frame(height: 5)
-                    
-                    Text("\(entry.widgetData?.garden.xp ?? 0) / \(entry.widgetData?.garden.xpToNextLevel ?? 100) XP")
-                        .font(.system(size: 9, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.8))
-                }
-                .padding(16)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Garden")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.secondary)
+                Spacer()
             }
+            
+            Spacer()
+            
+            HStack {
+                Text(plantEmoji)
+                    .font(.system(size: 36))
+                
+                Spacer()
+                
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("Level \(entry.widgetData?.garden.level ?? 1)")
+                        .font(.headline)
+                    Text("\(entry.widgetData?.garden.xp ?? 0) XP")
+                        .font(.caption)
+                        .foregroundColor(Color(red: 0.506, green: 0.698, blue: 0.604))
+                }
+            }
+            
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(height: 6)
+                    
+                    let progress = Double(entry.widgetData?.garden.xp ?? 0) / Double(entry.widgetData?.garden.xpToNextLevel ?? 100)
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color(red: 0.506, green: 0.698, blue: 0.604))
+                        .frame(width: geo.size.width * CGFloat(min(progress, 1.0)), height: 6)
+                }
+            }
+            .frame(height: 6)
         }
-        .widgetURL(URL(string: "tether://garden"))
+        .padding()
     }
 }
 
 struct QuickLogWidgetView: View {
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                LinearGradient(
-                    colors: [Color(red: 0.24, green: 0.25, blue: 0.36), Color(red: 0.35, green: 0.36, blue: 0.5)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                
-                VStack(spacing: 6) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.white.opacity(0.15))
-                            .frame(width: 50, height: 50)
-                        
-                        Image(systemName: "plus")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(.white)
-                    }
-                    
-                    Text("Quick Log")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(.white)
-                }
-            }
+        VStack(spacing: 12) {
+            Image(systemName: "plus.circle.fill")
+                .font(.system(size: 32))
+                .foregroundColor(Color(red: 0.878, green: 0.478, blue: 0.373))
+            
+            Text("Quick Log")
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundColor(.primary)
         }
-        .widgetURL(URL(string: "tether://quicklog"))
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
 struct StatsWidgetView: View {
     var entry: Provider.Entry
-    @Environment(\.widgetFamily) var family
     
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                Color(red: 0.957, green: 0.945, blue: 0.871)
-                
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack {
-                        Text("THIS WEEK")
-                            .font(.system(size: 8, weight: .heavy))
-                            .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36).opacity(0.5))
-                            .tracking(1)
-                        Spacer()
-                        Image(systemName: "chart.bar.fill")
-                            .foregroundColor(Color(red: 0.506, green: 0.698, blue: 0.604))
-                            .font(.system(size: 12))
-                    }
-                    
-                    Spacer()
-                    
-                    if family == .systemMedium {
-                        HStack(spacing: 12) {
-                            StatItem(
-                                value: entry.widgetData?.stats.connectionsThisWeek ?? 0,
-                                label: "Connections",
-                                color: Color(red: 0.506, green: 0.698, blue: 0.604)
-                            )
-                            
-                            StatItem(
-                                value: entry.widgetData?.stats.overdueCount ?? 0,
-                                label: "Overdue",
-                                color: (entry.widgetData?.stats.overdueCount ?? 0) > 0 ? Color(red: 0.878, green: 0.478, blue: 0.373) : Color(red: 0.24, green: 0.25, blue: 0.36)
-                            )
-                            
-                            StatItem(
-                                value: entry.widgetData?.stats.upcomingBirthdays ?? 0,
-                                label: "Birthdays",
-                                color: Color(red: 0.545, green: 0.361, blue: 0.965)
-                            )
-                        }
-                    } else {
-                        HStack(spacing: 12) {
-                            VStack(alignment: .leading, spacing: 0) {
-                                Text("\(entry.widgetData?.stats.connectionsThisWeek ?? 0)")
-                                    .font(.system(size: 26, weight: .black, design: .rounded))
-                                    .foregroundColor(Color(red: 0.506, green: 0.698, blue: 0.604))
-                                Text("connections")
-                                    .font(.system(size: 9, weight: .semibold))
-                                    .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36).opacity(0.5))
-                            }
-                            
-                            Spacer()
-                            
-                            if (entry.widgetData?.stats.overdueCount ?? 0) > 0 {
-                                VStack(alignment: .trailing, spacing: 0) {
-                                    Text("\(entry.widgetData?.stats.overdueCount ?? 0)")
-                                        .font(.system(size: 18, weight: .bold, design: .rounded))
-                                        .foregroundColor(Color(red: 0.878, green: 0.478, blue: 0.373))
-                                    Text("overdue")
-                                        .font(.system(size: 9, weight: .semibold))
-                                        .foregroundColor(Color(red: 0.878, green: 0.478, blue: 0.373).opacity(0.7))
-                                }
-                            }
-                        }
-                    }
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("This Week")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.secondary)
+                Spacer()
+                Image(systemName: "chart.bar.fill")
+                    .foregroundColor(Color(red: 0.506, green: 0.698, blue: 0.604))
+            }
+            
+            Spacer()
+            
+            HStack(spacing: 16) {
+                VStack(alignment: .leading) {
+                    Text("\(entry.widgetData?.stats.connectionsThisWeek ?? 0)")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    Text("Connections")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
                 }
-                .padding(16)
+                
+                Spacer()
+                
+                VStack(alignment: .leading) {
+                    Text("\(entry.widgetData?.stats.overdueCount ?? 0)")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(entry.widgetData?.stats.overdueCount ?? 0 > 0 ? .orange : .primary)
+                    Text("Overdue")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
             }
         }
-        .widgetURL(URL(string: "tether://insights"))
-    }
-}
-
-struct StatItem: View {
-    let value: Int
-    let label: String
-    let color: Color
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text("\(value)")
-                .font(.system(size: 22, weight: .black, design: .rounded))
-                .foregroundColor(color)
-            Text(label)
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36).opacity(0.5))
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
     }
 }
 
@@ -434,11 +297,11 @@ struct StreakWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             StreakWidgetView(entry: entry)
+                .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Streak")
         .description("Track your daily connection streak")
         .supportedFamilies([.systemSmall])
-        .contentMarginsDisabled()
     }
 }
 
@@ -448,11 +311,11 @@ struct TodayFocusWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             TodayFocusWidgetView(entry: entry)
+                .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Today's Focus")
         .description("See who to connect with today")
         .supportedFamilies([.systemSmall, .systemMedium])
-        .contentMarginsDisabled()
     }
 }
 
@@ -462,11 +325,11 @@ struct GardenWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             GardenWidgetView(entry: entry)
+                .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Garden")
         .description("Watch your connection garden grow")
         .supportedFamilies([.systemSmall])
-        .contentMarginsDisabled()
     }
 }
 
@@ -475,12 +338,14 @@ struct QuickLogWidget: Widget {
     
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
-            QuickLogWidgetView()
+            Link(destination: URL(string: "tether://quicklog")!) {
+                QuickLogWidgetView()
+            }
+            .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Quick Log")
         .description("Quickly log a connection")
         .supportedFamilies([.systemSmall])
-        .contentMarginsDisabled()
     }
 }
 
@@ -490,10 +355,10 @@ struct StatsWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             StatsWidgetView(entry: entry)
+                .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Weekly Stats")
         .description("Your connection statistics")
         .supportedFamilies([.systemSmall, .systemMedium])
-        .contentMarginsDisabled()
     }
 }
