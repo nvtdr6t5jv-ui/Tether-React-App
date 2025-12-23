@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform, NativeModules } from 'react-native';
+import { Platform } from 'react-native';
+import SharedGroupPreferences from 'react-native-shared-group-preferences';
 
 const APP_GROUP_ID = 'group.com.social.tether';
 const WIDGET_DATA_KEY = '@tether_widget_data';
@@ -59,6 +60,7 @@ const defaultWidgetData: WidgetData = {
 
 class WidgetService {
   private widgetData: WidgetData = defaultWidgetData;
+  private syncTimeout: ReturnType<typeof setTimeout> | null = null;
 
   async initialize(): Promise<void> {
     try {
@@ -82,7 +84,12 @@ class WidgetService {
       await AsyncStorage.setItem(WIDGET_DATA_KEY, JSON.stringify(this.widgetData));
 
       if (Platform.OS === 'ios') {
-        await this.syncToNativeWidget();
+        if (this.syncTimeout) {
+          clearTimeout(this.syncTimeout);
+        }
+        this.syncTimeout = setTimeout(() => {
+          this.syncToAppGroup();
+        }, 500);
       }
     } catch (error) {
       console.error('Failed to update widget data:', error);
@@ -116,29 +123,16 @@ class WidgetService {
     });
   }
 
-  private async syncToNativeWidget(): Promise<void> {
+  private async syncToAppGroup(): Promise<void> {
     try {
-      if (NativeModules.TetherWidgetModule) {
-        await NativeModules.TetherWidgetModule.updateWidgetData(JSON.stringify(this.widgetData));
-      } else {
-        await this.writeToAppGroup();
-      }
+      await SharedGroupPreferences.setItem(
+        'widgetData',
+        this.widgetData,
+        APP_GROUP_ID
+      );
+      console.log('Widget data synced to App Group');
     } catch (error) {
-      console.error('Failed to sync to native widget:', error);
-    }
-  }
-
-  private async writeToAppGroup(): Promise<void> {
-    try {
-      if (NativeModules.SharedStorage) {
-        await NativeModules.SharedStorage.set(
-          'widgetData',
-          JSON.stringify(this.widgetData),
-          APP_GROUP_ID
-        );
-      }
-    } catch (error) {
-      console.log('SharedStorage not available, widgets may not update');
+      console.error('Failed to sync to App Group:', error);
     }
   }
 
@@ -147,9 +141,9 @@ class WidgetService {
   }
 
   async refreshAllWidgets(): Promise<void> {
-    if (Platform.OS === 'ios' && NativeModules.TetherWidgetModule) {
+    if (Platform.OS === 'ios') {
       try {
-        await NativeModules.TetherWidgetModule.reloadAllTimelines();
+        await this.syncToAppGroup();
       } catch (error) {
         console.error('Failed to refresh widgets:', error);
       }

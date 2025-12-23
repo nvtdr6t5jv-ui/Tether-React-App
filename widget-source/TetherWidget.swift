@@ -55,7 +55,7 @@ struct Provider: TimelineProvider {
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<TetherEntry>) -> ()) {
         let currentDate = Date()
-        let refreshDate = Calendar.current.date(byAdding: .minute, value: 30, to: currentDate)!
+        let refreshDate = Calendar.current.date(byAdding: .minute, value: 15, to: currentDate)!
         
         let entry = TetherEntry(date: currentDate, widgetData: loadWidgetData())
         let timeline = Timeline(entries: [entry], policy: .after(refreshDate))
@@ -64,13 +64,29 @@ struct Provider: TimelineProvider {
     }
     
     private func loadWidgetData() -> WidgetData? {
-        guard let userDefaults = UserDefaults(suiteName: appGroupId),
-              let jsonString = userDefaults.string(forKey: "widgetData"),
-              let data = jsonString.data(using: .utf8) else {
+        guard let userDefaults = UserDefaults(suiteName: appGroupId) else {
             return nil
         }
         
-        return try? JSONDecoder().decode(WidgetData.self, from: data)
+        if let jsonString = userDefaults.string(forKey: "widgetData"),
+           let data = jsonString.data(using: .utf8) {
+            return try? JSONDecoder().decode(WidgetData.self, from: data)
+        }
+        
+        if let dict = userDefaults.dictionary(forKey: "widgetData") {
+            do {
+                let data = try JSONSerialization.data(withJSONObject: dict)
+                return try JSONDecoder().decode(WidgetData.self, from: data)
+            } catch {
+                return nil
+            }
+        }
+        
+        if let data = userDefaults.data(forKey: "widgetData") {
+            return try? JSONDecoder().decode(WidgetData.self, from: data)
+        }
+        
+        return nil
     }
 }
 
