@@ -1,6 +1,6 @@
 const { withInfoPlist, withEntitlementsPlist, withXcodeProject } = require('@expo/config-plugins');
 
-const APP_GROUP_ID = 'group.com.tether.app';
+const APP_GROUP_ID = 'group.com.social.tether';
 
 const withAppGroups = (config) => {
   config = withEntitlementsPlist(config, (config) => {

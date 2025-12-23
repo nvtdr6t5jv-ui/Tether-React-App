@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform, NativeModules } from 'react-native';
 
-const APP_GROUP_ID = 'group.com.tether.app';
+const APP_GROUP_ID = 'group.com.social.tether';
 const WIDGET_DATA_KEY = '@tether_widget_data';
 
 export interface WidgetData {

@@ -15,11 +15,11 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tether.app",
+      "bundleIdentifier": "com.social.tether",
       "usesAppleSignIn": true,
       "entitlements": {
         "aps-environment": "development",
-        "com.apple.security.application-groups": ["group.com.tether.app"]
+        "com.apple.security.application-groups": ["group.com.social.tether"]
       },
       "infoPlist": {
         "NSContactsUsageDescription": "Tether needs access to your contacts to help you find and add friends quickly.",
@@ -35,7 +35,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.tether.app",
+      "package": "com.social.tether",
       "permissions": [
         "android.permission.READ_CONTACTS",
         "android.permission.READ_CALENDAR",
