@@ -12,6 +12,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useApp } from '../context/AppContext';
 import { SwipeableScreen } from '../components/SwipeableScreen';
+import { UserAvatar } from '../components/UserAvatar';
 
 interface EditProfileScreenProps {
   onBack: () => void;
@@ -19,7 +20,7 @@ interface EditProfileScreenProps {
 }
 
 export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ onBack, onSave }) => {
-  const { userProfile, updateUserProfile } = useApp();
+  const { userProfile, updateUserProfile, premiumStatus } = useApp();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -105,18 +106,17 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ onBack, on
         >
           <TouchableOpacity
             style={{
-              width: 120,
-              height: 120,
-              borderRadius: 60,
-              backgroundColor: '#E07A5F',
-              alignItems: 'center',
-              justifyContent: 'center',
               marginBottom: 24,
+              position: 'relative',
             }}
           >
-            <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 40, color: '#FFF' }}>
-              {name.trim() ? name.trim().charAt(0).toUpperCase() : 'A'}
-            </Text>
+            <UserAvatar
+              name={name.trim() || userProfile?.name}
+              photo={userProfile?.photo}
+              size={120}
+              isPremium={premiumStatus.isPremium}
+              fontSize={40}
+            />
             <View
               style={{
                 position: 'absolute',

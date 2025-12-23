@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  Image,
   Switch,
   Alert,
   ActivityIndicator,
@@ -14,6 +13,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useApp } from '../context/AppContext';
 import { exportService } from '../services/ExportService';
+import { UserAvatar } from '../components/UserAvatar';
 
 interface SettingsScreenProps {
   onNavigateToNotifications: () => void;
@@ -175,52 +175,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         </Animated.View>
 
         <Animated.View entering={FadeIn.delay(200).duration(400)} style={{ alignItems: 'center', marginTop: 16, marginBottom: 32 }}>
-          <View
-            style={{
-              width: 116,
-              height: 116,
-              borderRadius: 58,
-              backgroundColor: premiumStatus.isPremium ? '#FFD700' : '#FFF',
-              padding: premiumStatus.isPremium ? 3 : 4,
-              shadowColor: premiumStatus.isPremium ? '#FFD700' : '#3D405B',
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: premiumStatus.isPremium ? 0.3 : 0.08,
-              shadowRadius: 24,
-              elevation: 4,
-            }}
-          >
-            <View
-              style={{
-                width: '100%',
-                height: '100%',
-                borderRadius: 55,
-                backgroundColor: '#FFF',
-                padding: 3,
-              }}
-            >
-              {userProfile?.photo ? (
-                <Image
-                  source={{ uri: userProfile.photo }}
-                  style={{ width: '100%', height: '100%', borderRadius: 52 }}
-                />
-              ) : (
-                <View
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    borderRadius: 52,
-                    backgroundColor: '#E07A5F',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 36, color: '#FFF' }}>
-                    {userProfile?.name?.charAt(0) || 'A'}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </View>
+          <UserAvatar
+            name={userProfile?.name}
+            photo={userProfile?.photo}
+            size={112}
+            isPremium={premiumStatus.isPremium}
+            fontSize={36}
+          />
           <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 24, color: '#3D405B', marginTop: 16 }}>
             {userProfile?.name || 'Alex Rivera'}
           </Text>

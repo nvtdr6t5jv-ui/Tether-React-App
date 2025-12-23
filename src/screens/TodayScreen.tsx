@@ -31,6 +31,7 @@ import { DrawerModal } from "../components/DrawerModal";
 import { QuickLogModal } from "../components/QuickLogModal";
 import { DailyCheckInModal } from "../components/DailyCheckInModal";
 import { MilestoneModal } from "../components/MilestoneModal";
+import { UserAvatar } from "../components/UserAvatar";
 
 const { width } = Dimensions.get("window");
 const ORBIT_SIZE = width - 64;
@@ -416,6 +417,7 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
     getOverdueFriends,
     getUpcomingBirthdays,
     userProfile,
+    premiumStatus,
   } = useApp();
   
   const {
@@ -584,22 +586,13 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
               </Text>
             </View>
             <TouchableOpacity onPress={() => setShowDailyCheckIn(true)}>
-              <View
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 24,
-                  backgroundColor: "#E07A5F",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderWidth: 2,
-                  borderColor: "#FFF",
-                }}
-              >
-                <Text style={{ fontFamily: "Fraunces_600SemiBold", fontSize: 18, color: "#FFF" }}>
-                  {userProfile?.name?.charAt(0) || 'A'}
-                </Text>
-              </View>
+              <UserAvatar
+                name={userProfile?.name}
+                photo={userProfile?.photo}
+                size={48}
+                isPremium={premiumStatus.isPremium}
+                fontSize={18}
+              />
               {todaysFocus.length > 0 && (
                 <View
                   style={{
@@ -668,25 +661,16 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
                 <Animated.View
                   entering={ZoomIn.delay(200).duration(500).springify()}
                   style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: 28,
-                    backgroundColor: "#E07A5F",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderWidth: 3,
-                    borderColor: "#FFF",
-                    shadowColor: "#E07A5F",
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 8,
-                    elevation: 4,
                     zIndex: 10,
                   }}
                 >
-                  <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 14, color: "#FFF" }}>
-                    {userProfile?.name?.charAt(0) || 'Me'}
-                  </Text>
+                  <UserAvatar
+                    name={userProfile?.name || 'Me'}
+                    photo={userProfile?.photo}
+                    size={56}
+                    isPremium={premiumStatus.isPremium}
+                    fontSize={14}
+                  />
                 </Animated.View>
 
                 {friendsByOrbit.inner.map((friend, i) => (
