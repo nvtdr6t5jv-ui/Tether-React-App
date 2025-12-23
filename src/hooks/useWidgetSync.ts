@@ -41,9 +41,10 @@ export const useWidgetSync = () => {
         await widgetService.updateTodayFocus(null);
       }
 
-      const level = gamificationState?.level ?? 1;
-      const xp = gamificationState?.xp ?? 0;
-      const xpToNextLevel = level * 100;
+      const levelData = gamificationState?.level;
+      const level = levelData?.level ?? 1;
+      const xp = levelData?.currentXP ?? 0;
+      const xpToNextLevel = levelData?.xpToNextLevel ?? 100;
       const plantStage = Math.min(5, Math.floor(level / 2) + 1);
 
       await widgetService.updateGarden({
