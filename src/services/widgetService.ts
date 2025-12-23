@@ -59,78 +59,97 @@ const defaultWidgetData: WidgetData = {
 };
 
 class WidgetService {
-  private widgetData: WidgetData = defaultWidgetData;
-  private syncTimeout: ReturnType<typeof setTimeout> | null = null;
+  private widgetData: WidgetData = { ...defaultWidgetData };
+  private pendingSync: boolean = false;
+  private syncTimer: ReturnType<typeof setTimeout> | null = null;
 
   async initialize(): Promise<void> {
     try {
       const stored = await AsyncStorage.getItem(WIDGET_DATA_KEY);
       if (stored) {
-        this.widgetData = JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        this.widgetData = {
+          ...defaultWidgetData,
+          ...parsed,
+          garden: { ...defaultWidgetData.garden, ...parsed.garden },
+          streak: { ...defaultWidgetData.streak, ...parsed.streak },
+          stats: { ...defaultWidgetData.stats, ...parsed.stats },
+          premium: { ...defaultWidgetData.premium, ...parsed.premium },
+        };
       }
     } catch (error) {
       console.error('Failed to initialize widget data:', error);
     }
   }
 
-  async updateWidgetData(updates: Partial<WidgetData>): Promise<void> {
+  private async saveAndSync(): Promise<void> {
     try {
-      this.widgetData = {
-        ...this.widgetData,
-        ...updates,
-        lastSynced: new Date().toISOString(),
-      };
-
+      this.widgetData.lastSynced = new Date().toISOString();
       await AsyncStorage.setItem(WIDGET_DATA_KEY, JSON.stringify(this.widgetData));
 
       if (Platform.OS === 'ios') {
-        if (this.syncTimeout) {
-          clearTimeout(this.syncTimeout);
-        }
-        this.syncTimeout = setTimeout(() => {
-          this.syncToAppGroup();
-        }, 500);
+        await this.syncToAppGroup();
       }
     } catch (error) {
-      console.error('Failed to update widget data:', error);
+      console.error('Failed to save widget data:', error);
     }
   }
 
+  private schedulSync(): void {
+    if (this.syncTimer) {
+      clearTimeout(this.syncTimer);
+    }
+    this.syncTimer = setTimeout(() => {
+      this.saveAndSync();
+    }, 100);
+  }
+
   async updateStreak(current: number): Promise<void> {
-    await this.updateWidgetData({
-      streak: {
-        current,
-        lastUpdated: new Date().toISOString(),
-      },
-    });
+    this.widgetData.streak = {
+      current,
+      lastUpdated: new Date().toISOString(),
+    };
+    this.schedulSync();
   }
 
   async updateTodayFocus(focus: WidgetData['todayFocus']): Promise<void> {
-    await this.updateWidgetData({ todayFocus: focus });
+    this.widgetData.todayFocus = focus;
+    this.schedulSync();
   }
 
   async updateGarden(garden: WidgetData['garden']): Promise<void> {
-    await this.updateWidgetData({ garden });
+    this.widgetData.garden = {
+      plantStage: garden.plantStage ?? 1,
+      level: garden.level ?? 1,
+      xp: garden.xp ?? 0,
+      xpToNextLevel: garden.xpToNextLevel ?? 100,
+    };
+    console.log('Garden updated in widget service:', this.widgetData.garden);
+    this.schedulSync();
   }
 
   async updateStats(stats: WidgetData['stats']): Promise<void> {
-    await this.updateWidgetData({ stats });
+    this.widgetData.stats = {
+      connectionsThisWeek: stats.connectionsThisWeek ?? 0,
+      overdueCount: stats.overdueCount ?? 0,
+      upcomingBirthdays: stats.upcomingBirthdays ?? 0,
+    };
+    this.schedulSync();
   }
 
   async updatePremiumStatus(isPremium: boolean, plan?: string): Promise<void> {
-    await this.updateWidgetData({
-      premium: { isPremium, plan },
-    });
+    this.widgetData.premium = { isPremium, plan };
+    this.schedulSync();
   }
 
   private async syncToAppGroup(): Promise<void> {
     try {
+      console.log('Syncing to App Group:', JSON.stringify(this.widgetData, null, 2));
       await SharedGroupPreferences.setItem(
         'widgetData',
         this.widgetData,
         APP_GROUP_ID
       );
-      console.log('Widget data synced to App Group');
     } catch (error) {
       console.error('Failed to sync to App Group:', error);
     }
@@ -143,7 +162,7 @@ class WidgetService {
   async refreshAllWidgets(): Promise<void> {
     if (Platform.OS === 'ios') {
       try {
-        await this.syncToAppGroup();
+        await this.saveAndSync();
       } catch (error) {
         console.error('Failed to refresh widgets:', error);
       }

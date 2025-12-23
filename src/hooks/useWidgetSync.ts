@@ -44,10 +44,23 @@ export const useWidgetSync = () => {
       }
 
       const levelData = gamificationState?.level;
-      const level = levelData?.level ?? 1;
-      const xp = levelData?.currentXP ?? 0;
-      const xpToNextLevel = levelData?.xpToNextLevel ?? 100;
+      let level = 1;
+      let xp = 0;
+      let xpToNextLevel = 100;
+
+      if (levelData) {
+        if (typeof levelData === 'object') {
+          level = levelData.level ?? 1;
+          xp = levelData.currentXP ?? levelData.totalXP ?? 0;
+          xpToNextLevel = levelData.xpToNextLevel ?? 100;
+        } else if (typeof levelData === 'number') {
+          level = levelData;
+        }
+      }
+
       const plantStage = Math.min(5, Math.floor(level / 2) + 1);
+
+      console.log('Widget Garden Sync:', { level, xp, xpToNextLevel, plantStage, levelData });
 
       await widgetService.updateGarden({
         plantStage,
@@ -92,14 +105,23 @@ export const useWidgetSync = () => {
   }, [syncWidgetData]);
 
   useEffect(() => {
-    syncWidgetData();
+    const timer = setTimeout(() => {
+      syncWidgetData();
+    }, 2000);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
-    if (friends && interactions) {
+    if (friends?.length > 0) {
       syncWidgetData();
     }
-  }, [syncWidgetData, friends, interactions]);
+  }, [syncWidgetData, friends]);
+
+  useEffect(() => {
+    if (interactions?.length > 0) {
+      syncWidgetData();
+    }
+  }, [syncWidgetData, interactions]);
 
   useEffect(() => {
     if (gamificationState?.level) {
@@ -108,10 +130,10 @@ export const useWidgetSync = () => {
   }, [gamificationState?.level, syncWidgetData]);
 
   useEffect(() => {
-    if (streakData) {
+    if (streakData?.currentStreak !== undefined) {
       syncWidgetData();
     }
-  }, [streakData, syncWidgetData]);
+  }, [streakData?.currentStreak, syncWidgetData]);
 
   return { syncWidgetData };
 };
