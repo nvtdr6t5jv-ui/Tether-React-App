@@ -17,31 +17,32 @@ export const useWidgetSync = () => {
     try {
       await widgetService.initialize();
 
-      await widgetService.updateStreak(streakData.currentStreak);
+      const currentStreak = streakData?.currentStreak ?? 0;
+      await widgetService.updateStreak(currentStreak);
 
-      const overdueFriends = getOverdueFriends();
+      const overdueFriends = getOverdueFriends?.() ?? [];
       if (overdueFriends.length > 0) {
         const focusFriend = overdueFriends[0];
         const now = new Date();
-        const lastContactDate = focusFriend.lastContact ? new Date(focusFriend.lastContact) : null;
+        const lastContactDate = focusFriend?.lastContact ? new Date(focusFriend.lastContact) : null;
         const daysSinceContact = lastContactDate 
           ? Math.floor((now.getTime() - lastContactDate.getTime()) / (1000 * 60 * 60 * 24))
           : 999;
 
         await widgetService.updateTodayFocus({
-          friendName: focusFriend.name,
-          friendInitials: focusFriend.initials,
-          friendPhoto: focusFriend.photo,
+          friendName: focusFriend?.name ?? 'Someone',
+          friendInitials: focusFriend?.initials ?? '?',
+          friendPhoto: focusFriend?.photo,
           daysSinceContact,
-          orbitName: focusFriend.orbitId === 'inner' ? 'Favorites' : 
-                     focusFriend.orbitId === 'close' ? 'Friends' : 'Acquaintances',
+          orbitName: focusFriend?.orbitId === 'inner' ? 'Favorites' : 
+                     focusFriend?.orbitId === 'close' ? 'Friends' : 'Acquaintances',
         });
       } else {
         await widgetService.updateTodayFocus(null);
       }
 
-      const level = gamificationState.level || 1;
-      const xp = gamificationState.xp || 0;
+      const level = gamificationState?.level ?? 1;
+      const xp = gamificationState?.xp ?? 0;
       const xpToNextLevel = level * 100;
       const plantStage = Math.min(5, Math.floor(level / 2) + 1);
 
@@ -52,16 +53,21 @@ export const useWidgetSync = () => {
         xpToNextLevel,
       });
 
-      const stats = getSocialHealthStats();
+      const stats = getSocialHealthStats?.() ?? {
+        connectionsThisWeek: 0,
+        overdueCount: 0,
+        upcomingBirthdays: 0,
+      };
+      
       await widgetService.updateStats({
-        connectionsThisWeek: stats.connectionsThisWeek,
-        overdueCount: stats.overdueCount,
-        upcomingBirthdays: stats.upcomingBirthdays,
+        connectionsThisWeek: stats.connectionsThisWeek ?? 0,
+        overdueCount: stats.overdueCount ?? 0,
+        upcomingBirthdays: stats.upcomingBirthdays ?? 0,
       });
 
       await widgetService.updatePremiumStatus(
-        premiumStatus.isPremium,
-        premiumStatus.plan
+        premiumStatus?.isPremium ?? false,
+        premiumStatus?.plan
       );
 
       await widgetService.refreshAllWidgets();
@@ -71,8 +77,10 @@ export const useWidgetSync = () => {
   }, [friends, interactions, premiumStatus, gamificationState, streakData, getSocialHealthStats, getOverdueFriends]);
 
   useEffect(() => {
-    syncWidgetData();
-  }, [syncWidgetData]);
+    if (friends && interactions) {
+      syncWidgetData();
+    }
+  }, [syncWidgetData, friends, interactions]);
 
   return { syncWidgetData };
 };

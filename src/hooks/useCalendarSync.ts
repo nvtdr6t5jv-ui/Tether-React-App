@@ -204,7 +204,7 @@ export const useCalendarSync = () => {
   };
 
   const normalizeTitle = (title: string): string => {
-    return title.toLowerCase().trim().replace(/\s+/g, ' ');
+    return title.toLowerCase().trim().replace(/\s+/g, ' ').replace(/[^\w\s]/g, '');
   };
 
   const isSameEvent = (event1Title: string, event1Date: Date, event2Title: string, event2Date: Date): boolean => {
@@ -214,14 +214,9 @@ export const useCalendarSync = () => {
     const date1 = new Date(event1Date);
     const date2 = new Date(event2Date);
     
-    const sameDay = date1.getFullYear() === date2.getFullYear() &&
-                    date1.getMonth() === date2.getMonth() &&
-                    date1.getDate() === date2.getDate();
+    const sameDay = date1.toDateString() === date2.toDateString();
     
-    const timeDiff = Math.abs(date1.getTime() - date2.getTime());
-    const withinHour = timeDiff < 60 * 60 * 1000;
-    
-    return title1 === title2 && (sameDay || withinHour);
+    return title1 === title2 && sameDay;
   };
 
   const performAutoSync = async (
@@ -244,15 +239,20 @@ export const useCalendarSync = () => {
       let imported = 0;
       for (const event of events) {
         const exists = existingEvents.some(e => {
+          if (e.sourceCalendarId === event.calendarId && e.id.includes(event.id)) {
+            return true;
+          }
+          
           const existingDate = e.date instanceof Date ? e.date : new Date(e.date);
-          return isSameEvent(e.title, existingDate, event.title, event.startDate) ||
-                 e.id === `imported-${event.id}` ||
-                 e.id.startsWith(`imported-${event.id}-`);
+          const titleMatch = normalizeTitle(e.title) === normalizeTitle(event.title);
+          const sameDay = existingDate.toDateString() === event.startDate.toDateString();
+          
+          return titleMatch && sameDay;
         });
         
         if (!exists) {
           await addCalendarEvent({
-            id: `imported-${event.id}`,
+            id: `imported-${event.calendarId}-${event.id}-${Date.now()}`,
             title: event.title,
             date: event.startDate,
             type: 'custom',

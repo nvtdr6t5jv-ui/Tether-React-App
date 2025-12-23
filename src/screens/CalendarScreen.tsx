@@ -258,7 +258,21 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
         };
       });
     
-    return [...calendarEvents, ...birthdayEvents];
+    const deduplicatedEvents = calendarEvents.reduce((acc: CalendarEvent[], event) => {
+      const isDuplicate = acc.some(e => {
+        const eDate = e.date instanceof Date ? e.date : new Date(e.date);
+        const eventDate = event.date instanceof Date ? event.date : new Date(event.date);
+        const titleMatch = normalizeTitle(e.title) === normalizeTitle(event.title);
+        const sameDay = eDate.toDateString() === eventDate.toDateString();
+        return titleMatch && sameDay && e.id !== event.id;
+      });
+      if (!isDuplicate) {
+        acc.push(event);
+      }
+      return acc;
+    }, []);
+    
+    return [...deduplicatedEvents, ...birthdayEvents];
   }, [calendarEvents, friends, currentDate]);
 
   const eventsForDate = useCallback((date: Date) => {
