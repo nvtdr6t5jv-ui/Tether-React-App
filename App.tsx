@@ -20,6 +20,7 @@ import { OnboardingProvider } from "./src/context/OnboardingContext";
 import { AppProvider } from "./src/context/AppContext";
 import { GamificationProvider } from "./src/context/GamificationContext";
 import { AuthProvider } from "./src/context/AuthContext";
+import { WidgetProvider } from "./src/context/WidgetContext";
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -46,10 +47,12 @@ export default function App() {
         <AuthProvider>
           <AppProvider>
             <GamificationProvider>
-              <OnboardingProvider>
-                <StatusBar style="dark" />
-                <AppNavigator />
-              </OnboardingProvider>
+              <WidgetProvider>
+                <OnboardingProvider>
+                  <StatusBar style="dark" />
+                  <AppNavigator />
+                </OnboardingProvider>
+              </WidgetProvider>
             </GamificationProvider>
           </AppProvider>
         </AuthProvider>

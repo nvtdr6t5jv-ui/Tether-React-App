@@ -7,4 +7,6 @@ export type { NotificationData } from './notifications';
 export { purchasesService } from './purchases';
 export type { PremiumStatus, AvailablePackage } from './purchases';
 export { syncService } from './sync';
+export { widgetService } from './widgetService';
+export type { WidgetData } from './widgetService';
 export * from './database.types';

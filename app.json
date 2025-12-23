@@ -18,7 +18,8 @@
       "bundleIdentifier": "com.tether.app",
       "usesAppleSignIn": true,
       "entitlements": {
-        "aps-environment": "development"
+        "aps-environment": "development",
+        "com.apple.security.application-groups": ["group.com.tether.app"]
       },
       "infoPlist": {
         "NSContactsUsageDescription": "Tether needs access to your contacts to help you find and add friends quickly.",
@@ -67,7 +68,8 @@
           "color": "#E07A5F"
         }
       ],
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      "./plugins/withWidgetExtension"
     ],
     "extra": {
       "eas": {
