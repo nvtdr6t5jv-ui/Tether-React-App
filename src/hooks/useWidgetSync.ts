@@ -14,12 +14,63 @@ export const useWidgetSync = () => {
   } = useApp();
   const { gamificationState, streakData } = useGamification();
   const appState = useRef(AppState.currentState);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSyncData = useRef<string>('');
+  const isInitialized = useRef(false);
 
-  const syncWidgetData = useCallback(async () => {
+  const syncWidgetData = useCallback(async (force: boolean = false) => {
+    const hasValidStreak = streakData?.currentStreak !== undefined;
+    const hasValidGamification = gamificationState?.level !== undefined;
+    const hasValidPremium = premiumStatus !== undefined;
+    
+    if (!force && (!hasValidStreak || !hasValidGamification || !hasValidPremium)) {
+      return;
+    }
+
+    const currentStreak = streakData?.currentStreak ?? 0;
+    
+    let level = 1;
+    let xp = 0;
+    let xpToNextLevel = 100;
+    const levelData = gamificationState?.level;
+
+    if (levelData) {
+      if (typeof levelData === 'object') {
+        level = levelData.level ?? 1;
+        xp = levelData.currentXP ?? levelData.totalXP ?? 0;
+        xpToNextLevel = levelData.xpToNextLevel ?? 100;
+      } else if (typeof levelData === 'number') {
+        level = levelData;
+      }
+    }
+
+    const isPremium = premiumStatus?.isPremium ?? false;
+    const plan = premiumStatus?.plan;
+    
+    const stats = getSocialHealthStats?.() ?? {
+      connectionsThisWeek: 0,
+      overdueCount: 0,
+      upcomingBirthdays: 0,
+    };
+
+    const dataHash = JSON.stringify({
+      streak: currentStreak,
+      level,
+      xp,
+      isPremium,
+      plan,
+      stats: stats.connectionsThisWeek + stats.overdueCount + stats.upcomingBirthdays,
+      friendCount: friends?.length ?? 0,
+    });
+
+    if (!force && dataHash === lastSyncData.current) {
+      return;
+    }
+    lastSyncData.current = dataHash;
+
     try {
       await widgetService.initialize();
 
-      const currentStreak = streakData?.currentStreak ?? 0;
       await widgetService.updateStreak(currentStreak);
 
       const overdueFriends = getOverdueFriends?.() ?? [];
@@ -43,24 +94,7 @@ export const useWidgetSync = () => {
         await widgetService.updateTodayFocus(null);
       }
 
-      const levelData = gamificationState?.level;
-      let level = 1;
-      let xp = 0;
-      let xpToNextLevel = 100;
-
-      if (levelData) {
-        if (typeof levelData === 'object') {
-          level = levelData.level ?? 1;
-          xp = levelData.currentXP ?? levelData.totalXP ?? 0;
-          xpToNextLevel = levelData.xpToNextLevel ?? 100;
-        } else if (typeof levelData === 'number') {
-          level = levelData;
-        }
-      }
-
       const plantStage = Math.min(5, Math.floor(level / 2) + 1);
-
-      console.log('Widget Garden Sync:', { level, xp, xpToNextLevel, plantStage, levelData });
 
       await widgetService.updateGarden({
         plantStage,
@@ -69,71 +103,63 @@ export const useWidgetSync = () => {
         xpToNextLevel,
       });
 
-      const stats = getSocialHealthStats?.() ?? {
-        connectionsThisWeek: 0,
-        overdueCount: 0,
-        upcomingBirthdays: 0,
-      };
-      
       await widgetService.updateStats({
         connectionsThisWeek: stats.connectionsThisWeek ?? 0,
         overdueCount: stats.overdueCount ?? 0,
         upcomingBirthdays: stats.upcomingBirthdays ?? 0,
       });
 
-      await widgetService.updatePremiumStatus(
-        premiumStatus?.isPremium ?? false,
-        premiumStatus?.plan
-      );
+      await widgetService.updatePremiumStatus(isPremium, plan);
 
       await widgetService.refreshAllWidgets();
+      
+      isInitialized.current = true;
     } catch (error) {
       console.error('Failed to sync widget data:', error);
     }
   }, [friends, interactions, premiumStatus, gamificationState, streakData, getSocialHealthStats, getOverdueFriends]);
 
+  const debouncedSync = useCallback((force: boolean = false) => {
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+    debounceTimer.current = setTimeout(() => {
+      syncWidgetData(force);
+    }, 500);
+  }, [syncWidgetData]);
+
   useEffect(() => {
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-        syncWidgetData();
+        debouncedSync(true);
       }
       appState.current = nextAppState;
     };
 
     const subscription = AppState.addEventListener('change', handleAppStateChange);
     return () => subscription.remove();
-  }, [syncWidgetData]);
+  }, [debouncedSync]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      syncWidgetData();
-    }, 2000);
+      debouncedSync(false);
+    }, 3000);
     return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
-    if (friends?.length > 0) {
-      syncWidgetData();
+    if (isInitialized.current) {
+      debouncedSync(false);
     }
-  }, [syncWidgetData, friends]);
+  }, [friends?.length, interactions?.length, gamificationState?.level, streakData?.currentStreak, premiumStatus?.isPremium]);
 
   useEffect(() => {
-    if (interactions?.length > 0) {
-      syncWidgetData();
-    }
-  }, [syncWidgetData, interactions]);
+    return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+    };
+  }, []);
 
-  useEffect(() => {
-    if (gamificationState?.level) {
-      syncWidgetData();
-    }
-  }, [gamificationState?.level, syncWidgetData]);
-
-  useEffect(() => {
-    if (streakData?.currentStreak !== undefined) {
-      syncWidgetData();
-    }
-  }, [streakData?.currentStreak, syncWidgetData]);
-
-  return { syncWidgetData };
+  return { syncWidgetData: () => debouncedSync(true) };
 };

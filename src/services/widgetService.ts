@@ -60,10 +60,13 @@ const defaultWidgetData: WidgetData = {
 
 class WidgetService {
   private widgetData: WidgetData = { ...defaultWidgetData };
-  private pendingSync: boolean = false;
   private syncTimer: ReturnType<typeof setTimeout> | null = null;
+  private initialized: boolean = false;
+  private pendingUpdates: Partial<WidgetData> = {};
 
   async initialize(): Promise<void> {
+    if (this.initialized) return;
+    
     try {
       const stored = await AsyncStorage.getItem(WIDGET_DATA_KEY);
       if (stored) {
@@ -77,6 +80,7 @@ class WidgetService {
           premium: { ...defaultWidgetData.premium, ...parsed.premium },
         };
       }
+      this.initialized = true;
     } catch (error) {
       console.error('Failed to initialize widget data:', error);
     }
@@ -95,37 +99,45 @@ class WidgetService {
     }
   }
 
-  private schedulSync(): void {
+  private scheduleSync(): void {
     if (this.syncTimer) {
       clearTimeout(this.syncTimer);
     }
     this.syncTimer = setTimeout(() => {
       this.saveAndSync();
-    }, 100);
+    }, 300);
   }
 
   async updateStreak(current: number): Promise<void> {
-    this.widgetData.streak = {
-      current,
-      lastUpdated: new Date().toISOString(),
-    };
-    this.schedulSync();
+    if (current > 0 || this.widgetData.streak.current === 0) {
+      this.widgetData.streak = {
+        current,
+        lastUpdated: new Date().toISOString(),
+      };
+    }
+    this.scheduleSync();
   }
 
   async updateTodayFocus(focus: WidgetData['todayFocus']): Promise<void> {
     this.widgetData.todayFocus = focus;
-    this.schedulSync();
+    this.scheduleSync();
   }
 
   async updateGarden(garden: WidgetData['garden']): Promise<void> {
-    this.widgetData.garden = {
-      plantStage: garden.plantStage ?? 1,
-      level: garden.level ?? 1,
-      xp: garden.xp ?? 0,
-      xpToNextLevel: garden.xpToNextLevel ?? 100,
-    };
-    console.log('Garden updated in widget service:', this.widgetData.garden);
-    this.schedulSync();
+    const newLevel = garden.level ?? 1;
+    const newXp = garden.xp ?? 0;
+    const currentLevel = this.widgetData.garden.level;
+    const currentXp = this.widgetData.garden.xp;
+    
+    if (newLevel > currentLevel || (newLevel === currentLevel && newXp >= currentXp) || currentLevel === 1) {
+      this.widgetData.garden = {
+        plantStage: garden.plantStage ?? 1,
+        level: newLevel,
+        xp: newXp,
+        xpToNextLevel: garden.xpToNextLevel ?? 100,
+      };
+    }
+    this.scheduleSync();
   }
 
   async updateStats(stats: WidgetData['stats']): Promise<void> {
@@ -134,17 +146,18 @@ class WidgetService {
       overdueCount: stats.overdueCount ?? 0,
       upcomingBirthdays: stats.upcomingBirthdays ?? 0,
     };
-    this.schedulSync();
+    this.scheduleSync();
   }
 
   async updatePremiumStatus(isPremium: boolean, plan?: string): Promise<void> {
-    this.widgetData.premium = { isPremium, plan };
-    this.schedulSync();
+    if (isPremium || !this.widgetData.premium.isPremium) {
+      this.widgetData.premium = { isPremium, plan };
+    }
+    this.scheduleSync();
   }
 
   private async syncToAppGroup(): Promise<void> {
     try {
-      console.log('Syncing to App Group:', JSON.stringify(this.widgetData, null, 2));
       await SharedGroupPreferences.setItem(
         'widgetData',
         this.widgetData,
