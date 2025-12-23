@@ -105,6 +105,7 @@ struct StreakWidgetView: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
+        .widgetURL(URL(string: "tether://progress"))
     }
 }
 
@@ -158,6 +159,7 @@ struct TodayFocusWidgetView: View {
                 }
             }
         }
+        .widgetURL(URL(string: "tether://today"))
     }
 }
 
@@ -218,6 +220,7 @@ struct GardenWidgetView: View {
             }
             .frame(height: 5)
         }
+        .widgetURL(URL(string: "tether://garden"))
     }
 }
 
@@ -234,6 +237,7 @@ struct QuickLogWidgetView: View {
                 .foregroundColor(.primary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .widgetURL(URL(string: "tether://quicklog"))
     }
 }
 
@@ -278,6 +282,7 @@ struct StatsWidgetView: View {
                 }
             }
         }
+        .widgetURL(URL(string: "tether://insights"))
     }
 }
 
@@ -345,11 +350,9 @@ struct QuickLogWidget: Widget {
     
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
-            Link(destination: URL(string: "tether://quicklog")!) {
-                QuickLogWidgetView()
-            }
-            .padding(12)
-            .containerBackground(.fill.tertiary, for: .widget)
+            QuickLogWidgetView()
+                .padding(12)
+                .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Quick Log")
         .description("Quickly log a connection")

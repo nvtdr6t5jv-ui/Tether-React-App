@@ -15,7 +15,6 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  withSpring,
   runOnJS,
   FadeIn,
   FadeOut,
@@ -63,7 +62,7 @@ export const CompleteActionModal: React.FC<CompleteActionModalProps> = ({
 
   useEffect(() => {
     if (visible) {
-      translateY.value = withSpring(0, { damping: 20, stiffness: 90 });
+      translateY.value = withTiming(0, { duration: 300 });
       setNote('');
       setOutcome('completed');
     } else {
@@ -83,7 +82,7 @@ export const CompleteActionModal: React.FC<CompleteActionModalProps> = ({
           runOnJS(onClose)();
         });
       } else {
-        translateY.value = withSpring(0, { damping: 20 });
+        translateY.value = withTiming(0, { duration: 200 });
       }
     });
 

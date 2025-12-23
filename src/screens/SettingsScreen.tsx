@@ -348,7 +348,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
         {premiumStatus.isPremium ? (
           <Animated.View entering={FadeInUp.delay(500).duration(400)} style={{ paddingHorizontal: 20, marginTop: 24 }}>
-            <View
+            <TouchableOpacity
+              onPress={onNavigateToPremium}
+              activeOpacity={0.8}
               style={{
                 backgroundColor: '#81B29A',
                 borderRadius: 16,
@@ -385,11 +387,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                     </View>
                   </View>
                   <Text style={{ fontFamily: 'PlusJakartaSans_400Regular', fontSize: 14, color: 'rgba(255,255,255,0.9)', marginTop: 4 }}>
-                    Thank you for supporting Tether!
+                    Tap to manage your subscription
                   </Text>
                 </View>
+                <MaterialCommunityIcons name="chevron-right" size={24} color="rgba(255,255,255,0.7)" />
               </View>
-            </View>
+            </TouchableOpacity>
           </Animated.View>
         ) : (
           <Animated.View entering={FadeInUp.delay(500).duration(400)} style={{ paddingHorizontal: 20, marginTop: 24 }}>

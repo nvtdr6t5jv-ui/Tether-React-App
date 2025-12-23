@@ -464,8 +464,13 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         return c;
       });
       const newState = { ...prev, weeklyChallenges: newChallenges };
-      saveState(newState);
-      return newState;
+      const computedXP = calculateTotalXPFromState(newState);
+      const stateWithCorrectXP = {
+        ...newState,
+        level: calculateLevel(computedXP),
+      };
+      saveState(stateWithCorrectXP);
+      return stateWithCorrectXP;
     });
   }, []);
 
@@ -482,8 +487,13 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         ...prev,
         weeklyChallenges: newChallenges,
       };
-      saveState(newState);
-      return newState;
+      const computedXP = calculateTotalXPFromState(newState);
+      const stateWithCorrectXP = {
+        ...newState,
+        level: calculateLevel(computedXP),
+      };
+      saveState(stateWithCorrectXP);
+      return stateWithCorrectXP;
     });
   }, []);
 
@@ -500,8 +510,13 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         ...prev,
         achievements: newAchievements,
       };
-      saveState(newState);
-      return newState;
+      const computedXP = calculateTotalXPFromState(newState);
+      const stateWithCorrectXP = {
+        ...newState,
+        level: calculateLevel(computedXP),
+      };
+      saveState(stateWithCorrectXP);
+      return stateWithCorrectXP;
     });
 
     try {
@@ -543,8 +558,13 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         ...prev,
         achievements: newAchievements,
       };
-      saveState(newState);
-      return newState;
+      const computedXP = calculateTotalXPFromState(newState);
+      const stateWithCorrectXP = {
+        ...newState,
+        level: calculateLevel(computedXP),
+      };
+      saveState(stateWithCorrectXP);
+      return stateWithCorrectXP;
     });
     
     if (shouldSyncAchievement) {
