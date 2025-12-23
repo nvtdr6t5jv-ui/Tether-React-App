@@ -746,7 +746,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
                       setSelectedDate(suggestedDate);
                       setNewEventTitle(`Catch up with ${friend.name}`);
                       setNewEventType('meetup');
-                      setNewEventFriendId(friend.id);
+                      setNewEventFriendIds([friend.id]);
                       setShowAddEvent(true);
                     }}
                     style={{

@@ -6,11 +6,14 @@ import {
   ScrollView,
   TextInput,
   Alert,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import * as ImagePicker from 'expo-image-picker';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { SwipeableScreen } from '../components/SwipeableScreen';
 import { UserAvatar } from '../components/UserAvatar';
 
@@ -21,18 +24,39 @@ interface EditProfileScreenProps {
 
 export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ onBack, onSave }) => {
   const { userProfile, updateUserProfile, premiumStatus } = useApp();
+  const { user } = useAuth();
 
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [photo, setPhoto] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (userProfile) {
       setName(userProfile.name || '');
-      setEmail(userProfile.email || '');
+      setPhoto(userProfile.photo);
     }
   }, [userProfile]);
 
   const canSave = name.trim().length > 0;
+
+  const handlePickImage = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (!permissionResult.granted) {
+      Alert.alert('Permission Required', 'Please allow access to your photo library to change your profile picture.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setPhoto(result.assets[0].uri);
+    }
+  };
 
   const handleSave = async () => {
     if (!canSave) return;
@@ -40,7 +64,7 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ onBack, on
     try {
       await updateUserProfile({
         name: name.trim(),
-        email: email.trim() || undefined,
+        photo: photo,
       });
       onSave();
     } catch (error) {
@@ -105,18 +129,34 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ onBack, on
           }}
         >
           <TouchableOpacity
+            onPress={handlePickImage}
             style={{
               marginBottom: 24,
               position: 'relative',
             }}
           >
-            <UserAvatar
-              name={name.trim() || userProfile?.name}
-              photo={userProfile?.photo}
-              size={120}
-              isPremium={premiumStatus.isPremium}
-              fontSize={40}
-            />
+            {photo ? (
+              <View style={{ position: 'relative' }}>
+                <Image
+                  source={{ uri: photo }}
+                  style={{
+                    width: 120,
+                    height: 120,
+                    borderRadius: 60,
+                    borderWidth: premiumStatus.isPremium ? 3 : 2,
+                    borderColor: premiumStatus.isPremium ? '#FFD700' : '#FFF',
+                  }}
+                />
+              </View>
+            ) : (
+              <UserAvatar
+                name={name.trim() || userProfile?.name}
+                photo={undefined}
+                size={120}
+                isPremium={premiumStatus.isPremium}
+                fontSize={40}
+              />
+            )}
             <View
               style={{
                 position: 'absolute',
@@ -158,24 +198,26 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ onBack, on
 
           <View style={{ width: '100%' }}>
             <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12, color: 'rgba(61, 64, 91, 0.5)', marginBottom: 8 }}>
-              Email (optional)
+              Email
             </Text>
-            <TextInput
-              value={email}
-              onChangeText={setEmail}
-              placeholder="your@email.com"
-              placeholderTextColor="rgba(61, 64, 91, 0.3)"
-              keyboardType="email-address"
-              autoCapitalize="none"
+            <View
               style={{
-                backgroundColor: 'rgba(0,0,0,0.02)',
+                backgroundColor: 'rgba(0,0,0,0.04)',
                 borderRadius: 12,
                 padding: 16,
-                fontFamily: 'PlusJakartaSans_600SemiBold',
-                fontSize: 16,
-                color: '#3D405B',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
               }}
-            />
+            >
+              <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 16, color: 'rgba(61, 64, 91, 0.6)' }}>
+                {user?.email || 'Not available'}
+              </Text>
+              <MaterialCommunityIcons name="lock" size={16} color="rgba(61, 64, 91, 0.3)" />
+            </View>
+            <Text style={{ fontFamily: 'PlusJakartaSans_400Regular', fontSize: 11, color: 'rgba(61, 64, 91, 0.4)', marginTop: 6, marginLeft: 4 }}>
+              Email is linked to your account and cannot be changed
+            </Text>
           </View>
         </Animated.View>
 

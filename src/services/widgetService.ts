@@ -65,8 +65,6 @@ class WidgetService {
   private pendingUpdates: Partial<WidgetData> = {};
 
   async initialize(): Promise<void> {
-    if (this.initialized) return;
-    
     try {
       const stored = await AsyncStorage.getItem(WIDGET_DATA_KEY);
       if (stored) {
@@ -83,6 +81,7 @@ class WidgetService {
       this.initialized = true;
     } catch (error) {
       console.error('Failed to initialize widget data:', error);
+      this.initialized = true;
     }
   }
 

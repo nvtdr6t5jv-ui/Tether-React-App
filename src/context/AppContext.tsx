@@ -740,9 +740,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const getOverdueFriends = (): Friend[] => {
     const now = new Date();
-    return state.friends.filter(f => {
+    const overdue = state.friends.filter(f => {
+      if (!f.lastContact && !f.nextNudge) return true;
       if (!f.nextNudge) return true;
       return now > new Date(f.nextNudge);
+    });
+    return overdue.sort((a, b) => {
+      if (!a.lastContact && b.lastContact) return -1;
+      if (a.lastContact && !b.lastContact) return 1;
+      if (!a.lastContact && !b.lastContact) return 0;
+      return new Date(a.lastContact!).getTime() - new Date(b.lastContact!).getTime();
     });
   };
 

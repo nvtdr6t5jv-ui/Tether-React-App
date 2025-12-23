@@ -12,7 +12,7 @@ export const useWidgetSync = () => {
     getSocialHealthStats,
     getOverdueFriends,
   } = useApp();
-  const { gamificationState, streakData } = useGamification();
+  const { state: gamificationState, streakData } = useGamification();
   const appState = useRef(AppState.currentState);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSyncData = useRef<string>('');
@@ -151,7 +151,7 @@ export const useWidgetSync = () => {
     if (isInitialized.current) {
       debouncedSync(false);
     }
-  }, [friends?.length, interactions?.length, gamificationState?.level, streakData?.currentStreak, premiumStatus?.isPremium]);
+  }, [friends?.length, interactions, gamificationState?.level, streakData?.currentStreak, premiumStatus?.isPremium]);
 
   useEffect(() => {
     return () => {
