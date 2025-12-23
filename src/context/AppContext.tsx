@@ -876,6 +876,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const startDate = event.date instanceof Date ? event.date : new Date(event.date);
         const endDate = event.endDate ? (event.endDate instanceof Date ? event.endDate : new Date(event.endDate)) : null;
         
+        if (isNaN(startDate.getTime())) {
+          console.warn('Invalid calendar event date, skipping cloud sync');
+          return;
+        }
+        
         await api.calendarEvents.create({
           id: event.id,
           user_id: userId,
@@ -883,7 +888,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           title: event.title,
           description: event.notes || null,
           start_date: startDate.toISOString(),
-          end_date: endDate ? endDate.toISOString() : null,
+          end_date: endDate && !isNaN(endDate.getTime()) ? endDate.toISOString() : null,
           is_all_day: false,
           location: event.location || null,
         });
@@ -905,12 +910,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const startDate = updates.date ? (updates.date instanceof Date ? updates.date : new Date(updates.date)) : undefined;
         const endDate = updates.endDate ? (updates.endDate instanceof Date ? updates.endDate : new Date(updates.endDate)) : undefined;
         
+        const validStartDate = startDate && !isNaN(startDate.getTime()) ? startDate.toISOString() : undefined;
+        const validEndDate = endDate && !isNaN(endDate.getTime()) ? endDate.toISOString() : null;
+        
         await api.calendarEvents.update(eventId, {
           friend_id: updates.friendId || null,
           title: updates.title,
           description: updates.notes || null,
-          start_date: startDate ? startDate.toISOString() : undefined,
-          end_date: endDate ? endDate.toISOString() : null,
+          start_date: validStartDate,
+          end_date: validEndDate,
           location: updates.location || null,
         });
       } catch (e) {

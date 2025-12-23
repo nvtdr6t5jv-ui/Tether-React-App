@@ -183,8 +183,8 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
       const exists = calendarEvents.some(e => {
         const existingDate = e.date instanceof Date ? e.date : new Date(e.date);
         return isSameEvent(e.title, existingDate, event.title, event.startDate) ||
-               e.id === `imported-${event.id}` ||
-               e.id.startsWith(`imported-${event.id}-`);
+               (e.id && event.id && e.id === `imported-${event.id}`) ||
+               (e.id && event.id && e.id.startsWith(`imported-${event.id}-`));
       });
       
       if (!exists) {
@@ -609,7 +609,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
                           </Text>
                         )}
                       </View>
-                      {!event.id.startsWith('birthday-') && (
+                      {!event.id?.startsWith('birthday-') && (
                         <TouchableOpacity
                           onPress={() => handleToggleComplete(event)}
                           style={{
@@ -960,7 +960,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
         </View>
       </FullScreenDrawerModal>
 
-      <DrawerModal
+      <FullScreenDrawerModal
         visible={!!showEventDetail}
         onClose={() => setShowEventDetail(null)}
         title={showEventDetail?.title || ''}
@@ -1042,7 +1042,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
               </View>
             )}
 
-            {!showEventDetail.id.startsWith('birthday-') && (
+            {!showEventDetail.id?.startsWith('birthday-') && (
               <>
                 <TouchableOpacity
                   onPress={() => handleEditEvent(showEventDetail)}
@@ -1117,7 +1117,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onNavigateToProf
             </TouchableOpacity>
           </View>
         )}
-      </DrawerModal>
+      </FullScreenDrawerModal>
 
       <Modal
         visible={showSyncModal}
