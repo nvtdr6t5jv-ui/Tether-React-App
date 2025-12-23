@@ -58,6 +58,7 @@ export const CompleteActionModal: React.FC<CompleteActionModalProps> = ({
 }) => {
   const [note, setNote] = useState('');
   const [outcome, setOutcome] = useState<'completed' | 'no_response' | 'voicemail'>('completed');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const translateY = useSharedValue(SCREEN_HEIGHT);
 
   useEffect(() => {
@@ -65,6 +66,7 @@ export const CompleteActionModal: React.FC<CompleteActionModalProps> = ({
       translateY.value = withTiming(0, { duration: 300 });
       setNote('');
       setOutcome('completed');
+      setIsSubmitting(false);
     } else {
       translateY.value = withTiming(SCREEN_HEIGHT, { duration: 300 });
     }
@@ -90,8 +92,14 @@ export const CompleteActionModal: React.FC<CompleteActionModalProps> = ({
     transform: [{ translateY: translateY.value }],
   }));
 
-  const handleComplete = () => {
-    onComplete(pendingAction?.type || 'call', note, outcome);
+  const handleComplete = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await onComplete(pendingAction?.type || 'call', note, outcome);
+    } catch (error) {
+      setIsSubmitting(false);
+    }
   };
 
   const getTimeSinceAction = () => {
@@ -294,20 +302,21 @@ export const CompleteActionModal: React.FC<CompleteActionModalProps> = ({
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={handleComplete}
+                    disabled={isSubmitting}
                     style={{
                       flex: 2,
                       paddingVertical: 16,
                       borderRadius: 12,
-                      backgroundColor: '#81B29A',
+                      backgroundColor: isSubmitting ? 'rgba(129, 178, 154, 0.5)' : '#81B29A',
                       alignItems: 'center',
                       flexDirection: 'row',
                       justifyContent: 'center',
                       gap: 8,
                     }}
                   >
-                    <MaterialCommunityIcons name="check" size={20} color="#FFF" />
+                    <MaterialCommunityIcons name={isSubmitting ? "loading" : "check"} size={20} color="#FFF" />
                     <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 15, color: '#FFF' }}>
-                      Log Connection
+                      {isSubmitting ? 'Saving...' : 'Log Connection'}
                     </Text>
                   </TouchableOpacity>
                 </View>

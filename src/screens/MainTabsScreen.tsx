@@ -160,8 +160,15 @@ export const MainTabsScreen = () => {
         updateChallengeProgress(callChallenge.id, callChallenge.progress + 1);
       }
     }
+    if (type === 'text') {
+      const textChallenge = challenges.find(c => c.type === 'messages' && !c.isCompleted);
+      if (textChallenge) {
+        updateChallengeProgress(textChallenge.id, textChallenge.progress + 1);
+      }
+    }
     
     clearPendingAction();
+    setShowCompleteModal(false);
   };
 
   const handleDiscardAction = () => {

@@ -516,7 +516,7 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
 
     const callCount = interactions.filter(i => i.type === 'call').length + (type === 'call' ? 1 : 0);
     const textCount = interactions.filter(i => i.type === 'text').length + (type === 'text' ? 1 : 0);
-    const inPersonCount = interactions.filter(i => i.type === 'in_person').length + (type === 'in_person' ? 1 : 0);
+    const inPersonCount = interactions.filter(i => i.type === 'in_person' || i.type === 'meetup').length + ((type === 'in_person' || type === 'meetup') ? 1 : 0);
     
     const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const weekInteractions = interactions.filter(i => new Date(i.date) >= oneWeekAgo);
@@ -542,10 +542,16 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigate, onNavigate
         updateChallengeProgress(callChallenge.id, callChallenge.progress + 1);
       }
     }
-    if (type === 'in_person') {
-      const meetChallenge = challenges.find(c => c.type === 'in_person' && !c.isCompleted);
+    if (type === 'in_person' || type === 'meetup') {
+      const meetChallenge = challenges.find(c => (c.type === 'in_person' || c.type === 'meetup') && !c.isCompleted);
       if (meetChallenge) {
         updateChallengeProgress(meetChallenge.id, meetChallenge.progress + 1);
+      }
+    }
+    if (type === 'text') {
+      const textChallenge = challenges.find(c => c.type === 'messages' && !c.isCompleted);
+      if (textChallenge) {
+        updateChallengeProgress(textChallenge.id, textChallenge.progress + 1);
       }
     }
   }, [recordDailyActivity,  checkAndUpdateAchievements, updateChallengeProgress, interactions, streakData, gamificationState]);

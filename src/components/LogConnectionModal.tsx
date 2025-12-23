@@ -86,6 +86,7 @@ export const LogConnectionModal: React.FC<LogConnectionModalProps> = ({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const translateY = useSharedValue(SCREEN_HEIGHT);
   const backdropOpacity = useSharedValue(0);
@@ -100,6 +101,7 @@ export const LogConnectionModal: React.FC<LogConnectionModalProps> = ({
     setSelectedDate(new Date());
     setShowDropdown(false);
     setShowDatePicker(false);
+    setIsSubmitting(false);
   }, []);
 
   useEffect(() => {
@@ -163,10 +165,15 @@ export const LogConnectionModal: React.FC<LogConnectionModalProps> = ({
     f.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleDone = () => {
-    if (selectedFriend) {
-      onLogConnection(selectedFriend.id, selectedType, note, selectedDate);
-      closeDrawer();
+  const handleDone = async () => {
+    if (selectedFriend && !isSubmitting) {
+      setIsSubmitting(true);
+      try {
+        await onLogConnection(selectedFriend.id, selectedType, note, selectedDate);
+        closeDrawer();
+      } catch (error) {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -262,26 +269,26 @@ export const LogConnectionModal: React.FC<LogConnectionModalProps> = ({
               </Text>
               <TouchableOpacity
                 onPress={handleDone}
-                disabled={!selectedFriend}
+                disabled={!selectedFriend || isSubmitting}
                 activeOpacity={0.8}
               >
                 <LinearGradient
-                  colors={selectedFriend ? ["#E07A5F", "#D66A4F"] : ["rgba(224,122,95,0.4)", "rgba(214,106,79,0.4)"]}
+                  colors={selectedFriend && !isSubmitting ? ["#E07A5F", "#D66A4F"] : ["rgba(224,122,95,0.4)", "rgba(214,106,79,0.4)"]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={{
                     paddingHorizontal: 20,
                     paddingVertical: 10,
                     borderRadius: 9999,
-                    shadowColor: selectedFriend ? "#E07A5F" : "transparent",
+                    shadowColor: selectedFriend && !isSubmitting ? "#E07A5F" : "transparent",
                     shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: selectedFriend ? 0.3 : 0,
+                    shadowOpacity: selectedFriend && !isSubmitting ? 0.3 : 0,
                     shadowRadius: 8,
-                    elevation: selectedFriend ? 4 : 0,
+                    elevation: selectedFriend && !isSubmitting ? 4 : 0,
                   }}
                 >
                   <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 14, color: "#FFF" }}>
-                    Done
+                    {isSubmitting ? "Saving..." : "Done"}
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>
