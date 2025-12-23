@@ -1,4 +1,5 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
 import { widgetService } from '../services/widgetService';
 import { useApp } from '../context/AppContext';
 import { useGamification } from '../context/GamificationContext';
@@ -12,6 +13,7 @@ export const useWidgetSync = () => {
     getOverdueFriends,
   } = useApp();
   const { gamificationState, streakData } = useGamification();
+  const appState = useRef(AppState.currentState);
 
   const syncWidgetData = useCallback(async () => {
     try {
@@ -78,10 +80,38 @@ export const useWidgetSync = () => {
   }, [friends, interactions, premiumStatus, gamificationState, streakData, getSocialHealthStats, getOverdueFriends]);
 
   useEffect(() => {
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+        syncWidgetData();
+      }
+      appState.current = nextAppState;
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription.remove();
+  }, [syncWidgetData]);
+
+  useEffect(() => {
+    syncWidgetData();
+  }, []);
+
+  useEffect(() => {
     if (friends && interactions) {
       syncWidgetData();
     }
   }, [syncWidgetData, friends, interactions]);
+
+  useEffect(() => {
+    if (gamificationState?.level) {
+      syncWidgetData();
+    }
+  }, [gamificationState?.level, syncWidgetData]);
+
+  useEffect(() => {
+    if (streakData) {
+      syncWidgetData();
+    }
+  }, [streakData, syncWidgetData]);
 
   return { syncWidgetData };
 };

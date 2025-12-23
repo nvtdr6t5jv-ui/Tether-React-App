@@ -324,61 +324,137 @@ struct StatsWidgetView: View {
     var entry: Provider.Entry
     @Environment(\.widgetFamily) var family
     
+    var isAllCaughtUp: Bool {
+        let overdue = entry.widgetData?.stats.overdueCount ?? 0
+        let birthdays = entry.widgetData?.stats.upcomingBirthdays ?? 0
+        return overdue == 0 && birthdays == 0
+    }
+    
     var body: some View {
         ZStack {
             Color(red: 0.96, green: 0.95, blue: 0.87)
             
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Text("This Week")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36))
+            if family == .systemSmall && isAllCaughtUp {
+                VStack(spacing: 8) {
+                    HStack {
+                        Text("This Week")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36))
+                        Spacer()
+                        Image(systemName: "checkmark.seal.fill")
+                            .foregroundColor(Color(red: 0.51, green: 0.70, blue: 0.60))
+                            .font(.system(size: 16))
+                    }
+                    
                     Spacer()
-                    Image(systemName: "chart.bar.fill")
-                        .foregroundColor(Color(red: 0.51, green: 0.70, blue: 0.60))
-                        .font(.system(size: 16))
-                }
-                
-                Spacer()
-                
-                HStack(spacing: family == .systemMedium ? 24 : 12) {
-                    VStack(alignment: .leading, spacing: 2) {
+                    
+                    VStack(spacing: 6) {
                         Text("\(entry.widgetData?.stats.connectionsThisWeek ?? 0)")
-                            .font(.system(size: 36, weight: .bold, design: .rounded))
+                            .font(.system(size: 44, weight: .bold, design: .rounded))
                             .foregroundColor(Color(red: 0.51, green: 0.70, blue: 0.60))
                         Text("Connections")
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36).opacity(0.6))
                     }
                     
-                    if family == .systemMedium {
-                        Spacer()
-                    }
+                    Spacer()
                     
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("\(entry.widgetData?.stats.overdueCount ?? 0)")
-                            .font(.system(size: 36, weight: .bold, design: .rounded))
-                            .foregroundColor(entry.widgetData?.stats.overdueCount ?? 0 > 0 ? Color(red: 0.88, green: 0.48, blue: 0.37) : Color(red: 0.24, green: 0.25, blue: 0.36))
-                        Text("Overdue")
+                    HStack(spacing: 4) {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(Color(red: 0.96, green: 0.76, blue: 0.29))
+                        Text("All caught up!")
                             .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36).opacity(0.6))
+                            .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36).opacity(0.7))
+                    }
+                }
+                .padding(16)
+            } else {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text("This Week")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36))
+                        Spacer()
+                        Image(systemName: "chart.bar.fill")
+                            .foregroundColor(Color(red: 0.51, green: 0.70, blue: 0.60))
+                            .font(.system(size: 16))
                     }
                     
-                    if family == .systemMedium {
-                        Spacer()
-                        
+                    Spacer()
+                    
+                    HStack(spacing: family == .systemMedium ? 24 : 12) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("\(entry.widgetData?.stats.upcomingBirthdays ?? 0)")
+                            Text("\(entry.widgetData?.stats.connectionsThisWeek ?? 0)")
                                 .font(.system(size: 36, weight: .bold, design: .rounded))
-                                .foregroundColor(Color(red: 0.39, green: 0.40, blue: 0.96))
-                            Text("Birthdays")
+                                .foregroundColor(Color(red: 0.51, green: 0.70, blue: 0.60))
+                            Text("Connections")
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36).opacity(0.6))
                         }
+                        
+                        if family == .systemMedium {
+                            Spacer()
+                        }
+                        
+                        if family == .systemSmall {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("\(entry.widgetData?.stats.overdueCount ?? 0)")
+                                    .font(.system(size: 36, weight: .bold, design: .rounded))
+                                    .foregroundColor(entry.widgetData?.stats.overdueCount ?? 0 > 0 ? Color(red: 0.88, green: 0.48, blue: 0.37) : Color(red: 0.24, green: 0.25, blue: 0.36))
+                                Text("Overdue")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36).opacity(0.6))
+                            }
+                        }
+                        
+                        if family == .systemMedium {
+                            VStack(alignment: .leading, spacing: 2) {
+                                if (entry.widgetData?.stats.overdueCount ?? 0) == 0 {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundColor(Color(red: 0.51, green: 0.70, blue: 0.60))
+                                            .font(.system(size: 28))
+                                    }
+                                    Text("No overdue")
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36).opacity(0.6))
+                                } else {
+                                    Text("\(entry.widgetData?.stats.overdueCount ?? 0)")
+                                        .font(.system(size: 36, weight: .bold, design: .rounded))
+                                        .foregroundColor(Color(red: 0.88, green: 0.48, blue: 0.37))
+                                    Text("Overdue")
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36).opacity(0.6))
+                                }
+                            }
+                            
+                            Spacer()
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                if (entry.widgetData?.stats.upcomingBirthdays ?? 0) == 0 {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "gift.fill")
+                                            .foregroundColor(Color(red: 0.39, green: 0.40, blue: 0.96).opacity(0.4))
+                                            .font(.system(size: 24))
+                                    }
+                                    Text("No birthdays")
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36).opacity(0.6))
+                                } else {
+                                    Text("\(entry.widgetData?.stats.upcomingBirthdays ?? 0)")
+                                        .font(.system(size: 36, weight: .bold, design: .rounded))
+                                        .foregroundColor(Color(red: 0.39, green: 0.40, blue: 0.96))
+                                    Text("Birthdays")
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundColor(Color(red: 0.24, green: 0.25, blue: 0.36).opacity(0.6))
+                                }
+                            }
+                        }
                     }
                 }
+                .padding(16)
             }
-            .padding(16)
         }
         .widgetURL(URL(string: "tether://insights"))
     }
